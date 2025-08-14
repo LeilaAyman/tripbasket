@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "950681576261",
+    "project_id": "tripbasket-sctkxj",
+    "storage_bucket": "tripbasket-sctkxj.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:950681576261:android:fd9dc360a9895c1df5942c",
+        "android_client_info": {
+          "package_name": "com.mycompany.tripbasket"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMZIUk4-bv7Ih_01p21-Dp3gT6tXrqHI0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
