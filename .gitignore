@@ -1,154 +1,130 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
+# --------------------------------------
+# General OS / Editor / Tooling
+# --------------------------------------
 .DS_Store
-.atom/
-.buildlog/
-.history
-.svn/
-migrate_working_dir/
+*.swp
+*.swo
+*.tmp
+*.temp
+*.log
+*.class
+*.pyc
+*~
 
-# IntelliJ related
+# IDEs
+.idea/
 *.iml
 *.ipr
 *.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
 .vscode/
+.atom/
+.history/
+.svn/
+migrate_working_dir/
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# --------------------------------------
+# Flutter / Dart
+# --------------------------------------
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
 .pub-cache/
 .pub/
-/build/
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-
-# iOS/XCode related
-**/ios/**/*.mode1v3
-**/ios/**/*.mode2v3
-**/ios/**/*.moved-aside
-**/ios/**/*.pbxuser
-**/ios/**/*.perspectivev3
-**/ios/**/*sync/
-**/ios/**/.sconsign.dblite
-**/ios/**/.tags*
-**/ios/**/.vagrant/
-**/ios/**/DerivedData/
-**/ios/**/Icon?
-**/ios/**/Pods/
-**/ios/**/.symlinks/
-**/ios/**/profile
-**/ios/**/xcuserdata
-**/ios/.generated/
-**/ios/Flutter/.last_build_id
-**/ios/Flutter/App.framework
-**/ios/Flutter/Flutter.framework
-**/ios/Flutter/Flutter.podspec
-**/ios/Flutter/Generated.xcconfig
-**/ios/Flutter/ephemeral/
-**/ios/Flutter/app.flx
-**/ios/Flutter/app.zip
-**/ios/Flutter/flutter_assets/
-**/ios/Flutter/flutter_export_environment.sh
-**/ios/ServiceDefinitions.json
-**/ios/Runner/GeneratedPluginRegistrant.*
-
-# Web related
+build/
+coverage/
 lib/generated_plugin_registrant.dart
 
-# Coverage
-coverage/
+# --------------------------------------
+# Android
+# --------------------------------------
+android/.gradle/
+android/app/build/
+android/local.properties
+android/key.properties
 
-# Exceptions to above rules.
-!/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
+# Build variants
+android/app/debug/
+android/app/profile/
+android/app/release/
 
-# Firebase related
+# --------------------------------------
+# iOS / Xcode
+# --------------------------------------
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/.last_build_id
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.*
+
+# Xcode user data
+**/ios/**/*.mode1v3
+**/ios/**/*.mode2v3
+**/ios/**/*.pbxuser
+**/ios/**/*.perspectivev3
+**/ios/**/xcuserdata
+**/ios/**/DerivedData/
+**/ios/**/*.moved-aside
+
+# --------------------------------------
+# macOS
+# --------------------------------------
+macos/Flutter/ephemeral/
+macos/Flutter/GeneratedPluginRegistrant.swift
+
+# --------------------------------------
+# Windows
+# --------------------------------------
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugin_registrant.h
+windows/flutter/generated_plugins.cmake
+
+# --------------------------------------
+# Linux
+# --------------------------------------
+linux/flutter/generated_plugin_registrant.cc
+linux/flutter/generated_plugin_registrant.h
+linux/flutter/generated_plugins.cmake
+
+# --------------------------------------
+# Firebase / Keys
+# --------------------------------------
 **/android/app/google-services.json
 **/ios/Runner/GoogleService-Info.plist
 **/ios/firebase_app_id_file.json
 .firebaserc
 
-# Signing files
-**/android/key.properties
+# Signing / Keystores
 **/android/app/upload-keystore.jks
 **/android/app/key.jks
 
-# macOS
-**/macos/Flutter/GeneratedPluginRegistrant.swift
-**/macos/Flutter/ephemeral/
-
-# Windows
-**/windows/flutter/generated_plugin_registrant.cc
-**/windows/flutter/generated_plugin_registrant.h
-**/windows/flutter/generated_plugins.cmake
-
-# Linux
-**/linux/flutter/generated_plugin_registrant.cc
-**/linux/flutter/generated_plugin_registrant.h
-**/linux/flutter/generated_plugins.cmake
-
-# Environment files
+# --------------------------------------
+# Environment / Config
+# --------------------------------------
 .env
-.env.local
-.env.production
-.env.staging
-
-# Local development files
+.env.*
 local.properties
 key.properties
 
-# Large build files that shouldn't be in version control
-**/build/
-**/android/app/build/
-**/ios/build/
-**/web/build/
-**/macos/build/
-**/windows/build/
-**/linux/build/
-
+# --------------------------------------
 # Generated files
+# --------------------------------------
 **/*.g.dart
 **/*.freezed.dart
 **/*.mocks.dart
 
-# Test related
+# --------------------------------------
+# Tests / Screenshots
+# --------------------------------------
 test_driver/screenshots/
 integration_test/screenshots/
 
-# Temporary files
-*.tmp
-*.temp
-
-# Log files
-*.log
-
-# Editor backups
-*~
-
-# IDE specific files
-.vscode/settings.json
-.vscode/launch.json
-.vscode/tasks.json
-
-# Large assets (keep file sizes under 50MB for GitHub)
-assets/images/20250711_0315_TripBasket_Logo_simple_compose_01jzvdc0wpefzs8a0w54pwwpd6_(1).png
+# --------------------------------------
+# Assets (large files >50MB → use Git LFS instead)
+# --------------------------------------
+# Example: ignore whole images folder if too heavy
+# assets/images/
