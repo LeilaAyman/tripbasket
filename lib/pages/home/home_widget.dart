@@ -5,6 +5,8 @@ import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
+import '/utils/add_sample_agencies.dart';
+import '/components/interactive_trip_rating.dart';
 import 'dart:math';
 import 'dart:ui';
 import '/index.dart';
@@ -255,6 +257,212 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+        appBar: AppBar(
+          backgroundColor: Color(0xFFD76B30),
+          automaticallyImplyLeading: false,
+          leading: FlutterFlowIconButton(
+            borderColor: Colors.transparent,
+            borderRadius: 30.0,
+            borderWidth: 1.0,
+            buttonSize: 60.0,
+            icon: Icon(
+              Icons.menu,
+              color: Colors.white,
+              size: 30.0,
+            ),
+            onPressed: () async {
+              scaffoldKey.currentState!.openDrawer();
+            },
+          ),
+          title: Text(
+            'Tripsbasket',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 22.0,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.0,
+            ),
+          ),
+          actions: [],
+          centerTitle: false,
+          elevation: 2.0,
+        ),
+        drawer: Drawer(
+          backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              DrawerHeader(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFFD76B30), // Primary Orange
+                      Color(0xFFDBA237), // Golden Yellow
+                    ],
+                    stops: [0.0, 1.0],
+                    begin: AlignmentDirectional(-1.0, -1.0),
+                    end: AlignmentDirectional(1.0, 1.0),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tripsbasket',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 24.0,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.0,
+                      ),
+                    ),
+                    SizedBox(height: 8.0),
+                    Text(
+                      'Your travel companion',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14.0,
+                        letterSpacing: 0.0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.home,
+                  color: Color(0xFFD76B30),
+                ),
+                title: Text(
+                  'Home',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.0,
+                    letterSpacing: 0.0,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.business,
+                  color: Color(0xFFD76B30),
+                ),
+                title: Text(
+                  'Travel Agencies',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.0,
+                    letterSpacing: 0.0,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.pushNamed('agenciesList');
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.rate_review,
+                  color: Color(0xFFD76B30),
+                ),
+                title: Text(
+                  'Reviews',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.0,
+                    letterSpacing: 0.0,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.pushNamed('reviews');
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.person,
+                  color: Color(0xFFD76B30),
+                ),
+                title: Text(
+                  'Profile',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.0,
+                    letterSpacing: 0.0,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.pushNamed('profile');
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.book_online,
+                  color: Color(0xFFD76B30),
+                ),
+                title: Text(
+                  'My Bookings',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.0,
+                    letterSpacing: 0.0,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.pushNamed('mybookings');
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.shopping_cart,
+                  color: Color(0xFFD76B30),
+                ),
+                title: Text(
+                  'Shopping Cart',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.0,
+                    letterSpacing: 0.0,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.pushNamed('cart');
+                },
+              ),
+              Divider(
+                color: Color(0xFFDBA237).withOpacity(0.3),
+                thickness: 1.0,
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.logout,
+                  color: Colors.red[600],
+                ),
+                title: Text(
+                  'Logout',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.0,
+                    color: Colors.red[600],
+                    letterSpacing: 0.0,
+                  ),
+                ),
+                onTap: () async {
+                  Navigator.pop(context);
+                  GoRouter.of(context).prepareAuthEvent();
+                  await authManager.signOut();
+                  GoRouter.of(context).clearRedirectLocation();
+                  context.goNamedAuth('landing', context.mounted);
+                },
+              ),
+            ],
+          ),
+        ),
         body: Column(
           mainAxisSize: MainAxisSize.max,
           children: [
@@ -296,24 +504,6 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                           mainAxisSize: MainAxisSize.max,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
-                                  16.0, 60.0, 16.0, 0.0),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.max,
-                                children: [
-                                  Text(
-                                    'Tripbasket',
-                                    style: GoogleFonts.poppins(
-                                      color: Colors.white,
-                                      fontSize: 50.0,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 0.0,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
                             Container(
                               height: 200.0,
                               child: Padding(
@@ -327,6 +517,19 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                                     Duration(milliseconds: 2000),
                                     () => safeSetState(() {}),
                                   ),
+                                  onFieldSubmitted: (_) async {
+                                    if (_model.textController.text.isNotEmpty) {
+                                      context.pushNamed(
+                                        'searchResults',
+                                        queryParameters: {
+                                          'searchQuery': serializeParam(
+                                            _model.textController.text,
+                                            ParamType.String,
+                                          ),
+                                        }.withoutNulls,
+                                      );
+                                    }
+                                  },
                                   autofocus: false,
                                   obscureText: false,
                                   decoration: InputDecoration(
@@ -371,19 +574,199 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                                     filled: true,
                                     fillColor: FlutterFlowTheme.of(context)
                                         .secondaryBackground,
-                                    prefixIcon: Icon(
-                                      Icons.search,
-                                      color: Color(0xFFD76B30), // Orange search icon
-                                      size: 16.0,
+                                    prefixIcon: InkWell(
+                                      onTap: () async {
+                                        if (_model.textController.text.isNotEmpty) {
+                                          context.pushNamed(
+                                            'searchResults',
+                                            queryParameters: {
+                                              'searchQuery': serializeParam(
+                                                _model.textController.text,
+                                                ParamType.String,
+                                              ),
+                                            }.withoutNulls,
+                                          );
+                                        }
+                                      },
+                                      child: Icon(
+                                        Icons.search,
+                                        color: Color(0xFFD76B30), // Orange search icon
+                                        size: 16.0,
+                                      ),
                                     ),
                                   ),
                                   style: GoogleFonts.poppins(
+                                    color: FlutterFlowTheme.of(context).primaryText,
                                     letterSpacing: 0.0,
                                   ),
                                   validator: _model.textControllerValidator
                                       .asValidator(context),
                                 ).animateOnPageLoad(animationsMap[
                                     'textFieldOnPageLoadAnimation']!),
+                              ),
+                            ),
+                            Padding(
+                              padding: EdgeInsetsDirectional.fromSTEB(
+                                  16.0, 12.0, 16.0, 8.0),
+                              child: Text(
+                                'Quick Search',
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontSize: 16.0,
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 0.0,
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: EdgeInsetsDirectional.fromSTEB(
+                                  16.0, 0.0, 16.0, 20.0),
+                              child: Wrap(
+                                spacing: 8.0,
+                                runSpacing: 8.0,
+                                alignment: WrapAlignment.start,
+                                children: [
+                                  InkWell(
+                                    onTap: () async {
+                                      context.pushNamed(
+                                        'searchResults',
+                                        queryParameters: {
+                                          'searchQuery': serializeParam(
+                                            'Japan',
+                                            ParamType.String,
+                                          ),
+                                        }.withoutNulls,
+                                      );
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(20.0),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.3),
+                                          width: 1.0,
+                                        ),
+                                      ),
+                                      child: Padding(
+                                        padding: EdgeInsetsDirectional.fromSTEB(
+                                            12.0, 6.0, 12.0, 6.0),
+                                        child: Text(
+                                          'Japan',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.white,
+                                            fontSize: 12.0,
+                                            letterSpacing: 0.0,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  InkWell(
+                                    onTap: () async {
+                                      context.pushNamed(
+                                        'searchResults',
+                                        queryParameters: {
+                                          'searchQuery': serializeParam(
+                                            'Paris',
+                                            ParamType.String,
+                                          ),
+                                        }.withoutNulls,
+                                      );
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(20.0),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.3),
+                                          width: 1.0,
+                                        ),
+                                      ),
+                                      child: Padding(
+                                        padding: EdgeInsetsDirectional.fromSTEB(
+                                            12.0, 6.0, 12.0, 6.0),
+                                        child: Text(
+                                          'Paris',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.white,
+                                            fontSize: 12.0,
+                                            letterSpacing: 0.0,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  InkWell(
+                                    onTap: () async {
+                                      context.pushNamed(
+                                        'searchResults',
+                                        queryParameters: {
+                                          'searchQuery': serializeParam(
+                                            'Beach',
+                                            ParamType.String,
+                                          ),
+                                        }.withoutNulls,
+                                      );
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(20.0),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.3),
+                                          width: 1.0,
+                                        ),
+                                      ),
+                                      child: Padding(
+                                        padding: EdgeInsetsDirectional.fromSTEB(
+                                            12.0, 6.0, 12.0, 6.0),
+                                        child: Text(
+                                          'Beach',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.white,
+                                            fontSize: 12.0,
+                                            letterSpacing: 0.0,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  InkWell(
+                                    onTap: () async {
+                                      context.pushNamed(
+                                        'searchResults',
+                                        queryParameters: {
+                                          'searchQuery': serializeParam(
+                                            'Adventure',
+                                            ParamType.String,
+                                          ),
+                                        }.withoutNulls,
+                                      );
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(20.0),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.3),
+                                          width: 1.0,
+                                        ),
+                                      ),
+                                      child: Padding(
+                                        padding: EdgeInsetsDirectional.fromSTEB(
+                                            12.0, 6.0, 12.0, 6.0),
+                                        child: Text(
+                                          'Adventure',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.white,
+                                            fontSize: 12.0,
+                                            letterSpacing: 0.0,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             Padding(
@@ -407,8 +790,7 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                                 width: double.infinity,
                                 height: 763.7,
                                 decoration: BoxDecoration(
-                                  color: FlutterFlowTheme.of(context)
-                                      .secondaryBackground,
+                                  color: FlutterFlowTheme.of(context).primaryBackground,
                                   borderRadius: BorderRadius.only(
                                     bottomLeft: Radius.circular(0.0),
                                     bottomRight: Radius.circular(0.0),
@@ -440,6 +822,7 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                                           child: Text(
                                             'Experience top destinations',
                                             style: GoogleFonts.poppins(
+                                              color: FlutterFlowTheme.of(context).primaryText,
                                               fontSize: 24.0,
                                               fontWeight: FontWeight.w600,
                                               letterSpacing: 0.0,
@@ -454,7 +837,7 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                                           child: Text(
                                             '30 locations world wide',
                                             style: GoogleFonts.poppins(
-                                              color: Colors.grey[600],
+                                              color: FlutterFlowTheme.of(context).primaryText,
                                               letterSpacing: 0.0,
                                             ),
                                           ).animateOnPageLoad(animationsMap[
@@ -847,6 +1230,7 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                                           child: Text(
                                             'Featured trips',
                                             style: GoogleFonts.poppins(
+                                              color: Colors.black,
                                               fontSize: 24.0,
                                               fontWeight: FontWeight.w600,
                                               letterSpacing: 0.0,
@@ -861,7 +1245,7 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                                           child: Text(
                                             '10 spots to catch some zzz\'s',
                                             style: GoogleFonts.poppins(
-                                              color: Colors.grey[600],
+                                              color: Colors.black,
                                               letterSpacing: 0.0,
                                             ),
                                           ).animateOnPageLoad(animationsMap[
@@ -1030,6 +1414,7 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                                                                         listViewTripsRecord
                                                                             .title,
                                                                         style: GoogleFonts.poppins(
+                                                                          color: Colors.black,
                                                                           fontSize: 16.0,
                                                                           fontWeight: FontWeight.w600,
                                                                           letterSpacing: 0.0,
@@ -1041,32 +1426,14 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                                                                             8.0,
                                                                             0.0,
                                                                             0.0),
-                                                                        child:
-                                                                            Row(
-                                                                          mainAxisSize:
-                                                                              MainAxisSize.max,
-                                                                          children: [
-                                                                            RatingBarIndicator(
-                                                                              itemBuilder: (context, index) => Icon(
-                                                                                Icons.star,
-                                                                                color: Color(0xFFF2D83B), // Bright yellow stars
-                                                                              ),
-                                                                              direction: Axis.horizontal,
-                                                                              rating: 4.0,
-                                                                              unratedColor: FlutterFlowTheme.of(context).secondaryText,
-                                                                              itemCount: 5,
-                                                                              itemSize: 16.0,
-                                                                            ),
-                                                                            Padding(
-                                                                              padding: EdgeInsetsDirectional.fromSTEB(8.0, 0.0, 0.0, 0.0),
-                                                                              child: Text(
-                                                                                '4.7',
-                                                                                style: GoogleFonts.poppins(
-                                                                                  letterSpacing: 0.0,
-                                                                                ),
-                                                                              ),
-                                                                            ),
-                                                                          ],
+                                                                        child: InteractiveTripRating(
+                                                                          tripRecord: listViewTripsRecord,
+                                                                          initialRating: listViewTripsRecord.rating,
+                                                                          showReviewsButton: true,
+                                                                          onRatingChanged: (rating) {
+                                                                            // Handle rating change if needed
+                                                                            print('Rating changed to: $rating');
+                                                                          },
                                                                         ),
                                                                       ),
                                                                     ],
@@ -1145,75 +1512,6 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                                               ).animateOnPageLoad(animationsMap[
                                                   'listViewOnPageLoadAnimation']!);
                                             },
-                                          ),
-                                        ),
-                                        Container(
-                                          width: 393.84,
-                                          height: 100.0,
-                                          decoration: BoxDecoration(
-                                            color: FlutterFlowTheme.of(context)
-                                                .secondaryBackground,
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.max,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                              FFButtonWidget(
-                                                onPressed: () {
-                                                  print('Button pressed ...');
-                                                },
-                                                text: 'agencies',
-                                                options: FFButtonOptions(
-                                                  width: 94.28,
-                                                  height: 58.6,
-                                                  padding: EdgeInsetsDirectional
-                                                      .fromSTEB(
-                                                          16.0, 0.0, 16.0, 0.0),
-                                                  iconPadding:
-                                                      EdgeInsetsDirectional
-                                                          .fromSTEB(0.0, 0.0,
-                                                              0.0, 0.0),
-                                                  color: Color(0xFFD76B30), // Orange button
-                                                  textStyle: GoogleFonts.poppins(
-                                                    color: Colors.white,
-                                                    fontSize: 14.0,
-                                                    fontWeight: FontWeight.w600,
-                                                    letterSpacing: 0.0,
-                                                  ),
-                                                  elevation: 0.0,
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          8.0),
-                                                ),
-                                              ),
-                                              FlutterFlowIconButton(
-                                                borderRadius: 8.0,
-                                                buttonSize: 40.0,
-                                                fillColor: Color(0xFFD76B30), // Orange button
-                                                icon: Icon(
-                                                  Icons.person_outline,
-                                                  color: Colors.white,
-                                                  size: 24.0,
-                                                ),
-                                                onPressed: () async {
-                                                  context.pushNamed('profile');
-                                                },
-                                              ),
-                                              FlutterFlowIconButton(
-                                                borderRadius: 8.0,
-                                                buttonSize: 40.0,
-                                                fillColor: Color(0xFFD76B30), // Orange button
-                                                icon: Icon(
-                                                  Icons.card_travel_outlined,
-                                                  color: Colors.white,
-                                                  size: 24.0,
-                                                ),
-                                                onPressed: () async {
-                                                  context.pushNamed('mybookings');
-                                                },
-                                              ),
-                                            ],
                                           ),
                                         ),
                                       ],

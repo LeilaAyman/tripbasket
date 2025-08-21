@@ -168,15 +168,15 @@ class _ProfileWidgetState extends State<ProfileWidget> {
           body: Column(
             mainAxisSize: MainAxisSize.max,
             children: [
-              // Header with User Info in Black Space
+              // Header with User Info in Light Space
               Container(
                 width: double.infinity,
                 height: 160.0,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Color(0xFF2D2D2D),
-                      Color(0xFF1A1A1A),
+                      Color(0xFFF8F9FA),
+                      Color(0xFFE9ECEF),
                     ],
                     stops: [0.0, 1.0],
                     begin: AlignmentDirectional(0.0, -1.0),
@@ -196,7 +196,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                                 ? currentUserEmail.split('@')[0] 
                                 : 'User'),
                         style: GoogleFonts.poppins(
-                          color: Colors.white,
+                          color: Color(0xFF2D2D2D),
                           fontSize: 28.0,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.0,
@@ -206,7 +206,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                       Text(
                         currentUserEmail,
                         style: GoogleFonts.poppins(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Color(0xFF666666),
                           fontSize: 16.0,
                           fontWeight: FontWeight.w400,
                           letterSpacing: 0.0,
@@ -420,6 +420,20 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                                   false,
                                   () {
                                     context.pushNamed(AdminUploadWidget.routeName);
+                                  },
+                                  isAdmin: true,
+                                ),
+
+                              // Agency Dashboard Section (if admin)
+                              if (isAdmin)
+                                _buildSettingsRow(
+                                  context,
+                                  Icons.dashboard_outlined,
+                                  'Agency Dashboard',
+                                  'Manage Trips',
+                                  false,
+                                  () {
+                                    context.pushNamed('agency_dashboard');
                                   },
                                   isAdmin: true,
                                 ),

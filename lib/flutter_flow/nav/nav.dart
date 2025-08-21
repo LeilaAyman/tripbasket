@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '/backend/backend.dart';
 
 import '/auth/base_auth_user_provider.dart';
@@ -134,9 +135,92 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => MybookingsWidget(),
         ),
         FFRoute(
+          name: CartWidget.routeName,
+          path: CartWidget.routePath,
+          builder: (context, params) => CartWidget(),
+        ),
+        FFRoute(
+          name: PaymentWidget.routeName,
+          path: PaymentWidget.routePath,
+          builder: (context, params) {
+            final tripRecordId = params.getParam('tripRecord', ParamType.String);
+            final totalAmount = params.getParam('totalAmount', ParamType.String);
+            
+            // This is a simplified approach - in a real app you'd handle this differently
+            return FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance.collection('trips').doc(tripRecordId).get(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                
+                final trip = TripsRecord.fromSnapshot(snapshot.data!);
+                return PaymentWidget(
+                  tripRecord: trip,
+                  totalAmount: double.tryParse(totalAmount ?? '0') ?? 0.0,
+                );
+              },
+            );
+          },
+        ),
+        FFRoute(
           name: AdminUploadWidget.routeName,
           path: AdminUploadWidget.routePath,
           builder: (context, params) => AdminUploadWidget(),
+        ),
+        FFRoute(
+          name: SearchResultsWidget.routeName,
+          path: SearchResultsWidget.routePath,
+          builder: (context, params) => SearchResultsWidget(
+            searchQuery: params.getParam(
+              'searchQuery',
+              ParamType.String,
+            ),
+          ),
+        ),
+        FFRoute(
+          name: AgenciesListWidget.routeName,
+          path: AgenciesListWidget.routePath,
+          builder: (context, params) => AgenciesListWidget(),
+        ),
+        FFRoute(
+          name: ReviewsWidget.routeName,
+          path: ReviewsWidget.routePath,
+          builder: (context, params) => ReviewsWidget(),
+        ),
+        FFRoute(
+          name: AgencyTripsWidget.routeName,
+          path: AgencyTripsWidget.routePath,
+          builder: (context, params) => AgencyTripsWidget(
+            agencyRef: params.getParam(
+              'agencyRef',
+              ParamType.DocumentReference,
+              isList: false,
+              collectionNamePath: ['agency'],
+            ),
+          ),
+        ),
+        FFRoute(
+          name: AgencyDashboardWidget.routeName,
+          path: AgencyDashboardWidget.routePath,
+          builder: (context, params) => AgencyDashboardWidget(),
+        ),
+        FFRoute(
+          name: CreateTripWidget.routeName,
+          path: CreateTripWidget.routePath,
+          builder: (context, params) => CreateTripWidget(),
+        ),
+        FFRoute(
+          name: EditTripWidget.routeName,
+          path: EditTripWidget.routePath,
+          builder: (context, params) => EditTripWidget(
+            tripRef: params.getParam(
+              'tripRef',
+              ParamType.String,
+            )!,
+          ),
         )
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );

@@ -84,6 +84,16 @@ class TripsRecord extends FirestoreRecord {
   String get location => _location ?? '';
   bool hasLocation() => _location != null;
 
+  // "agency_reference" field.
+  DocumentReference? _agencyReference;
+  DocumentReference? get agencyReference => _agencyReference;
+  bool hasAgencyReference() => _agencyReference != null;
+
+  // "rating" field.
+  double? _rating;
+  double get rating => _rating ?? 0.0;
+  bool hasRating() => _rating != null;
+
   void _initializeFields() {
     _specifications = snapshotData['specifications'] as String?;
     _itenarary = getDataList(snapshotData['itenarary']);
@@ -98,6 +108,8 @@ class TripsRecord extends FirestoreRecord {
     _description = snapshotData['description'] as String?;
     _title = snapshotData['title'] as String?;
     _location = snapshotData['location'] as String?;
+    _agencyReference = snapshotData['agency_reference'] as DocumentReference?;
+    _rating = castToType<double>(snapshotData['rating']);
   }
 
   static CollectionReference get collection =>
@@ -150,6 +162,8 @@ Map<String, dynamic> createTripsRecordData({
   String? description,
   String? title,
   String? location,
+  DocumentReference? agencyReference,
+  double? rating,
 }) {
   final firestoreData = mapToFirestore(
     <String, dynamic>{
@@ -169,6 +183,8 @@ Map<String, dynamic> createTripsRecordData({
       'description': description,
       'title': title,
       'location': location,
+      'agency_reference': agencyReference,
+      'rating': rating,
     }.withoutNulls,
   );
 
@@ -193,7 +209,9 @@ class TripsRecordDocumentEquality implements Equality<TripsRecord> {
         e1?.image == e2?.image &&
         e1?.description == e2?.description &&
         e1?.title == e2?.title &&
-        e1?.location == e2?.location;
+        e1?.location == e2?.location &&
+        e1?.agencyReference == e2?.agencyReference &&
+        e1?.rating == e2?.rating;
   }
 
   @override
@@ -210,7 +228,9 @@ class TripsRecordDocumentEquality implements Equality<TripsRecord> {
         e?.image,
         e?.description,
         e?.title,
-        e?.location
+        e?.location,
+        e?.agencyReference,
+        e?.rating
       ]);
 
   @override

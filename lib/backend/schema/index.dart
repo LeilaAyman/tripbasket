@@ -4,3 +4,7 @@ export '/flutter_flow/lat_lng.dart';
 export 'trips_record.dart';
 export 'users_record.dart';
 export 'cart_record.dart';
+export 'agencies_record.dart';
+export 'reviews_record.dart';
+export 'agency_reviews_record.dart';
+export 'bookings_record.dart';
