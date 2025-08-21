@@ -17,6 +17,11 @@ class AgenciesRecord extends FirestoreRecord {
     _initializeFields();
   }
 
+  // "agency_id" field.
+  String? _agencyId;
+  String get agencyId => _agencyId ?? '';
+  bool hasAgencyId() => _agencyId != null;
+
   // "name" field.
   String? _name;
   String get name => _name ?? '';
@@ -73,6 +78,7 @@ class AgenciesRecord extends FirestoreRecord {
   bool hasStatus() => _status != null;
 
   void _initializeFields() {
+    _agencyId = snapshotData['agency_id'] as String?;
     _name = snapshotData['name'] as String?;
     _description = snapshotData['description'] as String?;
     _logo = snapshotData['logo'] as String?;
@@ -123,6 +129,7 @@ class AgenciesRecord extends FirestoreRecord {
 }
 
 Map<String, dynamic> createAgenciesRecordData({
+  String? agencyId,
   String? name,
   String? description,
   String? logo,
@@ -137,6 +144,7 @@ Map<String, dynamic> createAgenciesRecordData({
 }) {
   final firestoreData = mapToFirestore(
     <String, dynamic>{
+      'agency_id': agencyId,
       'name': name,
       'description': description,
       'logo': logo,
@@ -159,7 +167,8 @@ class AgenciesRecordDocumentEquality implements Equality<AgenciesRecord> {
 
   @override
   bool equals(AgenciesRecord? e1, AgenciesRecord? e2) {
-    return e1?.name == e2?.name &&
+    return e1?.agencyId == e2?.agencyId &&
+        e1?.name == e2?.name &&
         e1?.description == e2?.description &&
         e1?.logo == e2?.logo &&
         e1?.contactEmail == e2?.contactEmail &&
@@ -174,6 +183,7 @@ class AgenciesRecordDocumentEquality implements Equality<AgenciesRecord> {
 
   @override
   int hash(AgenciesRecord? e) => const ListEquality().hash([
+        e?.agencyId,
         e?.name,
         e?.description,
         e?.logo,

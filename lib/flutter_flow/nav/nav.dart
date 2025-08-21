@@ -201,26 +201,6 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
               collectionNamePath: ['agency'],
             ),
           ),
-        ),
-        FFRoute(
-          name: AgencyDashboardWidget.routeName,
-          path: AgencyDashboardWidget.routePath,
-          builder: (context, params) => AgencyDashboardWidget(),
-        ),
-        FFRoute(
-          name: CreateTripWidget.routeName,
-          path: CreateTripWidget.routePath,
-          builder: (context, params) => CreateTripWidget(),
-        ),
-        FFRoute(
-          name: EditTripWidget.routeName,
-          path: EditTripWidget.routePath,
-          builder: (context, params) => EditTripWidget(
-            tripRef: params.getParam(
-              'tripRef',
-              ParamType.String,
-            )!,
-          ),
         )
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
