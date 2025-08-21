@@ -13,3 +13,6 @@ export '/pages/search_results/search_results_widget.dart' show SearchResultsWidg
 export '/pages/agencies_list/agencies_list_widget.dart' show AgenciesListWidget;
 export '/pages/agency_trips/agency_trips_widget.dart' show AgencyTripsWidget;
 export '/pages/reviews/reviews_widget.dart' show ReviewsWidget;
+export '/pages/edit_profile/edit_profile_widget.dart' show EditProfileWidget;
+export '/components/currency_selector.dart' show CurrencySelector;
+export '/components/language_selector.dart' show LanguageSelector;

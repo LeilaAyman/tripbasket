@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter pub:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(flutter build:*)",
+      "Bash(dart analyze:*)"
+    ],
+    "additionalDirectories": [
+      "C:\\c\\Users\\maria\\OneDrive\\Desktop"
+    ]
+  }
+}

@@ -5,8 +5,11 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
 import '/pages/agency_dashboard/agency_dashboard_widget.dart';
+import '/components/currency_selector.dart';
+import '/components/language_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'profile_model.dart';
 export 'profile_model.dart';
 
@@ -24,11 +27,34 @@ class _ProfileWidgetState extends State<ProfileWidget> {
   late ProfileModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  String selectedCurrency = 'USD';
+  String selectedCurrencyDisplay = 'US Dollar (\$)';
+  String selectedLanguage = 'en';
+  String selectedLanguageDisplay = 'English';
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => ProfileModel());
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedCurrency = prefs.getString('currency') ?? 'USD';
+      selectedCurrencyDisplay = prefs.getString('currency_display') ?? 'US Dollar (\$)';
+      selectedLanguage = prefs.getString('language') ?? 'en';
+      selectedLanguageDisplay = prefs.getString('language_display') ?? 'English';
+    });
+  }
+
+  Future<void> _savePreferences() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('currency', selectedCurrency);
+    await prefs.setString('currency_display', selectedCurrencyDisplay);
+    await prefs.setString('language', selectedLanguage);
+    await prefs.setString('language_display', selectedLanguageDisplay);
   }
 
   @override
@@ -76,6 +102,144 @@ class _ProfileWidgetState extends State<ProfileWidget> {
         duration: Duration(seconds: 3),
         backgroundColor: FlutterFlowTheme.of(context).primary,
       ),
+    );
+  }
+
+  Future<void> _showCurrencySelector() async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        margin: EdgeInsets.only(top: 50),
+        child: CurrencySelector(
+          currentCurrency: selectedCurrency,
+          onCurrencyChanged: (code, display) {
+            setState(() {
+              selectedCurrency = code;
+              selectedCurrencyDisplay = display;
+            });
+            _savePreferences();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Currency updated to $display'),
+                backgroundColor: Color(0xFF6B73FF),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showLanguageSelector() async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        margin: EdgeInsets.only(top: 50),
+        child: LanguageSelector(
+          currentLanguage: selectedLanguage,
+          onLanguageChanged: (code, display) {
+            setState(() {
+              selectedLanguage = code;
+              selectedLanguageDisplay = display;
+            });
+            _savePreferences();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Language updated to $display'),
+                backgroundColor: Color(0xFF6B73FF),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showPhoneNumberDialog() async {
+    final TextEditingController phoneController = TextEditingController(
+      text: currentPhoneNumber,
+    );
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'Update Phone Number',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: InputDecoration(
+                    hintText: 'Enter your phone number',
+                    prefixIcon: Icon(Icons.phone_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF6B73FF), width: 2.0),
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF6B73FF),
+                foregroundColor: Colors.white,
+              ),
+              child: Text('Save'),
+              onPressed: () async {
+                try {
+                  if (currentUserDocument != null) {
+                    await currentUserDocument!.reference.update({
+                      'phone_number': phoneController.text,
+                    });
+                  }
+
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Phone number updated successfully!'),
+                      backgroundColor: Color(0xFF6B73FF),
+                    ),
+                  );
+                  setState(() {});
+                } catch (e) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to update phone number.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -402,8 +566,9 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                                 currentPhoneNumber.isNotEmpty ? currentPhoneNumber : 'Add Number',
                                 currentPhoneNumber.isEmpty,
                                 () {
-                                  // TODO: Navigate to phone number edit
+                                  _showPhoneNumberDialog();
                                 },
+                                showArrow: true,
                               ),
                               
                               // Language
@@ -411,11 +576,12 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                                 context,
                                 Icons.language_outlined,
                                 'Language',
-                                'English (eng)',
+                                selectedLanguageDisplay,
                                 false,
                                 () {
-                                  // TODO: Navigate to language settings
+                                  _showLanguageSelector();
                                 },
+                                showArrow: true,
                               ),
                               
                               // Currency
@@ -423,11 +589,12 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                                 context,
                                 Icons.attach_money_outlined,
                                 'Currency',
-                                'US Dollar (\$)',
+                                selectedCurrencyDisplay,
                                 false,
                                 () {
-                                  // TODO: Navigate to currency settings
+                                  _showCurrencySelector();
                                 },
+                                showArrow: true,
                               ),
                               
                               // Profile Settings
@@ -438,8 +605,9 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                                 'Edit Profile',
                                 false,
                                 () {
-                                  // TODO: Navigate to profile edit
+                                  context.pushNamed('edit_profile');
                                 },
+                                showArrow: true,
                               ),
                               
                               // Notification Settings
@@ -447,10 +615,15 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                                 context,
                                 Icons.notifications_outlined,
                                 'Notification Settings',
-                                '',
+                                'Manage Notifications',
                                 false,
                                 () {
-                                  // TODO: Navigate to notification settings
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Notification settings coming soon!'),
+                                      backgroundColor: Color(0xFF6B73FF),
+                                    ),
+                                  );
                                 },
                                 showArrow: true,
                               ),

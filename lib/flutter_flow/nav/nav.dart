@@ -18,6 +18,7 @@ import 'serialization_util.dart';
 
 import '/index.dart';
 import '/pages/agency_dashboard/agency_dashboard_widget.dart';
+import '/pages/edit_profile/edit_profile_widget.dart';
 
 export 'package:go_router/go_router.dart';
 export 'serialization_util.dart';
@@ -207,6 +208,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: AgencyDashboardWidget.routeName,
           path: AgencyDashboardWidget.routePath,
           builder: (context, params) => AgencyDashboardWidget(),
+        ),
+        FFRoute(
+          name: EditProfileWidget.routeName,
+          path: EditProfileWidget.routePath,
+          builder: (context, params) => EditProfileWidget(),
         )
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
