@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'auth/firebase_auth/firebase_user_provider.dart';
 import 'auth/firebase_auth/auth_util.dart';
 
@@ -98,51 +99,23 @@ class _MyAppState extends State<MyApp> {
       supportedLocales: const [Locale('en', '')],
       theme: ThemeData(
         brightness: Brightness.light,
-        useMaterial3: false,
+        useMaterial3: true,
         scaffoldBackgroundColor: Colors.white,
         canvasColor: Colors.white,
         cardColor: Colors.white,
         dialogBackgroundColor: Colors.white,
-
         primarySwatch: Colors.blue,
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: Colors.black),
-          bodyMedium: TextStyle(color: Colors.black),
-          bodySmall: TextStyle(color: Colors.black),
-          headlineLarge: TextStyle(color: Colors.black),
-          headlineMedium: TextStyle(color: Colors.black),
-          headlineSmall: TextStyle(color: Colors.black),
-          titleLarge: TextStyle(color: Colors.black),
-          titleMedium: TextStyle(color: Colors.black),
-          titleSmall: TextStyle(color: Colors.black),
-          labelLarge: TextStyle(color: Colors.black),
-          labelMedium: TextStyle(color: Colors.black),
-          labelSmall: TextStyle(color: Colors.black),
-        ),
+        textTheme: GoogleFonts.interTextTheme(), // text only, preserves icons
       ),
       darkTheme: ThemeData(
         brightness: Brightness.light, // Force light mode
-        useMaterial3: false,
+        useMaterial3: true,
         scaffoldBackgroundColor: Colors.white,
         canvasColor: Colors.white,
         cardColor: Colors.white,
         dialogBackgroundColor: Colors.white,
-
         primarySwatch: Colors.blue,
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: Colors.black),
-          bodyMedium: TextStyle(color: Colors.black),
-          bodySmall: TextStyle(color: Colors.black),
-          headlineLarge: TextStyle(color: Colors.black),
-          headlineMedium: TextStyle(color: Colors.black),
-          headlineSmall: TextStyle(color: Colors.black),
-          titleLarge: TextStyle(color: Colors.black),
-          titleMedium: TextStyle(color: Colors.black),
-          titleSmall: TextStyle(color: Colors.black),
-          labelLarge: TextStyle(color: Colors.black),
-          labelMedium: TextStyle(color: Colors.black),
-          labelSmall: TextStyle(color: Colors.black),
-        ),
+        textTheme: GoogleFonts.interTextTheme(), // text only, preserves icons
       ),
       themeMode: _themeMode,
       routerConfig: _router,

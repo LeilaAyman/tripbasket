@@ -4,7 +4,10 @@
       "Bash(flutter pub:*)",
       "Bash(flutter analyze:*)",
       "Bash(flutter build:*)",
-      "Bash(dart analyze:*)"
+      "Bash(dart analyze:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(flutter clean:*)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\maria\\OneDrive\\Desktop"

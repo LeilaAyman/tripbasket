@@ -218,6 +218,40 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: EditProfileWidget.routeName,
           path: EditProfileWidget.routePath,
           builder: (context, params) => EditProfileWidget(),
+        ),
+        FFRoute(
+          name: AgencyCsvUploadWidget.routeName,
+          path: AgencyCsvUploadWidget.routePath,
+          builder: (context, params) => AgencyCsvUploadWidget(),
+        ),
+        FFRoute(
+          name: CreateTripWidget.routeName,
+          path: CreateTripWidget.routePath,
+          builder: (context, params) => CreateTripWidget(),
+        ),
+        FFRoute(
+          name: EditTripWidget.routeName,
+          path: EditTripWidget.routePath,
+          builder: (context, params) => EditTripWidget(
+            tripRef: params.getParam(
+              'tripRef',
+              ParamType.DocumentReference,
+              isList: false,
+              collectionNamePath: ['trips'],
+            ),
+          ),
+        ),
+        FFRoute(
+          name: BookTripWidget.routeName,
+          path: BookTripWidget.routePath,
+          builder: (context, params) => BookTripWidget(
+            tripRecord: params.getParam(
+              'tripRecord',
+              ParamType.Document,
+              isList: false,
+              collectionNamePath: ['trips'],
+            ),
+          ),
         )
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );

@@ -51,7 +51,7 @@ class _BookTripWidgetState extends State<BookTripWidget> {
 
   double get totalAmount {
     final travelerCount = int.tryParse(_model.travelerCountTextController.text) ?? 1;
-    return widget.tripRecord.price * travelerCount;
+    return widget.tripRecord.price.toDouble() * travelerCount;
   }
 
   @override
