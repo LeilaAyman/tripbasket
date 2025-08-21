@@ -17,6 +17,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import 'serialization_util.dart';
 
 import '/index.dart';
+import '/pages/agency_dashboard/agency_dashboard_widget.dart';
 
 export 'package:go_router/go_router.dart';
 export 'serialization_util.dart';
@@ -201,6 +202,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
               collectionNamePath: ['agency'],
             ),
           ),
+        ),
+        FFRoute(
+          name: AgencyDashboardWidget.routeName,
+          path: AgencyDashboardWidget.routePath,
+          builder: (context, params) => AgencyDashboardWidget(),
         )
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );

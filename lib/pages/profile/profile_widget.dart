@@ -4,6 +4,7 @@ import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
+import '/pages/agency_dashboard/agency_dashboard_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'profile_model.dart';
@@ -49,6 +50,23 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     bool adminStatus = currentUserDocument!.role.contains('admin');
     print('DEBUG: isAdmin result: $adminStatus');
     return adminStatus;
+  }
+
+  bool get isAgency {
+    print('DEBUG: Checking agency status');
+    print('DEBUG: currentUserDocument: ${currentUserDocument}');
+    print('DEBUG: currentUserDocument?.role: ${currentUserDocument?.role}');
+    print('DEBUG: currentUserDocument?.agencyReference: ${currentUserDocument?.agencyReference}');
+    
+    if (currentUserDocument == null) {
+      print('DEBUG: currentUserDocument is null');
+      return false;
+    }
+    
+    bool agencyStatus = currentUserDocument!.role.contains('agency') || 
+                       currentUserDocument!.agencyReference != null;
+    print('DEBUG: isAgency result: $agencyStatus');
+    return agencyStatus;
   }
 
   Future<void> _showPhotoUploadMessage() async {
@@ -143,9 +161,9 @@ class _ProfileWidgetState extends State<ProfileWidget> {
         },
         child: Scaffold(
           key: scaffoldKey,
-          backgroundColor: FlutterFlowTheme.of(context).secondaryText,
+          backgroundColor: Colors.white,
           appBar: AppBar(
-            backgroundColor: FlutterFlowTheme.of(context).secondaryText,
+            backgroundColor: Colors.white,
             automaticallyImplyLeading: false,
             leading: FlutterFlowIconButton(
               borderColor: Colors.transparent,
@@ -154,7 +172,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
               buttonSize: 60.0,
               icon: Icon(
                 Icons.arrow_back_rounded,
-                color: FlutterFlowTheme.of(context).info,
+                color: Colors.black,
                 size: 30.0,
               ),
               onPressed: () async {
@@ -173,14 +191,12 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                 width: double.infinity,
                 height: 160.0,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xFF1A1F24),
-                      Color(0xFF131A1F),
-                    ],
-                    stops: [0.0, 1.0],
-                    begin: AlignmentDirectional(0.0, -1.0),
-                    end: AlignmentDirectional(0, 1.0),
+                  color: Colors.white,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Color(0xFFE0E0E0),
+                      width: 1.0,
+                    ),
                   ),
                 ),
                 child: Padding(
@@ -196,7 +212,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                                 ? currentUserEmail.split('@')[0] 
                                 : 'User'),
                         style: GoogleFonts.poppins(
-                          color: Colors.white,
+                          color: Colors.black,
                           fontSize: 28.0,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.0,
@@ -206,41 +222,74 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                       Text(
                         currentUserEmail,
                         style: GoogleFonts.poppins(
-                          color: Color(0xFFE0E0E0),
+                          color: Color(0xFF666666),
                           fontSize: 16.0,
                           fontWeight: FontWeight.w400,
                           letterSpacing: 0.0,
                         ),
                       ),
                       SizedBox(height: 12.0),
-                      if (isAdmin)
-                        Container(
-                          padding: EdgeInsetsDirectional.fromSTEB(12.0, 6.0, 12.0, 6.0),
-                          decoration: BoxDecoration(
-                            color: Color(0xFFD76B30),
-                            borderRadius: BorderRadius.circular(20.0),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.admin_panel_settings,
-                                color: Colors.white,
-                                size: 16.0,
+                      Row(
+                        children: [
+                          if (isAdmin)
+                            Container(
+                              padding: EdgeInsetsDirectional.fromSTEB(12.0, 6.0, 12.0, 6.0),
+                              decoration: BoxDecoration(
+                                color: Color(0xFFD76B30),
+                                borderRadius: BorderRadius.circular(20.0),
                               ),
-                              SizedBox(width: 4.0),
-                              Text(
-                                'ADMIN',
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white,
-                                  fontSize: 12.0,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.0,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.admin_panel_settings,
+                                    color: Colors.white,
+                                    size: 16.0,
+                                  ),
+                                  SizedBox(width: 4.0),
+                                  Text(
+                                    'ADMIN',
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize: 12.0,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.0,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
+                            ),
+                          if (isAdmin && isAgency) SizedBox(width: 8.0),
+                          if (isAgency)
+                            Container(
+                              padding: EdgeInsetsDirectional.fromSTEB(12.0, 6.0, 12.0, 6.0),
+                              decoration: BoxDecoration(
+                                color: Color(0xFF6B73FF),
+                                borderRadius: BorderRadius.circular(20.0),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.business,
+                                    color: Colors.white,
+                                    size: 16.0,
+                                  ),
+                                  SizedBox(width: 4.0),
+                                  Text(
+                                    'AGENCY',
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize: 12.0,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.0,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -251,11 +300,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                 child: Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: FlutterFlowTheme.of(context).primaryBackground,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(24.0),
-                      topRight: Radius.circular(24.0),
-                    ),
+                    color: Colors.white,
                   ),
                   child: SingleChildScrollView(
                     child: Column(
@@ -422,6 +467,34 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                                     context.pushNamed(AdminUploadWidget.routeName);
                                   },
                                   isAdmin: true,
+                                ),
+
+                              // Agency Dashboard Section (if agency or admin)
+                              if (isAgency || isAdmin)
+                                _buildSettingsRow(
+                                  context,
+                                  Icons.dashboard_outlined,
+                                  'Agency Dashboard',
+                                  isAdmin ? 'Admin Access' : 'Manage Trips',
+                                  false,
+                                  () {
+                                    context.pushNamed(AgencyDashboardWidget.routeName);
+                                  },
+                                  showArrow: true,
+                                ),
+
+                              // Agency CSV Upload Section (if agency)
+                              if (isAgency)
+                                _buildSettingsRow(
+                                  context,
+                                  Icons.upload_file_outlined,
+                                  'Upload Trips (CSV)',
+                                  'Agency Access',
+                                  false,
+                                  () {
+                                    context.pushNamed('agencyCsvUpload');
+                                  },
+                                  showArrow: true,
                                 ),
 
                               SizedBox(height: 20.0),

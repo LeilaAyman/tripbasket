@@ -44,10 +44,36 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
     super.dispose();
   }
 
+  /// Check if current user is an admin
+  bool _isCurrentUserAdmin() {
+    final userDoc = currentUserDocument;
+    print('DEBUG AgencyDashboard: Checking admin status');
+    print('DEBUG AgencyDashboard: userDoc: $userDoc');
+    print('DEBUG AgencyDashboard: userDoc?.role: ${userDoc?.role}');
+    
+    if (userDoc == null) {
+      print('DEBUG AgencyDashboard: userDoc is null, returning false');
+      return false;
+    }
+    
+    bool isAdmin = userDoc.role.contains('admin');
+    print('DEBUG AgencyDashboard: isAdmin result: $isAdmin');
+    return isAdmin;
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Check if user has agency access
-    if (!AgencyUtils.isCurrentUserAgency()) {
+    // Check if user has agency OR admin access
+    bool isAgency = AgencyUtils.isCurrentUserAgency();
+    bool isAdmin = _isCurrentUserAdmin();
+    bool hasAccess = isAgency || isAdmin;
+    
+    print('DEBUG AgencyDashboard: Access check results:');
+    print('DEBUG AgencyDashboard: isAgency: $isAgency');
+    print('DEBUG AgencyDashboard: isAdmin: $isAdmin');
+    print('DEBUG AgencyDashboard: hasAccess: $hasAccess');
+    
+    if (!hasAccess) {
       return Scaffold(
         appBar: AppBar(
           title: Text('Access Denied'),
@@ -132,7 +158,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Agency Dashboard',
+            _isCurrentUserAdmin() ? 'Agency Dashboard (Admin)' : 'Agency Dashboard',
             style: FlutterFlowTheme.of(context).headlineMedium.override(
                     color: Colors.white,
                   fontSize: 24,
@@ -141,7 +167,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                 ),
           ),
           Text(
-            'Manage your trips and performance',
+            _isCurrentUserAdmin() ? 'Manage all agency trips and performance' : 'Manage your trips and performance',
             style: FlutterFlowTheme.of(context).bodyMedium.override(
                   color: Colors.white.withOpacity(0.9),
                   fontSize: 14,
@@ -317,10 +343,11 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
   }
 
   Widget _buildDashboardStats() {
-    final agencyRef = AgencyUtils.getCurrentAgencyRef();
+    final isAdmin = _isCurrentUserAdmin();
+    final agencyRef = isAdmin ? null : AgencyUtils.getCurrentAgencyRef();
     
-    // If no agency reference, show zero stats
-    if (agencyRef == null) {
+    // If no agency reference and not admin, show zero stats
+    if (!isAdmin && agencyRef == null) {
       return Container(
         margin: EdgeInsets.symmetric(horizontal: 16),
         height: 140,
@@ -373,11 +400,13 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16),
                   child: StreamBuilder<List<TripsRecord>>(
-                    stream: queryTripsRecord(
+                    stream: _isCurrentUserAdmin() 
+                      ? queryTripsRecord() // Admin sees all trips
+                      : queryTripsRecord(
                       queryBuilder: (tripsRecord) => tripsRecord.where(
                         'agency_reference',
-            isEqualTo: agencyRef,
-          ),
+                            isEqualTo: agencyRef,
+                          ),
                     ),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
@@ -661,10 +690,11 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
   }
 
   Widget _buildTripsSection() {
-    final agencyRef = AgencyUtils.getCurrentAgencyRef();
+    final isAdmin = _isCurrentUserAdmin();
+    final agencyRef = isAdmin ? null : AgencyUtils.getCurrentAgencyRef();
     
-    // If no agency reference, show setup message instead of empty results
-    if (agencyRef == null) {
+    // If no agency reference and not admin, show setup message instead of empty results
+    if (!isAdmin && agencyRef == null) {
       return _buildNoAgencyReferenceState();
     }
     
@@ -685,12 +715,14 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                 ),
               ),
               StreamBuilder<List<TripsRecord>>(
-                stream: queryTripsRecord(
-                  queryBuilder: (tripsRecord) => tripsRecord.where(
-                    'agency_reference',
-                    isEqualTo: agencyRef,
-                  ),
-                ),
+                stream: _isCurrentUserAdmin() 
+                  ? queryTripsRecord() // Admin sees all trips
+                  : queryTripsRecord(
+                      queryBuilder: (tripsRecord) => tripsRecord.where(
+                        'agency_reference',
+                        isEqualTo: agencyRef,
+                      ),
+                    ),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) return Text('0 trips');
                   
@@ -714,12 +746,16 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
           ),
           SizedBox(height: 16),
           StreamBuilder<List<TripsRecord>>(
-            stream: queryTripsRecord(
-              queryBuilder: (tripsRecord) => tripsRecord.where(
-                'agency_reference',
-                isEqualTo: agencyRef,
-              ).orderBy('created_at', descending: true),
-            ),
+            stream: _isCurrentUserAdmin() 
+              ? queryTripsRecord(
+                  queryBuilder: (tripsRecord) => tripsRecord.orderBy('created_at', descending: true),
+                ) // Admin sees all trips
+              : queryTripsRecord(
+                  queryBuilder: (tripsRecord) => tripsRecord.where(
+                    'agency_reference',
+                    isEqualTo: agencyRef,
+                  ).orderBy('created_at', descending: true),
+                ),
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
                 return _buildTripsLoading();
@@ -997,8 +1033,8 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                               ),
-                            ),
                           ),
+                        ),
                       ],
                     ),
                     Spacer(),

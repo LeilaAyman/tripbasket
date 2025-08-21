@@ -21,14 +21,17 @@ class AgencyUtils {
     }
     
     final agencyRef = userDoc.agencyReference;
+    
     if (agencyRef == null) {
       print('DEBUG AgencyUtils: No agency reference found for user: ${user.uid}, roles: ${userDoc.role}');
     } else {
-      print('DEBUG AgencyUtils: Found agency reference: ${agencyRef.path}');
+      print('DEBUG AgencyUtils: ✅ Found agency reference: ${agencyRef.path}');
     }
     
     return agencyRef;
   }
+  
+
   
   /// Filter trips based on search query and status
   static List<TripsRecord> filterTrips(
