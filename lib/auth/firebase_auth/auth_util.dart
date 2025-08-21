@@ -54,10 +54,19 @@ final authenticatedUserStream = FirebaseAuth.instance
       (uid) => uid.isEmpty
           ? Stream.value(null)
           : UsersRecord.getDocument(UsersRecord.collection.doc(uid))
-              .handleError((_) {}),
+              .handleError((error) {
+                print('AUTH STREAM ERROR: Failed to load user document for UID: $uid');
+                print('AUTH STREAM ERROR: $error');
+                return null;
+              }),
     )
     .map((user) {
   currentUserDocument = user;
+  print('AUTH STREAM: User document loaded: ${user != null ? 'SUCCESS' : 'NULL'}');
+  if (user != null) {
+    print('AUTH STREAM: User email: ${user.email}');
+    print('AUTH STREAM: User roles: ${user.role}');
+  }
 
   return currentUserDocument;
 }).asBroadcastStream();

@@ -91,8 +91,13 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: '_initialize',
           path: '/',
-          builder: (context, _) =>
-              appStateNotifier.loggedIn ? HomeWidget() : LandingWidget(),
+          builder: (context, _) {
+            print('ROUTER DEBUG: loggedIn = ${appStateNotifier.loggedIn}');
+            print('ROUTER DEBUG: loading = ${appStateNotifier.loading}');
+            final widget = appStateNotifier.loggedIn ? HomeWidget() : LandingWidget();
+            print('ROUTER DEBUG: Navigating to ${widget.runtimeType}');
+            return widget;
+          },
         ),
         FFRoute(
           name: LandingWidget.routeName,
