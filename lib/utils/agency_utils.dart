@@ -5,6 +5,12 @@ import '/backend/schema/users_record.dart';
 import '/auth/firebase_auth/auth_util.dart';
 
 class AgencyUtils {
+  // Constants
+  static const double kFeaturedMinRating = 4.0;
+
+  /// Helper to safely lowercase strings
+  static String lc(String? s) => (s ?? '').toLowerCase();
+
   /// Get the current user's agency reference
   static DocumentReference? getCurrentAgencyRef() {
     final user = currentUser;
@@ -31,9 +37,7 @@ class AgencyUtils {
     return agencyRef;
   }
   
-
-  
-  /// Filter trips based on search query and status
+  /// Filter trips based on search query and status with null-safe text handling
   static List<TripsRecord> filterTrips(
     List<TripsRecord> trips,
     String searchQuery,
@@ -41,13 +45,13 @@ class AgencyUtils {
   ) {
     List<TripsRecord> filteredTrips = trips;
     
-    // Apply search filter
+    // Apply search filter with null-safe text handling
     if (searchQuery.isNotEmpty) {
       filteredTrips = filteredTrips.where((trip) {
-        final query = searchQuery.toLowerCase();
-        return trip.title.toLowerCase().contains(query) ||
-               trip.location.toLowerCase().contains(query) ||
-               trip.description.toLowerCase().contains(query);
+        final query = lc(searchQuery);
+        return lc(trip.title).contains(query) ||
+               lc(trip.location).contains(query) ||
+               lc(trip.description).contains(query);
       }).toList();
     }
     
@@ -60,8 +64,7 @@ class AgencyUtils {
         filteredTrips = filteredTrips.where((trip) => trip.availableSeats <= 0).toList();
         break;
       case 'featured':
-        // For now, consider trips with rating > 4.0 as featured
-        filteredTrips = filteredTrips.where((trip) => (trip.rating ?? 0) > 4.0).toList();
+        filteredTrips = filteredTrips.where((trip) => (trip.rating ?? 0) > kFeaturedMinRating).toList();
         break;
       case 'all':
       default:
@@ -77,10 +80,11 @@ class AgencyUtils {
     return trips.where((trip) => trip.availableSeats > 0).length;
   }
   
-  /// Calculate total revenue from trips
+  /// Calculate total revenue from trips with proper data validation
   static int calculateTotalRevenue(List<TripsRecord> trips) {
     return trips.fold<int>(0, (sum, trip) {
-      final soldSeats = trip.quantity - trip.availableSeats;
+      final rawSold = (trip.quantity - trip.availableSeats);
+      final soldSeats = rawSold.clamp(0, trip.quantity);
       return sum + (trip.price * soldSeats);
     });
   }
@@ -100,12 +104,13 @@ class AgencyUtils {
     return 'AGY_${timestamp}_$random';
   }
   
-  /// Check if current user is an agency
+  /// Check if current user is an agency (case-insensitive)
   static bool isCurrentUserAgency() {
     final userDoc = currentUserDocument;
     if (userDoc == null) return false;
     
-    return userDoc.role.contains('agency') || userDoc.agencyReference != null;
+    final role = lc(userDoc.role.join(' '));
+    return role.contains('agency') || userDoc.agencyReference != null;
   }
   
   /// Check if current user can access CSV upload
@@ -113,9 +118,39 @@ class AgencyUtils {
     final userDoc = currentUserDocument;
     if (userDoc == null) return false;
     
-    // Allow access if user is admin OR has agency reference OR has agency role
-    return userDoc.role.contains('admin') || 
-           userDoc.role.contains('agency') || 
-           userDoc.agencyReference != null;
+    final role = lc(userDoc.role.join(' '));
+    return role.contains('admin') || role.contains('agency') || userDoc.agencyReference != null;
+  }
+
+  /// Validate trip ownership for agency users
+  static bool validateTripOwnership(TripsRecord trip) {
+    final userDoc = currentUserDocument;
+    if (userDoc == null) return false;
+    
+    // Admin can access any trip
+    final role = lc(userDoc.role.join(' '));
+    if (role.contains('admin')) return true;
+    
+    // Agency users can only access their own trips
+    final userAgencyRef = getCurrentAgencyRef();
+    return trip.agencyReference == userAgencyRef;
+  }
+
+  /// Check if user is admin (case-insensitive)
+  static bool isCurrentUserAdmin() {
+    final userDoc = currentUserDocument;
+    if (userDoc == null) return false;
+    
+    final role = lc(userDoc.role.join(' '));
+    return role.contains('admin');
+  }
+
+  /// Verify ownership before performing trip actions
+  static bool verifyTripAccess(TripsRecord trip) {
+    final isAdmin = isCurrentUserAdmin();
+    if (isAdmin) return true;
+    
+    final userAgencyRef = getCurrentAgencyRef();
+    return trip.agencyReference == userAgencyRef;
   }
 }

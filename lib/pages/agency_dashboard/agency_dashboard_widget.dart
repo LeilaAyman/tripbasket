@@ -1,3 +1,4 @@
+import 'dart:async';
 import '/auth/firebase_auth/auth_util.dart';
 import '/backend/backend.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
@@ -5,13 +6,10 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/utils/agency_utils.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'agency_dashboard_model.dart';
 export 'agency_dashboard_model.dart';
-
 
 class AgencyDashboardWidget extends StatefulWidget {
   const AgencyDashboardWidget({super.key});
@@ -30,6 +28,14 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _filterStatus = 'all';
+  Timer? _debounce;
+
+  // Currency formatter
+  static final _currency = NumberFormat.currency(symbol: '\$');
+
+  // Consistent status colors
+  static const Color _activeColor = Color(0xFF4CAF50);
+  static const Color _inactiveColor = Color(0xFFF44336);
 
   @override
   void initState() {
@@ -40,31 +46,57 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
   @override
   void dispose() {
     _searchController.dispose();
+    _debounce?.cancel();
     _model.dispose();
     super.dispose();
   }
 
-  /// Check if current user is an admin
+  /// Check if current user is an admin (case-insensitive, no hardcoded override)
   bool _isCurrentUserAdmin() {
     final userDoc = currentUserDocument;
-    print('DEBUG AgencyDashboard: Checking admin status');
-    print('DEBUG AgencyDashboard: userDoc: $userDoc');
-    print('DEBUG AgencyDashboard: userDoc?.role: ${userDoc?.role}');
+    if (userDoc == null) return false;
     
-    if (userDoc == null) {
-      print('DEBUG AgencyDashboard: userDoc is null, returning false');
+    final role = AgencyUtils.lc(userDoc.role.join(' '));
+    return role.contains('admin');
+  }
+
+  /// Debounced search handler (300ms)
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        setState(() {
+          _searchQuery = value;
+        });
+      }
+    });
+  }
+
+  /// Clear search
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+    });
+  }
+
+  /// Validate trip access before navigation with proper error handling
+  Future<bool> _validateTripAccess(TripsRecord trip) async {
+    final isAdmin = _isCurrentUserAdmin();
+    final owns = trip.agencyReference == AgencyUtils.getCurrentAgencyRef();
+    
+    if (!isAdmin && !owns) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Access denied: You can only access trips from your agency'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return false;
     }
-    
-    // TEMPORARY FIX: Allow adv@gmail.com access
-    if (userDoc.email == 'adv@gmail.com') {
-      print('DEBUG AgencyDashboard: Allowing access for adv@gmail.com');
-      return true;
-    }
-    
-    bool isAdmin = userDoc.role.contains('admin');
-    print('DEBUG AgencyDashboard: isAdmin result: $isAdmin');
-    return isAdmin;
+    return true;
   }
 
   @override
@@ -74,36 +106,31 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
     bool isAdmin = _isCurrentUserAdmin();
     bool hasAccess = isAgency || isAdmin;
     
-    print('DEBUG AgencyDashboard: Access check results:');
-    print('DEBUG AgencyDashboard: isAgency: $isAgency');
-    print('DEBUG AgencyDashboard: isAdmin: $isAdmin');
-    print('DEBUG AgencyDashboard: hasAccess: $hasAccess');
-    
     if (!hasAccess) {
       return Scaffold(
         appBar: AppBar(
-          title: Text('Access Denied'),
+          title: const Text('Access Denied'),
           backgroundColor: Colors.red,
         ),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.block, size: 64, color: Colors.red),
-              SizedBox(height: 16),
+              const Icon(Icons.block, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
               Text(
                 'Agency Access Required',
                 style: FlutterFlowTheme.of(context).headlineSmall,
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 'You need agency privileges to access this dashboard.',
                 style: FlutterFlowTheme.of(context).bodyMedium,
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => context.pop(),
-                child: Text('Go Back'),
+                child: const Text('Go Back'),
               ),
             ],
           ),
@@ -127,12 +154,14 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
   }
 
   PreferredSizeWidget _buildAppBar() {
+    final isAdmin = _isCurrentUserAdmin();
+    
     return AppBar(
-      backgroundColor: Color(0xFFD76B30),
-          automaticallyImplyLeading: false,
+      backgroundColor: const Color(0xFFD76B30),
+      automaticallyImplyLeading: false,
       elevation: 0,
       flexibleSpace: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -144,74 +173,73 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
         ),
       ),
       leading: Container(
-        margin: EdgeInsets.only(left: 16),
+        margin: const EdgeInsets.only(left: 16),
         child: FlutterFlowIconButton(
           borderColor: Colors.white.withOpacity(0.2),
           borderRadius: 12,
           borderWidth: 1,
           buttonSize: 48,
-            icon: Icon(
-              Icons.arrow_back_rounded,
-              color: Colors.white,
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: Colors.white,
             size: 24,
-            ),
-            onPressed: () async {
-              context.pop();
-            },
           ),
+          onPressed: () async {
+            context.pop();
+          },
+        ),
       ),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _isCurrentUserAdmin() ? 'Agency Dashboard (Admin)' : 'Agency Dashboard',
+            isAdmin ? 'Agency Dashboard (Admin)' : 'Agency Dashboard',
             style: FlutterFlowTheme.of(context).headlineMedium.override(
-                    color: Colors.white,
-                  fontSize: 24,
-                  letterSpacing: 0.5,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: Colors.white,
+              fontSize: 24,
+              letterSpacing: 0.5,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           Text(
-            _isCurrentUserAdmin() ? 'Manage all agency trips and performance' : 'Manage your trips and performance',
+            isAdmin ? 'Manage all agency trips and performance' : 'Manage your trips and performance',
             style: FlutterFlowTheme.of(context).bodyMedium.override(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 14,
-                  letterSpacing: 0.2,
-                ),
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 14,
+              letterSpacing: 0.2,
+            ),
           ),
         ],
-          ),
-          actions: [
+      ),
+      actions: [
         Container(
-          margin: EdgeInsets.only(right: 16),
-              child: FlutterFlowIconButton(
+          margin: const EdgeInsets.only(right: 16),
+          child: FlutterFlowIconButton(
             borderColor: Colors.white.withOpacity(0.2),
             borderRadius: 12,
             borderWidth: 1,
             buttonSize: 48,
-                icon: Icon(
-                  Icons.add,
-                  color: Colors.white,
+            icon: const Icon(
+              Icons.add,
+              color: Colors.white,
               size: 24,
-                ),
-                onPressed: () async {
-                  context.pushNamed('create_trip');
-                },
-              ),
             ),
-          ],
-          centerTitle: false,
+            onPressed: () async {
+              context.pushNamed('create_trip');
+            },
+          ),
+        ),
+      ],
+      centerTitle: false,
     );
   }
 
-
   Widget _buildBody() {
     return SafeArea(
-          top: true,
+      top: true,
       child: SingleChildScrollView(
-          child: Column(
-            children: [
+        child: Column(
+          children: [
             _buildSearchAndFilter(),
             _buildDashboardStats(),
             _buildQuickActions(),
@@ -224,31 +252,25 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
 
   Widget _buildSearchAndFilter() {
     return Container(
-      margin: EdgeInsets.all(16),
+      margin: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Search Bar
-              Container(
-                decoration: BoxDecoration(
-                  color: FlutterFlowTheme.of(context).secondaryBackground,
+          // Search Bar with clear icon
+          Container(
+            decoration: BoxDecoration(
+              color: FlutterFlowTheme.of(context).secondaryBackground,
               borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
             child: TextField(
               controller: _searchController,
-              onChanged: (value) {
-                if (_searchQuery != value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                }
-              },
+              onChanged: _onSearchChanged,
               decoration: InputDecoration(
                 hintText: 'Search trips...',
                 hintStyle: FlutterFlowTheme.of(context).bodyLarge.override(
@@ -259,34 +281,43 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                   Icons.search,
                   color: FlutterFlowTheme.of(context).secondaryText,
                 ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(
+                          Icons.clear,
+                          color: FlutterFlowTheme.of(context).secondaryText,
+                        ),
+                        onPressed: _clearSearch,
+                      )
+                    : null,
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(
+                contentPadding: const EdgeInsets.symmetric(
                   horizontal: 20,
                   vertical: 16,
                 ),
               ),
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           // Filter Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
                 _buildFilterChip('All', 'all', Icons.all_inclusive),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 _buildFilterChip('Active', 'active', Icons.check_circle),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 _buildFilterChip('Inactive', 'inactive', Icons.cancel),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 _buildFilterChip('Featured', 'featured', Icons.star),
               ],
             ),
           ),
         ],
-                          ),
-                        );
-                      }
+      ),
+    );
+  }
 
   Widget _buildFilterChip(String label, String value, IconData icon) {
     final isSelected = _filterStatus == value;
@@ -299,31 +330,31 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
         }
       },
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
-              ? Color(0xFFD76B30)
+              ? const Color(0xFFD76B30)
               : FlutterFlowTheme.of(context).secondaryBackground,
           borderRadius: BorderRadius.circular(25),
           border: Border.all(
             color: isSelected
-                ? Color(0xFFD76B30)
+                ? const Color(0xFFD76B30)
                 : FlutterFlowTheme.of(context).secondaryText.withOpacity(0.3),
             width: 1.5,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Color(0xFFD76B30).withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: Offset(0, 4),
+                    color: const Color(0xFFD76B30).withOpacity(0.2),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
                   ),
                 ]
               : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-                        children: [
+          children: [
             Icon(
               icon,
               size: 18,
@@ -331,7 +362,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                   ? Colors.white
                   : FlutterFlowTheme.of(context).secondaryText,
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Text(
               label,
               style: FlutterFlowTheme.of(context).labelMedium.override(
@@ -355,47 +386,55 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
     // If no agency reference and not admin, show zero stats
     if (!isAdmin && agencyRef == null) {
       return Container(
-        margin: EdgeInsets.symmetric(horizontal: 16),
-        height: 140,
-        child: Row(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
           children: [
-            Expanded(
-              child: _buildEnhancedStatCard(
-                            'Total Trips',
-                '0',
-                            Icons.flight_takeoff,
-                [Color(0xFFD76B30), Color(0xFFDBA237)],
-                'trips',
-              ),
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: _buildEnhancedStatCard(
-                            'Active',
-                '0',
-                            Icons.check_circle,
-                [Color(0xFFD76B30), Color(0xFFE8A657)],
-                'trips',
-              ),
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: _buildEnhancedStatCard(
-                'Revenue',
-                '\$0',
-                Icons.attach_money,
-                [Color(0xFFDBA237), Color(0xFFD76B30)],
-                'total',
-              ),
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: _buildEnhancedStatCard(
-                'Rating',
-                '0.0',
-                Icons.star,
-                [Color(0xFFE8A657), Color(0xFFDBA237)],
-                'avg',
+            _buildAgencyInfoCard(),
+            const SizedBox(height: 16),
+            Container(
+              height: 140,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildEnhancedStatCard(
+                      'Total Trips',
+                      '0',
+                      Icons.flight_takeoff,
+                      const [Color(0xFFD76B30), Color(0xFFDBA237)],
+                      'trips',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildEnhancedStatCard(
+                      'Active',
+                      '0',
+                      Icons.check_circle,
+                      const [Color(0xFFD76B30), Color(0xFFE8A657)],
+                      'trips',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildEnhancedStatCard(
+                      'Revenue',
+                      _currency.format(0),
+                      Icons.attach_money,
+                      const [Color(0xFFDBA237), Color(0xFFD76B30)],
+                      'total',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildEnhancedStatCard(
+                      'Rating',
+                      '0.0',
+                      Icons.star,
+                      const [Color(0xFFE8A657), Color(0xFFDBA237)],
+                      'avg',
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -404,19 +443,26 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
     }
     
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16),
-                  child: StreamBuilder<List<TripsRecord>>(
-                    stream: _isCurrentUserAdmin() 
-                      ? queryTripsRecord() // Admin sees all trips
-                      : queryTripsRecord(
-                      queryBuilder: (tripsRecord) => tripsRecord.where(
-                        'agency_reference',
-                            isEqualTo: agencyRef,
-                          ),
-                    ),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-            return _buildStatsLoading();
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: StreamBuilder<List<TripsRecord>>(
+        // NOTE: A composite index may be required for this query combining
+        // .where('agency_reference', ...) + .orderBy('created_at', ...)
+        stream: isAdmin 
+          ? queryTripsRecord() // Admin sees all trips
+          : queryTripsRecord(
+            queryBuilder: (r) => r
+              .where('agency_reference', isEqualTo: agencyRef)
+              .orderBy('created_at', descending: true),
+          ),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return Column(
+              children: [
+                _buildAgencyInfoCard(),
+                const SizedBox(height: 16),
+                _buildStatsLoading(),
+              ],
+            );
           }
           
           List<TripsRecord> trips = snapshot.data!;
@@ -424,51 +470,57 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
           final totalRevenue = AgencyUtils.calculateTotalRevenue(trips);
           final avgRating = AgencyUtils.calculateAverageRating(trips);
           
-          return Container(
-            height: 140,
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildEnhancedStatCard(
-                    'Total Trips',
-                    trips.length.toString(),
-                    Icons.flight_takeoff,
-                    [Color(0xFFD76B30), Color(0xFFDBA237)],
-                    'trips',
-                  ),
+          return Column(
+            children: [
+              _buildAgencyInfoCard(),
+              const SizedBox(height: 16),
+              Container(
+                height: 140,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildEnhancedStatCard(
+                        'Total Trips',
+                        trips.length.toString(),
+                        Icons.flight_takeoff,
+                        const [Color(0xFFD76B30), Color(0xFFDBA237)],
+                        'trips',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildEnhancedStatCard(
+                        'Active',
+                        activeTrips.toString(),
+                        Icons.check_circle,
+                        const [Color(0xFFD76B30), Color(0xFFE8A657)],
+                        'trips',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildEnhancedStatCard(
+                        'Revenue',
+                        _currency.format(totalRevenue),
+                        Icons.attach_money,
+                        const [Color(0xFFDBA237), Color(0xFFD76B30)],
+                        'total',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildEnhancedStatCard(
+                        'Rating',
+                        avgRating.toStringAsFixed(1),
+                        Icons.star,
+                        const [Color(0xFFE8A657), Color(0xFFDBA237)],
+                        'avg',
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: _buildEnhancedStatCard(
-                    'Active',
-                    activeTrips.toString(),
-                    Icons.check_circle,
-                    [Color(0xFFD76B30), Color(0xFFE8A657)],
-                    'trips',
-                  ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: _buildEnhancedStatCard(
-                    'Revenue',
-                    '\$${totalRevenue.toStringAsFixed(0)}',
-                    Icons.attach_money,
-                    [Color(0xFFDBA237), Color(0xFFD76B30)],
-                    'total',
-                  ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: _buildEnhancedStatCard(
-                    'Rating',
-                    avgRating.toStringAsFixed(1),
-                    Icons.star,
-                    [Color(0xFFE8A657), Color(0xFFDBA237)],
-                    'avg',
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),
@@ -483,27 +535,54 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
           child: Container(
             margin: EdgeInsets.only(right: index < 3 ? 12 : 0),
             decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).secondaryBackground,
-              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: [
+                  FlutterFlowTheme.of(context).secondaryBackground,
+                  FlutterFlowTheme.of(context).secondaryBackground.withOpacity(0.8),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: Center(
-                          child: SizedBox(
-                width: 30,
-                height: 30,
-                            child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                    Color(0xFFD76B30),
-                              ),
-                  strokeWidth: 2,
-                            ),
+            child: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 30,
+                    height: 30,
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFFD76B30),
+                      ),
+                      strokeWidth: 3,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Loading...',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
         )),
-                          ),
-                        );
-                      }
-                      
+      ),
+    );
+  }
+      
   Widget _buildEnhancedStatCard(String title, String value, IconData icon, List<Color> colors, String type) {
     return Container(
       decoration: BoxDecoration(
@@ -515,14 +594,14 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: colors[0].withOpacity(0.3),
-            blurRadius: 12,
-            offset: Offset(0, 6),
+            color: colors[0].withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -531,7 +610,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
@@ -544,14 +623,14 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                 ),
                 if (type == 'trips' || type == 'total')
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       type == 'trips' ? 'trips' : 'total',
-                      style: FlutterFlowTheme.of(context).labelSmall.override(
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
@@ -565,7 +644,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
               children: [
                 Text(
                   value,
-                  style: FlutterFlowTheme.of(context).headlineMedium.override(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -574,7 +653,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                 ),
                 Text(
                   title,
-                  style: FlutterFlowTheme.of(context).labelSmall.override(
+                  style: TextStyle(
                     color: Colors.white.withOpacity(0.9),
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -590,12 +669,12 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
 
   Widget _buildQuickActions() {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: EdgeInsets.only(left: 4, bottom: 12),
+            padding: const EdgeInsets.only(left: 4, bottom: 12),
             child: Text(
               'Quick Actions',
               style: FlutterFlowTheme.of(context).titleMedium.override(
@@ -605,37 +684,37 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
               ),
             ),
           ),
-                     Row(
-             children: [
-               Expanded(
-                 child: _buildQuickActionCard(
-                   'Create Trip',
-                   Icons.add_location,
-                   [Color(0xFFD76B30), Color(0xFFDBA237)],
-                   () => context.pushNamed('create_trip'),
-                 ),
-               ),
-               SizedBox(width: 12),
-               Expanded(
-                 child: _buildQuickActionCard(
-                   'CSV Upload',
-                   Icons.upload_file,
-                   [Color(0xFFDBA237), Color(0xFFE8A657)],
-                   () => context.pushNamed('agencyCsvUpload'),
-                 ),
-               ),
-               SizedBox(width: 12),
-               Expanded(
-                 child: _buildQuickActionCard(
-                   'View Bookings',
-                   Icons.book_online,
-                   [Color(0xFFE8A657), Color(0xFFD76B30)],
-                   () => context.pushNamed('bookings'),
-                 ),
-               ),
-             ],
-           ),
-         ],
+          Row(
+            children: [
+              Expanded(
+                child: _buildQuickActionCard(
+                  'Create Trip',
+                  Icons.add_location,
+                  const [Color(0xFFD76B30), Color(0xFFDBA237)],
+                  () => context.pushNamed('create_trip'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildQuickActionCard(
+                  'CSV Upload',
+                  Icons.upload_file,
+                  const [Color(0xFFDBA237), Color(0xFFE8A657)],
+                  () => context.pushNamed('agencyCsvUpload'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildQuickActionCard(
+                  'View Bookings',
+                  Icons.book_online,
+                  const [Color(0xFFE8A657), Color(0xFFD76B30)],
+                  () => context.pushNamed('bookings'),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -644,7 +723,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 80,
+        height: 88, // Increased height to prevent overflow
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: colors,
@@ -654,9 +733,9 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: colors[0].withOpacity(0.2),
-              blurRadius: 8,
-              offset: Offset(0, 4),
+              color: colors[0].withOpacity(0.15),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -665,27 +744,28 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: onTap,
-        child: Padding(
-              padding: EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
                     color: Colors.white,
                     size: 28,
                   ),
-                  SizedBox(height: 8),
-                                     Center(
-                     child: Text(
-                       title,
-                       style: FlutterFlowTheme.of(context).labelMedium.override(
-                         color: Colors.white,
-                         fontSize: 12,
-                         fontWeight: FontWeight.w600,
-                      ),
+                  const SizedBox(height: 8),
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     ),
-              ),
+                  ),
                 ],
               ),
             ),
@@ -699,72 +779,38 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
     final isAdmin = _isCurrentUserAdmin();
     final agencyRef = isAdmin ? null : AgencyUtils.getCurrentAgencyRef();
     
-    // If no agency reference and not admin, show setup message instead of empty results
+    // If no agency reference and not admin, show setup message
     if (!isAdmin && agencyRef == null) {
       return _buildNoAgencyReferenceState();
     }
     
     return Container(
-      margin: EdgeInsets.all(16),
+      margin: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Your Trips',
-                style: FlutterFlowTheme.of(context).titleLarge.override(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: FlutterFlowTheme.of(context).primaryText,
-                ),
-              ),
-              StreamBuilder<List<TripsRecord>>(
-                stream: _isCurrentUserAdmin() 
-                  ? queryTripsRecord() // Admin sees all trips
-                  : queryTripsRecord(
-                      queryBuilder: (tripsRecord) => tripsRecord.where(
-                        'agency_reference',
-                        isEqualTo: agencyRef,
-                      ),
-                    ),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return Text('0 trips');
-                  
-                  List<TripsRecord> trips = snapshot.data!;
-                  List<TripsRecord> filteredTrips = AgencyUtils.filterTrips(
-                    trips,
-                    _searchQuery,
-                    _filterStatus,
-                  );
-                  
-                  return Text(
-                    '${filteredTrips.length} trips',
-                    style: FlutterFlowTheme.of(context).labelMedium.override(
-                      fontSize: 14,
-                      color: FlutterFlowTheme.of(context).secondaryText,
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-          SizedBox(height: 16),
+          // Single StreamBuilder to avoid duplicate queries
           StreamBuilder<List<TripsRecord>>(
-            stream: _isCurrentUserAdmin() 
+            // NOTE: A composite index may be required for this query combining
+            // .where('agency_reference', ...) + .orderBy('created_at', ...)
+            stream: isAdmin 
               ? queryTripsRecord(
-                  queryBuilder: (tripsRecord) => tripsRecord.orderBy('created_at', descending: true),
+                  queryBuilder: (r) => r.orderBy('created_at', descending: true),
                 ) // Admin sees all trips
               : queryTripsRecord(
-                  queryBuilder: (tripsRecord) => tripsRecord.where(
-                    'agency_reference',
-                    isEqualTo: agencyRef,
-                  ).orderBy('created_at', descending: true),
+                  queryBuilder: (r) => r
+                    .where('agency_reference', isEqualTo: agencyRef)
+                    .orderBy('created_at', descending: true),
                 ),
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
-                return _buildTripsLoading();
+                return Column(
+                  children: [
+                    _buildTripsHeader('Loading...'),
+                    const SizedBox(height: 16),
+                    _buildTripsLoading(),
+                  ],
+                );
               }
               
               List<TripsRecord> trips = snapshot.data!;
@@ -774,24 +820,44 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                 _filterStatus,
               );
               
-              if (filteredTrips.isEmpty) {
-                return _buildEnhancedEmptyState(context);
-              }
-              
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 0.75,
-                ),
-                itemCount: filteredTrips.length,
-                itemBuilder: (context, index) {
-                  final trip = filteredTrips[index];
-                  return _buildEnhancedTripCard(context, trip);
-                },
+              return Column(
+                children: [
+                  _buildTripsHeader('${filteredTrips.length} trips'),
+                  const SizedBox(height: 16),
+                  // Trips grid
+                  if (filteredTrips.isEmpty)
+                    _buildEnhancedEmptyState(context)
+                  else
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        // Fixed order grid breakpoints
+                        int crossAxisCount;
+                        if (constraints.maxWidth > 1200) {
+                          crossAxisCount = 4;
+                        } else if (constraints.maxWidth > 800) {
+                          crossAxisCount = 3;
+                        } else {
+                          crossAxisCount = 2;
+                        }
+                        
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 0.75,
+                          ),
+                          itemCount: filteredTrips.length,
+                          itemBuilder: (context, index) {
+                            final trip = filteredTrips[index];
+                            return _buildEnhancedTripCard(context, trip, index);
+                          },
+                        );
+                      },
+                    ),
+                ],
               );
             },
           ),
@@ -800,9 +866,49 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
     );
   }
 
+  Widget _buildTripsHeader(String countText) {
+    final isAdmin = _isCurrentUserAdmin();
+    
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 4,
+              height: 24,
+              decoration: BoxDecoration(
+                color: const Color(0xFFD76B30),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              isAdmin ? 'All Agency Trips' : 'Your Trips',
+              style: FlutterFlowTheme.of(context).titleLarge.override(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: FlutterFlowTheme.of(context).primaryText,
+              ),
+            ),
+          ],
+        ),
+        Text(
+          countText,
+          style: FlutterFlowTheme.of(context).labelMedium.override(
+            fontSize: 14,
+            color: FlutterFlowTheme.of(context).secondaryText,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTripsLoading() {
     return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
@@ -814,7 +920,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
           color: FlutterFlowTheme.of(context).secondaryBackground,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Center(
+        child: const Center(
           child: SizedBox(
             width: 30,
             height: 30,
@@ -830,46 +936,158 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
     );
   }
 
-  Widget _buildEnhancedTripCard(BuildContext context, TripsRecord trip) {
-    return GestureDetector(
-      onTap: () => _showTripDetails(context, trip),
-      child: Container(
-        decoration: BoxDecoration(
-          color: FlutterFlowTheme.of(context).secondaryBackground,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: Offset(0, 4),
-            ),
+  Widget _buildAgencyInfoCard() {
+    final userDoc = currentUserDocument;
+    final isAdmin = _isCurrentUserAdmin();
+    final agencyRef = AgencyUtils.getCurrentAgencyRef();
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFD76B30).withOpacity(0.1),
+            const Color(0xFFDBA237).withOpacity(0.05),
           ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-              // Trip Image with Status Badge
-            ClipRRect(
-              borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFFD76B30).withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFD76B30), Color(0xFFDBA237)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              child: Stack(
-                children: [
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              isAdmin ? Icons.admin_panel_settings : Icons.business,
+              color: Colors.white,
+              size: 30,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isAdmin ? 'Admin Dashboard' : 'Agency Dashboard',
+                  style: FlutterFlowTheme.of(context).titleMedium.override(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: FlutterFlowTheme.of(context).primaryText,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isAdmin 
+                    ? 'Manage all agencies and trips system-wide'
+                    : agencyRef != null 
+                      ? 'Manage your agency trips and bookings'
+                      : 'Agency setup required',
+                  style: FlutterFlowTheme.of(context).bodyMedium.override(
+                    fontSize: 14,
+                    color: FlutterFlowTheme.of(context).secondaryText,
+                  ),
+                ),
+                if (userDoc?.email != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      userDoc!.email,
+                      style: FlutterFlowTheme.of(context).labelSmall.override(
+                        fontSize: 12,
+                        color: const Color(0xFFD76B30),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFD76B30).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              isAdmin ? 'ADMIN' : 'AGENCY',
+              style: FlutterFlowTheme.of(context).labelSmall.override(
+                color: const Color(0xFFD76B30),
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEnhancedTripCard(BuildContext context, TripsRecord trip, int index) {
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 300 + (index * 100)),
+      child: GestureDetector(
+        onTap: () async {
+          if (await _validateTripAccess(trip)) {
+            _showTripDetails(context, trip);
+          }
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: FlutterFlowTheme.of(context).secondaryBackground,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFFD76B30).withOpacity(0.1),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Trip Image with Status Badge
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+                child: Stack(
+                  children: [
                     Container(
-                    width: double.infinity,
+                      width: double.infinity,
                       height: 140,
                       child: trip.image.isNotEmpty
                           ? Image.network(
                               trip.image,
-                    fit: BoxFit.cover,
+                              fit: BoxFit.cover,
                               loadingBuilder: (context, child, loadingProgress) {
                                 if (loadingProgress == null) return child;
                                 return Container(
                                   width: double.infinity,
                                   height: 140,
                                   color: FlutterFlowTheme.of(context).alternate,
-                                  child: Center(
+                                  child: const Center(
                                     child: SizedBox(
                                       width: 20,
                                       height: 20,
@@ -883,24 +1101,24 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                                   ),
                                 );
                               },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: double.infinity,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  width: double.infinity,
                                   height: 140,
-                        color: FlutterFlowTheme.of(context).alternate,
-                        child: Icon(
-                          Icons.image_not_supported,
-                          color: FlutterFlowTheme.of(context).secondaryText,
+                                  color: FlutterFlowTheme.of(context).alternate,
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    color: FlutterFlowTheme.of(context).secondaryText,
                                     size: 40,
-                        ),
-                      );
-                    },
+                                  ),
+                                );
+                              },
                             )
                           : Container(
                               width: double.infinity,
                               height: 140,
                               color: FlutterFlowTheme.of(context).alternate,
-                              child: Icon(
+                              child: const Icon(
                                 Icons.flight_takeoff,
                                 color: Color(0xFFD76B30),
                                 size: 40,
@@ -908,19 +1126,19 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                             ),
                     ),
                     // Status Badge
-                  Positioned(
+                    Positioned(
                       top: 12,
                       right: 12,
-                    child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: trip.availableSeats > 0 ? Colors.green : Colors.red,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: trip.availableSeats > 0 ? _activeColor : _inactiveColor,
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.2),
                               blurRadius: 4,
-                              offset: Offset(0, 2),
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
@@ -932,12 +1150,12 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                               color: Colors.white,
                               size: 12,
                             ),
-                            SizedBox(width: 4),
+                            const SizedBox(width: 4),
                             Text(
-                        trip.availableSeats > 0 ? 'Active' : 'Inactive',
-                              style: FlutterFlowTheme.of(context).labelSmall.override(
-                          color: Colors.white,
-                          fontSize: 10,
+                              trip.availableSeats > 0 ? 'Active' : 'Inactive',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -950,126 +1168,135 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                       bottom: 12,
                       left: 12,
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.7),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          '\$${trip.price}',
-                          style: FlutterFlowTheme.of(context).labelMedium.override(
+                          _currency.format(trip.price),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            // Trip Details
-            Expanded(
-              child: Padding(
-                  padding: EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      trip.title,
+              // Trip Details
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        trip.title,
                         style: FlutterFlowTheme.of(context).titleSmall.override(
                           fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w700,
                           color: FlutterFlowTheme.of(context).primaryText,
-                          ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                      SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          color: FlutterFlowTheme.of(context).secondaryText,
-                            size: 16,
                         ),
-                          SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            trip.location,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            color: FlutterFlowTheme.of(context).secondaryText,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              trip.location,
                               style: FlutterFlowTheme.of(context).labelMedium.override(
-                                    color: FlutterFlowTheme.of(context).secondaryText,
+                                color: FlutterFlowTheme.of(context).secondaryText,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
-                                ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                      SizedBox(height: 8),
-                    Row(
-                      children: [
-                          Icon(
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
                             Icons.star,
                             color: Colors.orange,
                             size: 16,
                           ),
-                          SizedBox(width: 4),
-                        Text(
-                          trip.rating != null ? trip.rating.toStringAsFixed(1) : '0.0',
-                            style: FlutterFlowTheme.of(context).labelMedium.override(
-                            color: Colors.orange,
+                          const SizedBox(width: 4),
+                          Text(
+                            trip.rating != null ? trip.rating!.toStringAsFixed(1) : '0.0',
+                            style: const TextStyle(
+                              color: Colors.orange,
                               fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                          Spacer(),
+                          const Spacer(),
                           Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Color(0xFFD76B30).withOpacity(0.1),
+                              color: const Color(0xFFD76B30).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               '${trip.availableSeats} seats',
-                              style: FlutterFlowTheme.of(context).labelSmall.override(
+                              style: const TextStyle(
                                 color: Color(0xFFD76B30),
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                               ),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    Spacer(),
-                    // Action Buttons
-                    Row(
-                      children: [
-                        Expanded(
+                        ],
+                      ),
+                      const Spacer(),
+                      // Action Buttons
+                      Row(
+                        children: [
+                          Expanded(
                             child: _buildActionButton(
                               'Edit',
                               Icons.edit,
-                              Color(0xFFD76B30),
-                              () => context.pushNamed(
-                                'edit_trip',
-                                queryParameters: {'tripRef': trip.reference.id}.withoutNulls,
-                              ),
+                              const Color(0xFFD76B30),
+                              () async {
+                                if (await _validateTripAccess(trip)) {
+                                  context.pushNamed(
+                                    'edit_trip',
+                                    queryParameters: {
+                                      'tripRef': serializeParam(trip.reference, ParamType.DocumentReference),
+                                    }.withoutNulls,
+                                  );
+                                }
+                              },
                             ),
                           ),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: _buildActionButton(
                               'Delete',
                               Icons.delete,
                               FlutterFlowTheme.of(context).error,
-                              () => _showDeleteConfirmation(context, trip),
+                              () async {
+                                if (await _validateTripAccess(trip)) {
+                                  _showDeleteConfirmation(context, trip);
+                                }
+                              },
                             ),
                           ),
                         ],
                       ),
-                      // Action Buttons end
                     ],
                   ),
                 ),
@@ -1077,23 +1304,24 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
             ],
           ),
         ),
-      );
+      ),
+    );
   }
 
   Widget _buildActionButton(String text, IconData icon, Color color, VoidCallback onPressed) {
     return Container(
       height: 36,
-                          child: FFButtonWidget(
+      child: FFButtonWidget(
         onPressed: onPressed,
         text: text,
         icon: Icon(icon),
-                            options: FFButtonOptions(
+        options: FFButtonOptions(
           height: 36,
           padding: EdgeInsets.zero,
           iconPadding: EdgeInsets.zero,
           color: color,
-          textStyle: FlutterFlowTheme.of(context).labelMedium.override(
-                                      color: Colors.white,
+          textStyle: const TextStyle(
+            color: Colors.white,
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
@@ -1106,7 +1334,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
 
   Widget _buildNoAgencyReferenceState() {
     return Container(
-      margin: EdgeInsets.all(16),
+      margin: const EdgeInsets.all(16),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1123,13 +1351,13 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                 ),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.warning_rounded,
                 color: Colors.orange,
                 size: 60,
               ),
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             Text(
               'Agency Setup Required',
               style: FlutterFlowTheme.of(context).headlineSmall.override(
@@ -1138,7 +1366,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                 color: FlutterFlowTheme.of(context).primaryText,
               ),
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Text(
               'Your account needs to be linked to an agency to view and manage trips.',
               style: FlutterFlowTheme.of(context).bodyLarge.override(
@@ -1147,7 +1375,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
               ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               'Please contact your administrator or support team to complete the setup.',
               style: FlutterFlowTheme.of(context).bodyMedium.override(
@@ -1156,7 +1384,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
               ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 32),
+            const SizedBox(height: 32),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -1165,7 +1393,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                   text: 'Go Back',
                   options: FFButtonOptions(
                     height: 48,
-                    padding: EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
                     color: FlutterFlowTheme.of(context).secondaryBackground,
                     textStyle: FlutterFlowTheme.of(context).titleSmall.override(
                       color: FlutterFlowTheme.of(context).primaryText,
@@ -1180,19 +1408,18 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                     ),
                   ),
                 ),
-                SizedBox(width: 16),
+                const SizedBox(width: 16),
                 FFButtonWidget(
                   onPressed: () {
-                    // Refresh the page to check again
                     setState(() {});
                   },
                   text: 'Refresh',
-                  icon: Icon(Icons.refresh),
+                  icon: const Icon(Icons.refresh),
                   options: FFButtonOptions(
                     height: 48,
-                    padding: EdgeInsets.symmetric(horizontal: 24),
-                    color: Color(0xFFD76B30),
-                    textStyle: FlutterFlowTheme.of(context).titleSmall.override(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    color: const Color(0xFFD76B30),
+                    textStyle: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -1220,58 +1447,58 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Color(0xFFD76B30).withOpacity(0.1),
-                  Color(0xFFD76B30).withOpacity(0.05),
+                  const Color(0xFFD76B30).withOpacity(0.1),
+                  const Color(0xFFD76B30).withOpacity(0.05),
                 ],
               ),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-            Icons.flight_takeoff,
+            child: const Icon(
+              Icons.flight_takeoff,
               color: Color(0xFFD76B30),
               size: 60,
+            ),
           ),
-          ),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           Text(
             'No trips found',
             style: FlutterFlowTheme.of(context).headlineSmall.override(
               fontSize: 24,
-                    fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w600,
               color: FlutterFlowTheme.of(context).primaryText,
-                  ),
-                ),
-          SizedBox(height: 12),
+            ),
+          ),
+          const SizedBox(height: 12),
           Text(
-             _searchQuery.isNotEmpty || _filterStatus != 'all'
-                 ? 'Try adjusting your search or filters'
-                 : 'Create your first trip to get started',
+            _searchQuery.isNotEmpty || _filterStatus != 'all'
+                ? 'Try adjusting your search or filters'
+                : 'Create your first trip to get started',
             style: FlutterFlowTheme.of(context).bodyLarge.override(
-               fontSize: 16,
-                    color: FlutterFlowTheme.of(context).secondaryText,
-                  ),
-             textAlign: TextAlign.center,
-                ),
-          SizedBox(height: 32),
+              fontSize: 16,
+              color: FlutterFlowTheme.of(context).secondaryText,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
           FFButtonWidget(
             onPressed: () async {
               context.pushNamed('create_trip');
             },
             text: 'Create Your First Trip',
-             icon: Icon(Icons.add),
+            icon: const Icon(Icons.add),
             options: FFButtonOptions(
-               height: 56,
-               padding: EdgeInsets.symmetric(horizontal: 32),
-               color: Color(0xFFD76B30),
-              textStyle: FlutterFlowTheme.of(context).titleSmall.override(
-                      color: Colors.white,
-                 fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-               elevation: 4,
-               borderRadius: BorderRadius.circular(16),
-             ),
-           ),
+              height: 56,
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              color: const Color(0xFFD76B30),
+              textStyle: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              elevation: 4,
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
         ],
       ),
     );
@@ -1279,21 +1506,21 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
 
   Widget _buildFloatingActionButton() {
     return Container(
-      margin: EdgeInsets.only(bottom: 16, right: 16),
+      margin: const EdgeInsets.only(bottom: 16, right: 16),
       child: FloatingActionButton.extended(
         onPressed: () async {
           context.pushNamed('create_trip');
         },
-        backgroundColor: Color(0xFFD76B30),
+        backgroundColor: const Color(0xFFD76B30),
         elevation: 8,
-        icon: Icon(
+        icon: const Icon(
           Icons.add,
           color: Colors.white,
           size: 24,
         ),
-        label: Text(
+        label: const Text(
           'New Trip',
-          style: FlutterFlowTheme.of(context).titleSmall.override(
+          style: TextStyle(
             color: Colors.white,
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -1302,7 +1529,6 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
       ),
     );
   }
-
 
   void _showTripDetails(BuildContext context, TripsRecord trip) {
     showModalBottomSheet(
@@ -1313,7 +1539,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
         height: MediaQuery.of(context).size.height * 0.7,
         decoration: BoxDecoration(
           color: FlutterFlowTheme.of(context).primaryBackground,
-          borderRadius: BorderRadius.only(
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(24),
             topRight: Radius.circular(24),
           ),
@@ -1323,7 +1549,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
             Container(
               width: 40,
               height: 4,
-              margin: EdgeInsets.symmetric(vertical: 12),
+              margin: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
                 color: FlutterFlowTheme.of(context).secondaryText.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(2),
@@ -1331,7 +1557,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
             ),
             Expanded(
               child: SingleChildScrollView(
-                padding: EdgeInsets.all(24),
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1342,7 +1568,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     // Add more trip details here
                   ],
                 ),
@@ -1350,15 +1576,6 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showAnalytics(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Analytics feature coming soon!'),
-        backgroundColor: FlutterFlowTheme.of(context).info,
       ),
     );
   }
@@ -1375,7 +1592,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
           title: Row(
             children: [
               Container(
-                padding: EdgeInsets.all(8),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: FlutterFlowTheme.of(context).error.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -1386,30 +1603,30 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                   size: 24,
                 ),
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Text(
-            'Delete Trip',
+                'Delete Trip',
                 style: FlutterFlowTheme.of(context).titleLarge.override(
                   fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  fontWeight: FontWeight.w600,
                 ),
+              ),
             ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-                Text(
-                  'Are you sure you want to delete "${trip.title}"?',
-                  style: FlutterFlowTheme.of(context).bodyLarge.override(
+              Text(
+                'Are you sure you want to delete "${trip.title}"?',
+                style: FlutterFlowTheme.of(context).bodyLarge.override(
                   fontSize: 16,
                   color: FlutterFlowTheme.of(context).primaryText,
                 ),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Container(
-                padding: EdgeInsets.all(12),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: FlutterFlowTheme.of(context).error.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -1418,10 +1635,10 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                   children: [
                     Icon(
                       Icons.warning,
-                          color: FlutterFlowTheme.of(context).error,
+                      color: FlutterFlowTheme.of(context).error,
                       size: 20,
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'This action cannot be undone and will remove all associated data.',
@@ -1430,10 +1647,10 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                           color: FlutterFlowTheme.of(context).error,
                         ),
                       ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
             ],
           ),
           actions: [
@@ -1441,10 +1658,10 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
               child: Text(
                 'Cancel',
                 style: FlutterFlowTheme.of(context).titleSmall.override(
-                        color: FlutterFlowTheme.of(context).secondaryText,
+                  color: FlutterFlowTheme.of(context).secondaryText,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                    ),
+                ),
               ),
               onPressed: () {
                 Navigator.of(context).pop();
@@ -1456,42 +1673,46 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: TextButton(
-              child: Text(
-                'Delete',
+                child: Text(
+                  'Delete',
                   style: FlutterFlowTheme.of(context).titleSmall.override(
                     color: Colors.white,
                     fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                    ),
-              ),
-              onPressed: () async {
-                try {
-                  await trip.reference.delete();
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Trip deleted successfully'),
-                      backgroundColor: FlutterFlowTheme.of(context).success,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                onPressed: () async {
+                  try {
+                    await trip.reference.delete();
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Trip deleted successfully'),
+                          backgroundColor: FlutterFlowTheme.of(context).success,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                    ),
-                  );
-                } catch (e) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error deleting trip: $e'),
-                      backgroundColor: FlutterFlowTheme.of(context).error,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error deleting trip: $e'),
+                          backgroundColor: FlutterFlowTheme.of(context).error,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                    ),
-                  );
-                }
-              },
+                      );
+                    }
+                  }
+                },
               ),
             ),
           ],
@@ -1499,6 +1720,4 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
       },
     );
   }
-
-
 }

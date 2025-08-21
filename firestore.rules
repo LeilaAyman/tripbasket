@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function isSignedIn() { 
+      return request.auth != null; 
+    }
+    
+    function userDoc() { 
+      return get(/databases/$(db)/documents/users/$(request.auth.uid)); 
+    }
+    
+    function role() { 
+      return (userDoc().data.role ?? []).join(" ").toLowerCase(); 
+    }
+    
+    function isAdmin() { 
+      return role().matches('.*admin.*'); 
+    }
+    
+    function userAgency() { 
+      return userDoc().data.agency_reference; 
+    }
+    
+    function ownsTrip() { 
+      return resource.data.agency_reference == userAgency(); 
+    }
+    
+    function createsOwnTrip() { 
+      return request.resource.data.agency_reference == userAgency(); 
+    }
+
+    // Users collection - users can read/update their own document
+    match /users/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      allow read: if isSignedIn() && isAdmin(); // Admins can read all users
+    }
+
+    // Agencies collection - admins can do everything, agency users can read their own
+    match /agencies/{agencyId} {
+      allow read, write: if isSignedIn() && isAdmin();
+      allow read: if isSignedIn() && userAgency() == resource.__name__;
+    }
+
+    // Trips collection - strict agency access control
+    match /trips/{tripId} {
+      allow read: if isSignedIn() && (isAdmin() || ownsTrip());
+      allow create: if isSignedIn() && (isAdmin() || createsOwnTrip());
+      allow update, delete: if isSignedIn() && (isAdmin() || ownsTrip());
+    }
+
+    // Bookings collection - users can manage their own bookings, agencies can see bookings for their trips
+    match /bookings/{bookingId} {
+      allow read, write: if isSignedIn() && request.auth.uid == resource.data.user_id;
+      allow read: if isSignedIn() && isAdmin();
+      allow read: if isSignedIn() && get(resource.data.trip_reference).data.agency_reference == userAgency();
+    }
+
+    // Reviews collection - users can manage their own reviews, agencies can read reviews for their trips
+    match /reviews/{reviewId} {
+      allow read, write: if isSignedIn() && request.auth.uid == resource.data.user_id;
+      allow read: if isSignedIn() && isAdmin();
+      allow read: if isSignedIn() && get(resource.data.trip_reference).data.agency_reference == userAgency();
+    }
+
+    // Default deny rule for all other documents
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

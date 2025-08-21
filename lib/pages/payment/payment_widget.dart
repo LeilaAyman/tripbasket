@@ -12,8 +12,9 @@ import '/auth/firebase_auth/auth_util.dart';
 import 'payment_model.dart';
 export 'payment_model.dart';
 
-// Import for web
-import 'dart:html' as html show window;
+// Platform-specific imports
+import 'package:flutter/foundation.dart' show kIsWeb;
+import '/utils/web_utils.dart';
 
 class PaymentWidget extends StatefulWidget {
   const PaymentWidget({
@@ -125,7 +126,7 @@ class _PaymentWidgetState extends State<PaymentWidget> {
 
   void _openPaymentInNewTab() {
     if (_paymentUrl != null) {
-      html.window.open(_paymentUrl!, '_blank');
+      WebUtils.openUrlInNewTab(_paymentUrl!);
       // Show instructions to user
       setState(() {
         _isLoading = false;
@@ -157,11 +158,9 @@ class _PaymentWidgetState extends State<PaymentWidget> {
     });
     
     // Also listen for tab focus to detect when user returns
-    if (kIsWeb) {
-      html.window.addEventListener('focus', (event) {
-        _showPaymentCompleteDialog();
-      });
-    }
+    WebUtils.addWindowFocusListener(() {
+      _showPaymentCompleteDialog();
+    });
   }
 
   void _showPaymentCompleteDialog() {
