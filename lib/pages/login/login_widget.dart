@@ -343,12 +343,24 @@ class _LoginWidgetState extends State<LoginWidget> {
                                           _model.passwordTextController.text,
                                         );
                                         if (user == null) {
+                                          print('LOGIN DEBUG: Authentication failed - user is null');
                                           return;
                                         }
+
+                                        print('LOGIN DEBUG: Authentication successful');
+                                        print('LOGIN DEBUG: User UID: ${user.uid}');
+                                        print('LOGIN DEBUG: User Email: ${user.email}');
+                                        
+                                        // Wait a moment for user document to load
+                                        await Future.delayed(Duration(milliseconds: 500));
+                                        
+                                        print('LOGIN DEBUG: Current User Document: ${currentUserDocument}');
+                                        print('LOGIN DEBUG: Current User Email Verified: ${currentUserEmailVerified}');
 
                                         if (currentUserEmailVerified
                                             ? true
                                             : true) {
+                                          print('LOGIN DEBUG: Navigating to home...');
                                           context.pushNamedAuth(
                                               HomeWidget.routeName,
                                               context.mounted);

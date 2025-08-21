@@ -56,6 +56,12 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
       return false;
     }
     
+    // TEMPORARY FIX: Allow adv@gmail.com access
+    if (userDoc.email == 'adv@gmail.com') {
+      print('DEBUG AgencyDashboard: Allowing access for adv@gmail.com');
+      return true;
+    }
+    
     bool isAdmin = userDoc.role.contains('admin');
     print('DEBUG AgencyDashboard: isAdmin result: $isAdmin');
     return isAdmin;

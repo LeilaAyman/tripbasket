@@ -76,7 +76,17 @@ class UsersRecord extends FirestoreRecord {
     _phoneNumber = snapshotData['phone_number'] as String?;
     _name = snapshotData['name'] as String?;
     _role = getDataList(snapshotData['role']);
-    _agencyReference = snapshotData['agency_reference'] as DocumentReference?;
+    // Handle both string and DocumentReference formats for agency_reference
+    final agencyRefData = snapshotData['agency_reference'];
+    if (agencyRefData is String && agencyRefData.isNotEmpty) {
+      // Convert string path to DocumentReference
+      _agencyReference = FirebaseFirestore.instance.doc(agencyRefData);
+    } else if (agencyRefData is DocumentReference) {
+      // Already a DocumentReference
+      _agencyReference = agencyRefData;
+    } else {
+      _agencyReference = null;
+    }
   }
 
   static CollectionReference get collection =>
