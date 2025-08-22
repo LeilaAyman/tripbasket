@@ -421,6 +421,7 @@ Future<List<AgenciesRecord>> queryAgenciesRecordOnce({
       singleRecord: singleRecord,
     );
 
+
 // Creates a Firestore document representing the logged in user if it doesn't yet exist
 Future maybeCreateUser(User user) async {
   final userRecord = UsersRecord.collection.doc(user.uid);

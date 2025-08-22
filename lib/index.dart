@@ -20,5 +20,6 @@ export '/pages/create_trip/create_trip_widget.dart' show CreateTripWidget;
 export '/pages/edit_trip/edit_trip_widget.dart' show EditTripWidget;
 export '/pages/book_trip/book_trip_widget.dart' show BookTripWidget;
 export '/pages/loyalty_page/loyalty_page_widget.dart' show LoyaltyPageWidget;
+export '/pages/favorites/favorites_page.dart' show FavoritesPage;
 export '/components/currency_selector.dart' show CurrencySelector;
 export '/components/language_selector.dart' show LanguageSelector;

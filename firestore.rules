@@ -70,6 +70,20 @@ service cloud.firestore {
       allow read: if isSignedIn() && get(resource.data.trip_reference).data.agency_reference == userAgency();
     }
 
+    // Favorites collection - owner-only access with DocumentReference validation
+    function isOwner(data) {
+      return data.user_reference != null
+        && data.user_reference.path == '/databases/' + db + '/documents/users/' + request.auth.uid;
+    }
+    
+    match /favorites/{favId} {
+      allow read: if isSignedIn() && isOwner(resource.data);
+      allow create: if isSignedIn()
+        && isOwner(request.resource.data)
+        && request.resource.data.trip_reference != null;
+      allow delete, update: if isSignedIn() && isOwner(resource.data);
+    }
+
     // Default deny rule for all other documents
     match /{document=**} {
       allow read, write: if false;

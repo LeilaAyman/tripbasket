@@ -3,10 +3,12 @@ import '/backend/backend.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/theme/app_theme.dart';
 import '/index.dart';
 import '/pages/agency_dashboard/agency_dashboard_widget.dart';
 import '/components/currency_selector.dart';
 import '/components/language_selector.dart';
+import '/main.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -100,7 +102,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
       SnackBar(
         content: Text('Photo upload feature coming soon! For now, you can update your photo through your account settings.'),
         duration: Duration(seconds: 3),
-        backgroundColor: FlutterFlowTheme.of(context).primary,
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
     );
   }
@@ -124,7 +126,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Currency updated to $display'),
-                backgroundColor: Color(0xFF6B73FF),
+                backgroundColor: Theme.of(context).colorScheme.primary,
               ),
             );
           },
@@ -152,7 +154,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Language updated to $display'),
-                backgroundColor: Color(0xFF6B73FF),
+                backgroundColor: Theme.of(context).colorScheme.primary,
               ),
             );
           },
@@ -189,7 +191,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                       borderRadius: BorderRadius.circular(12.0),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF6B73FF), width: 2.0),
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2.0),
                       borderRadius: BorderRadius.circular(12.0),
                     ),
                   ),
@@ -206,8 +208,8 @@ class _ProfileWidgetState extends State<ProfileWidget> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF6B73FF),
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
               child: Text('Save'),
               onPressed: () async {
@@ -222,7 +224,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Phone number updated successfully!'),
-                      backgroundColor: Color(0xFF6B73FF),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                     ),
                   );
                   setState(() {});
@@ -253,6 +255,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     bool showArrow = false,
     bool isAdmin = false,
     bool isLogout = false,
+    Widget? trailing,
   }) {
     return Container(
       margin: EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 12.0),
@@ -268,8 +271,8 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                 color: isLogout 
                     ? Colors.red 
                     : isAdmin 
-                        ? Color(0xFFD76B30)
-                        : FlutterFlowTheme.of(context).secondaryText,
+                        ? AppTheme.seed
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                 size: 24.0,
               ),
               SizedBox(width: 16.0),
@@ -325,9 +328,9 @@ class _ProfileWidgetState extends State<ProfileWidget> {
         },
         child: Scaffold(
           key: scaffoldKey,
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.background,
           appBar: AppBar(
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(context).colorScheme.background,
             automaticallyImplyLeading: false,
             leading: FlutterFlowIconButton(
               borderColor: Colors.transparent,
@@ -336,7 +339,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
               buttonSize: 60.0,
               icon: Icon(
                 Icons.arrow_back_rounded,
-                color: Colors.black,
+                color: Theme.of(context).colorScheme.onBackground,
                 size: 30.0,
               ),
               onPressed: () async {
@@ -355,10 +358,10 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                 width: double.infinity,
                 height: 160.0,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   border: Border(
                     bottom: BorderSide(
-                      color: Color(0xFFE0E0E0),
+                      color: Theme.of(context).dividerColor,
                       width: 1.0,
                     ),
                   ),
@@ -376,7 +379,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                                 ? currentUserEmail.split('@')[0] 
                                 : 'User'),
                         style: GoogleFonts.poppins(
-                          color: Colors.black,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 28.0,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.0,
@@ -386,7 +389,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                       Text(
                         currentUserEmail,
                         style: GoogleFonts.poppins(
-                          color: Color(0xFF666666),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontSize: 16.0,
                           fontWeight: FontWeight.w400,
                           letterSpacing: 0.0,
@@ -399,7 +402,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                             Container(
                               padding: EdgeInsetsDirectional.fromSTEB(12.0, 6.0, 12.0, 6.0),
                               decoration: BoxDecoration(
-                                color: Color(0xFFD76B30),
+                                color: Theme.of(context).colorScheme.primary,
                                 borderRadius: BorderRadius.circular(20.0),
                               ),
                               child: Row(
@@ -407,14 +410,14 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                                 children: [
                                   Icon(
                                     Icons.admin_panel_settings,
-                                    color: Colors.white,
+                                    color: Theme.of(context).colorScheme.onPrimary,
                                     size: 16.0,
                                   ),
                                   SizedBox(width: 4.0),
                                   Text(
                                     'ADMIN',
                                     style: GoogleFonts.poppins(
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.onPrimary,
                                       fontSize: 12.0,
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 0.0,
@@ -428,7 +431,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                             Container(
                               padding: EdgeInsetsDirectional.fromSTEB(12.0, 6.0, 12.0, 6.0),
                               decoration: BoxDecoration(
-                                color: Color(0xFF6B73FF),
+                                color: Theme.of(context).colorScheme.secondary,
                                 borderRadius: BorderRadius.circular(20.0),
                               ),
                               child: Row(
@@ -436,14 +439,14 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                                 children: [
                                   Icon(
                                     Icons.business,
-                                    color: Colors.white,
+                                    color: Theme.of(context).colorScheme.onSecondary,
                                     size: 16.0,
                                   ),
                                   SizedBox(width: 4.0),
                                   Text(
                                     'AGENCY',
                                     style: GoogleFonts.poppins(
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.onSecondary,
                                       fontSize: 12.0,
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 0.0,
@@ -464,7 +467,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                 child: Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                   ),
                   child: SingleChildScrollView(
                     child: Column(

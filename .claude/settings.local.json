@@ -10,7 +10,10 @@
       "Bash(flutter clean:*)",
       "Bash(git restore:*)",
       "Bash(sed:*)",
-      "Bash(timeout 10 flutter build:*)"
+      "Bash(timeout 10 flutter build:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(flutter run:*)",
+      "Bash(git checkout:*)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\maria\\OneDrive\\Desktop"

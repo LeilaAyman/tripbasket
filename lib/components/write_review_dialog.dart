@@ -5,7 +5,7 @@ import '/backend/backend.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
+import '/theme/app_theme.dart';
 
 class WriteReviewDialog extends StatefulWidget {
   const WriteReviewDialog({
@@ -23,14 +23,20 @@ class WriteReviewDialog extends StatefulWidget {
 
 class _WriteReviewDialogState extends State<WriteReviewDialog> {
   final TextEditingController _commentController = TextEditingController();
-  double _rating = 0.0;
+  double _overallRating = 0.0;
+  double _serviceRating = 0.0;
+  double _communicationRating = 0.0;
+  double _valueRating = 0.0;
   bool _isSubmitting = false;
+
+  static const int maxLength = 400;
+  static const int minLength = 20;
 
   @override
   void initState() {
     super.initState();
     if (widget.existingReview != null) {
-      _rating = widget.existingReview!.rating;
+      _overallRating = widget.existingReview!.rating;
       _commentController.text = widget.existingReview!.comment;
     }
   }
@@ -41,12 +47,16 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
     super.dispose();
   }
 
+  bool get canSubmit => _overallRating > 0 && _commentController.text.trim().length >= minLength;
+
   Future<void> _submitReview() async {
-    if (_rating == 0) {
+    if (!canSubmit) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please select a rating'),
-          backgroundColor: FlutterFlowTheme.of(context).error,
+          content: Text(_overallRating == 0 
+              ? 'Please select a rating'
+              : 'Please write at least $minLength characters'),
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
       return;
@@ -63,7 +73,7 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
       if (widget.existingReview != null) {
         // Update existing review
         await widget.existingReview!.reference.update({
-          'rating': _rating,
+          'rating': _overallRating,
           'comment': _commentController.text.trim(),
         });
       } else {
@@ -73,7 +83,7 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
           userReference: currentUserReference,
           userName: userData.displayName.isNotEmpty ? userData.displayName : userData.name,
           userPhoto: userData.photoUrl,
-          rating: _rating,
+          rating: _overallRating,
           comment: _commentController.text.trim(),
           createdAt: DateTime.now(),
           helpfulCount: 0,
@@ -93,7 +103,7 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
             content: Text(widget.existingReview != null 
                 ? 'Review updated successfully!' 
                 : 'Review submitted successfully!'),
-            backgroundColor: FlutterFlowTheme.of(context).primary,
+            backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
       }
@@ -103,7 +113,7 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error submitting review. Please try again.'),
-            backgroundColor: FlutterFlowTheme.of(context).error,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -138,213 +148,218 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textLength = _commentController.text.length;
+    
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
-        padding: EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    widget.existingReview != null 
-                        ? 'Edit Your Review' 
-                        : 'Write a Review',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.0,
+                // Header with close button
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Write Review',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            'Share your experience',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: const Color(0xFF6B7280),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                      tooltip: 'Close',
+                    ),
+                  ],
+                ),
+                
+                AppTheme.gap24,
+                
+                // Trip title
+                Text(
+                  widget.tripRecord.title,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF6B7280),
                   ),
                 ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: Icon(Icons.close),
-                ),
-              ],
-            ),
-            
-            SizedBox(height: 8),
-            
-            // Trip title
-            Text(
-              widget.tripRecord.title,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: FlutterFlowTheme.of(context).secondaryText,
-                letterSpacing: 0.0,
-              ),
-            ),
-            
-            SizedBox(height: 24),
-            
-            // Rating section
-            Text(
-              'Your Rating',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0.0,
-              ),
-            ),
-            
-            SizedBox(height: 12),
-            
-            Center(
-              child: RatingBar.builder(
-                initialRating: _rating,
-                minRating: 1,
-                direction: Axis.horizontal,
-                allowHalfRating: true,
-                itemCount: 5,
-                itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
-                itemBuilder: (context, _) => Icon(
-                  Icons.star,
-                  color: Color(0xFFF2D83B),
-                ),
-                onRatingUpdate: (rating) {
-                  setState(() {
-                    _rating = rating;
-                  });
-                },
-                itemSize: 40.0,
-                glow: true,
-                glowColor: Color(0xFFF2D83B).withOpacity(0.3),
-              ),
-            ),
-            
-            if (_rating > 0) ...[
-              SizedBox(height: 8),
-              Center(
-                child: Text(
-                  _getRatingText(_rating),
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
+                
+                AppTheme.gap24,
+                
+                // Overall Rating (required)
+                Text(
+                  'Overall Rating *',
+                  style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w500,
-                    color: FlutterFlowTheme.of(context).primary,
-                    letterSpacing: 0.0,
-                  ),
-                ),
-              ),
-            ],
-            
-            SizedBox(height: 24),
-            
-            // Comment section
-            Text(
-              'Your Review (Optional)',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0.0,
-              ),
-            ),
-            
-            SizedBox(height: 12),
-            
-            TextField(
-              controller: _commentController,
-              maxLines: 4,
-              maxLength: 500,
-              decoration: InputDecoration(
-                hintText: 'Share your experience with this trip...',
-                hintStyle: GoogleFonts.poppins(
-                  color: FlutterFlowTheme.of(context).secondaryText,
-                  fontSize: 14,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                    color: FlutterFlowTheme.of(context).alternate,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                    color: FlutterFlowTheme.of(context).primary,
-                    width: 2,
-                  ),
-                ),
-                contentPadding: EdgeInsets.all(12),
-              ),
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                letterSpacing: 0.0,
-              ),
-            ),
-            
-            SizedBox(height: 24),
-            
-            // Action buttons
-            Row(
-              children: [
-                Expanded(
-                  child: FFButtonWidget(
-                    onPressed: () => Navigator.of(context).pop(),
-                    text: 'Cancel',
-                    options: FFButtonOptions(
-                      height: 44,
-                      padding: EdgeInsetsDirectional.fromSTEB(24, 0, 24, 0),
-                      iconPadding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
-                      color: Colors.transparent,
-                      textStyle: GoogleFonts.poppins(
-                        color: FlutterFlowTheme.of(context).secondaryText,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.0,
-                      ),
-                      elevation: 0,
-                      borderSide: BorderSide(
-                        color: FlutterFlowTheme.of(context).alternate,
-                        width: 1,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
                   ),
                 ),
                 
-                SizedBox(width: 12),
+                AppTheme.gap8,
                 
-                Expanded(
-                  child: FFButtonWidget(
-                    onPressed: _isSubmitting ? null : _submitReview,
-                    text: _isSubmitting 
-                        ? 'Submitting...' 
-                        : (widget.existingReview != null ? 'Update' : 'Submit'),
-                    options: FFButtonOptions(
-                      height: 44,
-                      padding: EdgeInsetsDirectional.fromSTEB(24, 0, 24, 0),
-                      iconPadding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
-                      color: FlutterFlowTheme.of(context).primary,
-                      textStyle: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.0,
-                      ),
-                      elevation: 2,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                RatingBar.builder(
+                  initialRating: _overallRating,
+                  minRating: 0,
+                  direction: Axis.horizontal,
+                  allowHalfRating: true,
+                  itemCount: 5,
+                  itemPadding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  itemBuilder: (context, _) => Icon(
+                    Icons.star,
+                    color: AppTheme.seed,
                   ),
+                  onRatingUpdate: (rating) {
+                    setState(() {
+                      _overallRating = rating;
+                    });
+                  },
+                  itemSize: 28.0,
+                  glow: true,
+                  glowColor: AppTheme.seed.withOpacity(0.3),
+                ),
+                
+                AppTheme.gap24,
+                
+                // Optional category ratings
+                Text(
+                  'Category Ratings (Optional)',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                
+                AppTheme.gap16,
+                
+                // Service Quality
+                _buildCategoryRating('Service Quality', _serviceRating, (rating) {
+                  setState(() => _serviceRating = rating);
+                }),
+                
+                AppTheme.gap8,
+                
+                // Communication
+                _buildCategoryRating('Communication', _communicationRating, (rating) {
+                  setState(() => _communicationRating = rating);
+                }),
+                
+                AppTheme.gap8,
+                
+                // Value
+                _buildCategoryRating('Value', _valueRating, (rating) {
+                  setState(() => _valueRating = rating);
+                }),
+                
+                AppTheme.gap24,
+                
+                // Experience text
+                Text(
+                  'Your Experience *',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                
+                AppTheme.gap8,
+                
+                TextField(
+                  controller: _commentController,
+                  maxLength: maxLength,
+                  minLines: 3,
+                  maxLines: 6,
+                  decoration: InputDecoration(
+                    hintText: 'Share your experience with this agency…',
+                    helperText: 'Ratings help other travelers choose confidently.',
+                    counterText: '$textLength/$maxLength',
+                    border: const OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+                
+                AppTheme.gap24,
+                
+                // Action buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    
+                    AppTheme.gap16,
+                    
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: canSubmit && !_isSubmitting ? _submitReview : null,
+                        child: _isSubmitting 
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text('Submit'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  String _getRatingText(double rating) {
-    if (rating >= 4.5) return 'Excellent!';
-    if (rating >= 4.0) return 'Very Good';
-    if (rating >= 3.0) return 'Good';
-    if (rating >= 2.0) return 'Fair';
-    return 'Poor';
+  Widget _buildCategoryRating(String label, double rating, Function(double) onRatingUpdate) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+        Expanded(
+          flex: 3,
+          child: RatingBar.builder(
+            initialRating: rating,
+            minRating: 0,
+            direction: Axis.horizontal,
+            allowHalfRating: true,
+            itemCount: 5,
+            itemPadding: const EdgeInsets.symmetric(horizontal: 2.0),
+            itemBuilder: (context, _) => Icon(
+              Icons.star,
+              color: AppTheme.seed,
+            ),
+            onRatingUpdate: onRatingUpdate,
+            itemSize: 20.0,
+          ),
+        ),
+      ],
+    );
   }
 }

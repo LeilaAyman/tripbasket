@@ -3,7 +3,10 @@ import '/backend/backend.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/flutter_flow/flutter_flow_widgets.dart';
 import '/utils/loyalty_utils.dart';
+import '/utils/manual_points_award.dart';
+import '/utils/debug_points.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'loyalty_page_model.dart';
@@ -96,6 +99,10 @@ class _LoyaltyPageWidgetState extends State<LoyaltyPageWidget> {
           child: StreamBuilder<UsersRecord>(
             stream: UsersRecord.getDocument(currentUserReference!),
             builder: (context, snapshot) {
+              // Debug logging
+              if (snapshot.hasData) {
+                print('🔍 Loyalty page - Current user points: ${snapshot.data!.loyaltyPoints}');
+              }
               if (!snapshot.hasData) {
                 return const Center(
                   child: CircularProgressIndicator(
@@ -458,6 +465,123 @@ class _LoyaltyPageWidgetState extends State<LoyaltyPageWidget> {
                               _buildTierRow(context, Icons.military_tech, 'Silver', '800+ points', '15% off', points >= 800),
                               const SizedBox(height: 12.0),
                               _buildTierRow(context, Icons.workspace_premium, 'Gold', '1000+ points', '20% off', points >= 1000),
+                            ],
+                          ),
+                        ),
+                      ),
+                      
+                      // Manual Points Button (Temporary)
+                      const SizedBox(height: 24.0),
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: FlutterFlowTheme.of(context).secondaryBackground,
+                          borderRadius: BorderRadius.circular(16.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 6.0,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.build,
+                                    color: Colors.orange,
+                                    size: 24.0,
+                                  ),
+                                  const SizedBox(width: 12.0),
+                                  Text(
+                                    'Temporary Points Fix',
+                                    style: GoogleFonts.poppins(
+                                      color: FlutterFlowTheme.of(context).primaryText,
+                                      fontSize: 18.0,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12.0),
+                              Text(
+                                'If you completed a booking but didn\'t receive points, click the button below to manually award points for your completed bookings.',
+                                style: GoogleFonts.poppins(
+                                  color: FlutterFlowTheme.of(context).secondaryText,
+                                  fontSize: 14.0,
+                                ),
+                              ),
+                              const SizedBox(height: 16.0),
+                              FFButtonWidget(
+                                onPressed: () async {
+                                  final result = await awardPointsForCompletedBookings();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(result),
+                                      backgroundColor: result.contains('Successfully') 
+                                          ? Colors.green 
+                                          : Colors.red,
+                                      duration: Duration(seconds: 4),
+                                    ),
+                                  );
+                                },
+                                text: 'Award Missing Points',
+                                options: FFButtonOptions(
+                                  width: double.infinity,
+                                  height: 48,
+                                  padding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
+                                  iconPadding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
+                                  color: Colors.orange,
+                                  textStyle: GoogleFonts.poppins(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  elevation: 2,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              const SizedBox(height: 12.0),
+                              FFButtonWidget(
+                                onPressed: () async {
+                                  final result = await debugPointsAndBookings();
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: Text('Debug Report'),
+                                      content: SingleChildScrollView(
+                                        child: Text(result, style: TextStyle(fontFamily: 'monospace', fontSize: 12)),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.of(context).pop(),
+                                          child: Text('Close'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                                text: 'Debug Points & Bookings',
+                                options: FFButtonOptions(
+                                  width: double.infinity,
+                                  height: 48,
+                                  padding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
+                                  iconPadding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
+                                  color: Colors.blue,
+                                  textStyle: GoogleFonts.poppins(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  elevation: 2,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
                             ],
                           ),
                         ),

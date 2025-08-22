@@ -12,6 +12,7 @@ import 'backend/firebase/firebase_config.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import 'flutter_flow/flutter_flow_util.dart';
 import 'flutter_flow/nav/nav.dart';
+import 'theme/app_theme.dart';
 import 'index.dart';
 
 void main() async {
@@ -97,27 +98,9 @@ class _MyAppState extends State<MyApp> {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [Locale('en', '')],
-      theme: ThemeData(
-        brightness: Brightness.light,
-        useMaterial3: true,
-        scaffoldBackgroundColor: Colors.white,
-        canvasColor: Colors.white,
-        cardColor: Colors.white,
-        dialogBackgroundColor: Colors.white,
-        primarySwatch: Colors.blue,
-        textTheme: GoogleFonts.interTextTheme(), // text only, preserves icons
-      ),
-      darkTheme: ThemeData(
-        brightness: Brightness.light, // Force light mode
-        useMaterial3: true,
-        scaffoldBackgroundColor: Colors.white,
-        canvasColor: Colors.white,
-        cardColor: Colors.white,
-        dialogBackgroundColor: Colors.white,
-        primarySwatch: Colors.blue,
-        textTheme: GoogleFonts.interTextTheme(), // text only, preserves icons
-      ),
-      themeMode: _themeMode,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.light, // Always use light theme
       routerConfig: _router,
     );
   }

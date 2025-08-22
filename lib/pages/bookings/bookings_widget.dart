@@ -4,6 +4,9 @@ import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
+import '/theme/app_theme.dart';
+import '/utils/formatting.dart';
+import '/widgets/sticky_cta_bar.dart';
 import '/index.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -52,10 +55,24 @@ class _BookingsWidgetState extends State<BookingsWidget> {
         FocusScope.of(context).unfocus();
         FocusManager.instance.primaryFocus?.unfocus();
       },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        body: SafeArea(
+      child: StreamBuilder<TripsRecord>(
+        stream: TripsRecord.getDocument(widget.tripref!),
+        builder: (context, tripSnapshot) {
+          if (!tripSnapshot.hasData) {
+            return Scaffold(
+              key: scaffoldKey,
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              body: const Center(child: CircularProgressIndicator()),
+            );
+          }
+          
+          final trip = tripSnapshot.data!;
+          final totalPrice = trip.price * _model.travelers;
+
+          return Scaffold(
+            key: scaffoldKey,
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            body: SafeArea(
           top: true,
           child: SingleChildScrollView(
             child: Column(
@@ -755,146 +772,52 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                 ),
               ),
 
-              // Bottom bar
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: FlutterFlowTheme.of(context).secondaryBackground,
-                    border: Border.all(
-                      color: FlutterFlowTheme.of(context).alternate,
-                      width: 1.0,
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '\$1,299',
-                              style: FlutterFlowTheme.of(context)
-                                  .headlineSmall
-                                  .override(
-                                    font: GoogleFonts.interTight(
-                                      fontWeight: FontWeight.bold,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .headlineSmall
-                                          .fontStyle,
-                                    ),
-                                    color: const Color(0xFFD76B30), // Orange theme color
-                                    letterSpacing: 0.0,
-                                    fontWeight: FontWeight.bold,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .headlineSmall
-                                        .fontStyle,
-                                  ),
-                            ),
-                            Text(
-                              'per person',
-                              style: FlutterFlowTheme.of(context)
-                                  .bodyMedium
-                                  .override(
-                                    font: GoogleFonts.inter(
-                                      fontWeight:
-                                          FlutterFlowTheme.of(context)
-                                              .bodyMedium
-                                              .fontWeight,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .bodyMedium
-                                          .fontStyle,
-                                    ),
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryText,
-                                    letterSpacing: 0.0,
-                                    fontWeight: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .fontWeight,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .fontStyle,
-                                  ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 16.0),
-                        Expanded(
-                          child: FFButtonWidget(
-                            onPressed: () async {
-                              // Add to Cart functionality
-                              try {
-                                // Get trip details
-                                final tripSnapshot = await widget.tripref!.get();
-                                final tripData = tripSnapshot.data() as Map<String, dynamic>;
-                                
-                                final cartCreateData = {
-                                  'tripReference': widget.tripref,
-                                  'userReference': currentUserReference,
-                                  'tripName': tripData['name'],
-                                  'tripImage': tripData['image'],
-                                  'travelers': _model.travelers,
-                                  'totalPrice': (tripData['price'] as num).toDouble() * _model.travelers,
-                                  'requiresAdditionalPaperwork': _model.requiresAdditionalPaperwork,
-                                  'addedAt': DateTime.now(),
-                                };
-                                
-                                await CartRecord.collection.doc().set(cartCreateData);
-                                
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Trip added to cart!'),
-                                    backgroundColor: FlutterFlowTheme.of(context).primary,
-                                    duration: Duration(seconds: 2),
-                                  ),
-                                );
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Error adding to cart. Please try again.'),
-                                    backgroundColor: FlutterFlowTheme.of(context).error,
-                                    duration: Duration(seconds: 2),
-                                  ),
-                                );
-                              }
-                            },
-                            text: 'Add to Cart',
-                            options: FFButtonOptions(
-                              height: 50.0,
-                              padding:
-                                  const EdgeInsetsDirectional.fromSTEB(
-                                      32.0, 0.0, 32.0, 0.0),
-                              iconPadding:
-                                  const EdgeInsetsDirectional.fromSTEB(
-                                      0.0, 0.0, 0.0, 0.0),
-                              color: const Color(0xFFD76B30), // Orange
-                              textStyle: FlutterFlowTheme.of(context)
-                                  .titleMedium
-                                  .override(
-                                    font: GoogleFonts.poppins(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    color: Colors.white,
-                                    letterSpacing: 0.0,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                              elevation: 0.0,
-                              borderRadius: BorderRadius.circular(12.0),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
             ],
             ),
           ),
         ),
+        bottomNavigationBar: StickyCtaBar(
+          price: totalPrice,
+          buttonText: 'Add to Cart',
+          currencyCode: 'USD',
+          symbol: '\$',
+          icon: Icons.shopping_cart_outlined,
+          onPressed: () async {
+            // Add to Cart functionality
+            try {
+              final cartCreateData = {
+                'tripReference': widget.tripref,
+                'userReference': currentUserReference,
+                'tripName': trip.title,
+                'tripImage': trip.image,
+                'travelers': _model.travelers,
+                'totalPrice': totalPrice,
+                'requiresAdditionalPaperwork': _model.requiresAdditionalPaperwork,
+                'addedAt': DateTime.now(),
+              };
+              
+              await CartRecord.collection.doc().set(cartCreateData);
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Trip added to cart!'),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Error adding to cart. Please try again.'),
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            }
+          },
+        ),
+      );
+        },
       ),
     );
   }

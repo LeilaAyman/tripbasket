@@ -257,6 +257,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: LoyaltyPageWidget.routeName,
           path: LoyaltyPageWidget.routePath,
           builder: (context, params) => LoyaltyPageWidget(),
+        ),
+        FFRoute(
+          name: FavoritesPage.routeName,
+          path: FavoritesPage.routePath,
+          builder: (context, params) => FavoritesPage(),
         )
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );

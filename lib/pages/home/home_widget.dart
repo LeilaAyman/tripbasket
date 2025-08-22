@@ -7,6 +7,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/utils/add_sample_agencies.dart';
 import '/components/interactive_trip_rating.dart';
+import '/services/favorites_service.dart';
 import 'dart:math';
 import 'dart:ui';
 import '/index.dart';
@@ -247,6 +248,70 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  Widget _favoriteButton(TripsRecord trip) {
+    final userRef = currentUserReference;
+    if (userRef == null) return const SizedBox(); // not signed in
+    
+    return StreamBuilder<bool>(
+      stream: FavoritesService.isFavoriteStream(userRef, trip.reference),
+      builder: (context, snap) {
+        final isFav = snap.data ?? false;
+        return GestureDetector(
+          onTap: () async {
+            try {
+              if (isFav) {
+                await FavoritesService.remove(userRef, trip.reference);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Removed from favorites'),
+                    backgroundColor: Colors.orange,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              } else {
+                await FavoritesService.add(userRef, trip.reference);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Added to favorites'),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Favorite error: $e'),
+                  backgroundColor: Colors.red,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            }
+          },
+          child: Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(
+              isFav ? Icons.favorite : Icons.favorite_border,
+              color: isFav ? Colors.red : Colors.grey[600],
+              size: 20,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -475,6 +540,24 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                 onTap: () {
                   Navigator.pop(context);
                   context.pushNamed('cart');
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.favorite,
+                  color: Color(0xFFD76B30),
+                ),
+                title: Text(
+                  'My Favorites',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.0,
+                    letterSpacing: 0.0,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.pushNamed('favorites');
                 },
               ),
               Divider(
@@ -1423,6 +1506,13 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                                                                       );
                                                                     },
                                                                   ),
+                                                                  // Favorite Icon
+                                                                  if (loggedIn && currentUserReference != null)
+                                                                    Positioned(
+                                                                      top: 12,
+                                                                      right: 12,
+                                                                      child: _favoriteButton(listViewTripsRecord),
+                                                                    ),
                                                                 ],
                                                               ),
                                                             ),
