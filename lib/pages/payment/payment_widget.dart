@@ -9,6 +9,7 @@ import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/services/paymob_service.dart';
 import '/backend/backend.dart';
 import '/auth/firebase_auth/auth_util.dart';
+import '/utils/loyalty_utils.dart';
 import 'payment_model.dart';
 export 'payment_model.dart';
 
@@ -517,13 +518,58 @@ class _PaymentWidgetState extends State<PaymentWidget> {
                       color: FlutterFlowTheme.of(context).secondaryText,
                     ),
                   ),
-                  Text(
-                    'EGP ${widget.totalAmount.toStringAsFixed(2)}',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFFD76B30),
-                    ),
+                  StreamBuilder<UsersRecord>(
+                    stream: UsersRecord.getDocument(currentUserReference!),
+                    builder: (context, userSnapshot) {
+                      if (!userSnapshot.hasData) {
+                        return Text(
+                          'EGP ${widget.totalAmount.toStringAsFixed(2)}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: FlutterFlowTheme.of(context).primaryText,
+                          ),
+                        );
+                      }
+                      
+                      final user = userSnapshot.data!;
+                      final userPoints = user.loyaltyPoints;
+                      final discountAmount = Loyalty.calculateDiscountAmount(widget.totalAmount, userPoints);
+                      final originalAmount = widget.totalAmount + discountAmount;
+                      
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          if (discountAmount > 0) ...[
+                            Text(
+                              'EGP ${originalAmount.toStringAsFixed(2)}',
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                                color: FlutterFlowTheme.of(context).secondaryText,
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                            Text(
+                              'Loyalty Discount (${Loyalty.formatDiscount(Loyalty.discountFor(userPoints))}): -EGP ${discountAmount.toStringAsFixed(2)}',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFFD76B30),
+                              ),
+                            ),
+                          ],
+                          Text(
+                            'EGP ${widget.totalAmount.toStringAsFixed(2)}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFFD76B30),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),

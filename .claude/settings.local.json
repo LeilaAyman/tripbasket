@@ -7,7 +7,10 @@
       "Bash(dart analyze:*)",
       "Bash(find:*)",
       "Bash(cat:*)",
-      "Bash(flutter clean:*)"
+      "Bash(flutter clean:*)",
+      "Bash(git restore:*)",
+      "Bash(sed:*)",
+      "Bash(timeout 10 flutter build:*)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\maria\\OneDrive\\Desktop"

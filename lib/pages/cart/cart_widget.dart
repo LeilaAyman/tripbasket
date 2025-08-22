@@ -4,6 +4,8 @@ import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
+import '/utils/loyalty_utils.dart';
+import '/utils/loyalty_redemption.dart';
 import 'dart:ui';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/gestures.dart';
@@ -32,6 +34,9 @@ class _CartWidgetState extends State<CartWidget> {
 
   static const double _taxRate = 0.15; // 15%
   static const double _serviceFeeFlat = 40.0;
+
+  int get userPoints => currentUserDocument?.loyaltyPoints ?? 0;
+  double get loyaltyDiscountAmount => _model.totalRedemptionDiscount;
 
   @override
   void initState() {
@@ -252,7 +257,11 @@ class _CartWidgetState extends State<CartWidget> {
     final double baseTotal = cartItems.fold(0.0, (sum, item) => sum + (item.totalPrice));
     final double taxes = baseTotal * _taxRate;
     final double serviceFee = baseTotal > 0 ? _serviceFeeFlat : 0.0;
-    final double grandTotal = baseTotal + taxes + serviceFee;
+    final double subtotal = baseTotal + taxes + serviceFee;
+    
+    // Apply per-trip redemption discount
+    final double loyaltyRedemptionDiscount = _model.totalRedemptionDiscount;
+    final double grandTotal = subtotal - loyaltyRedemptionDiscount;
 
     return Wrap(
       spacing: 16.0,
@@ -366,6 +375,40 @@ class _CartWidgetState extends State<CartWidget> {
                       _rowPrice(context, 'Base Price', _money.format(baseTotal)),
                       _rowPrice(context, 'Taxes (15%)', _money.format(taxes)),
                       _rowPrice(context, 'Service Fee', _money.format(serviceFee)),
+                      // Loyalty discount line (if applicable)
+                      if (loyaltyDiscountAmount > 0) ...[
+                        _rowPrice(
+                          context, 
+                          'Loyalty Discount (${Loyalty.formatDiscount(Loyalty.discountFor(userPoints))})', 
+                          '-${_money.format(loyaltyDiscountAmount)}',
+                          isDiscount: true,
+                        ),
+                      ],
+                      // Loyalty points display (if user has points but no discount yet)
+                      if (userPoints > 0 && loyaltyDiscountAmount == 0) ...[
+                        Padding(
+                          padding: const EdgeInsetsDirectional.fromSTEB(0.0, 8.0, 0.0, 0.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Loyalty Points: $userPoints',
+                                style: FlutterFlowTheme.of(context).bodySmall.override(
+                                  color: const Color(0xFFD76B30),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                '${400 - userPoints} more for 10% off!',
+                                style: FlutterFlowTheme.of(context).bodySmall.override(
+                                  color: FlutterFlowTheme.of(context).secondaryText,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       Padding(
                         padding: const EdgeInsetsDirectional.fromSTEB(0.0, 8.0, 0.0, 8.0),
                         child: Row(
@@ -424,6 +467,12 @@ class _CartWidgetState extends State<CartWidget> {
   }
 
   Widget _buildCartItem(BuildContext context, CartRecord cartItem, TripsRecord tripRecord) {
+    final userPoints = currentUserDocument?.loyaltyPoints ?? 0;
+    final canRedeem = Loyalty.canRedeem(userPoints) && !_model.loyaltyRedeemed;
+    final cartItemId = cartItem.reference.id;
+    final redemption = _model.getRedemptionForItem(cartItemId);
+    final isThisItemSelected = _model.selectedTripIdForRedemption == tripRecord.reference.id;
+    
     return Padding(
       padding: const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 16.0),
       child: Container(
@@ -431,7 +480,10 @@ class _CartWidgetState extends State<CartWidget> {
           color: FlutterFlowTheme.of(context).secondaryBackground,
           boxShadow: const [BoxShadow(blurRadius: 8.0, color: Color(0x1A000000), offset: Offset(0.0, 2.0))],
           borderRadius: BorderRadius.circular(12.0),
-          border: Border.all(color: FlutterFlowTheme.of(context).alternate, width: 1.0),
+          border: Border.all(
+            color: isThisItemSelected ? const Color(0xFFD76B30) : FlutterFlowTheme.of(context).alternate, 
+            width: isThisItemSelected ? 2.0 : 1.0,
+          ),
         ),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
@@ -482,16 +534,130 @@ class _CartWidgetState extends State<CartWidget> {
                       ],
                     ),
                   ),
-                  Text(
-                    _money.format(cartItem.totalPrice),
-                    style: GoogleFonts.poppins(
-                      color: const Color(0xFFD76B30),
-                      fontSize: 20.0,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (redemption != null) ...[
+                        Text(
+                          _money.format(cartItem.totalPrice),
+                          style: GoogleFonts.poppins(
+                            color: FlutterFlowTheme.of(context).secondaryText,
+                            fontSize: 16.0,
+                            fontWeight: FontWeight.w400,
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                        Text(
+                          _money.format(redemption.finalPrice),
+                          style: GoogleFonts.poppins(
+                            color: const Color(0xFFD76B30),
+                            fontSize: 20.0,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ] else ...[
+                        Text(
+                          _money.format(cartItem.totalPrice),
+                          style: GoogleFonts.poppins(
+                            color: const Color(0xFFD76B30),
+                            fontSize: 20.0,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
+              
+              // Loyalty redemption section
+              if (canRedeem && userPoints >= 400) ...[
+                const SizedBox(height: 12.0),
+                Container(
+                  padding: const EdgeInsets.all(12.0),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD76B30).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8.0),
+                    border: Border.all(color: const Color(0xFFD76B30).withOpacity(0.3), width: 1.0),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.card_giftcard,
+                            color: const Color(0xFFD76B30),
+                            size: 20.0,
+                          ),
+                          const SizedBox(width: 8.0),
+                          Text(
+                            'Redeem Loyalty Points',
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFFD76B30),
+                              fontSize: 14.0,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const Spacer(),
+                          Switch(
+                            value: isThisItemSelected,
+                            onChanged: _model.hasActiveRedemption && !isThisItemSelected
+                                ? null // Disable if another item is selected
+                                : (value) {
+                                    setState(() {
+                                      if (value) {
+                                        _model.selectTripForRedemption(
+                                          cartItemId,
+                                          tripRecord.reference.id,
+                                          cartItem.totalPrice,
+                                        );
+                                      } else {
+                                        _model.clearRedemption();
+                                      }
+                                    });
+                                  },
+                            activeColor: const Color(0xFFD76B30),
+                          ),
+                        ],
+                      ),
+                      if (isThisItemSelected) ...[
+                        const SizedBox(height: 8.0),
+                        Text(
+                          'Loyalty Discount (10%): -${_money.format(redemption?.discountAmount ?? 0)}',
+                          style: GoogleFonts.poppins(
+                            color: const Color(0xFFD76B30),
+                            fontSize: 12.0,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4.0),
+                        Text(
+                          'Note: Your ${userPoints} loyalty points will be reset to 0 after purchase.',
+                          style: GoogleFonts.poppins(
+                            color: FlutterFlowTheme.of(context).secondaryText,
+                            fontSize: 11.0,
+                            fontWeight: FontWeight.w400,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ] else if (_model.hasActiveRedemption) ...[
+                        const SizedBox(height: 8.0),
+                        Text(
+                          'You can only redeem points on one trip per order.',
+                          style: GoogleFonts.poppins(
+                            color: FlutterFlowTheme.of(context).secondaryText,
+                            fontSize: 11.0,
+                            fontWeight: FontWeight.w400,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+              
               const SizedBox(height: 16.0),
               InkWell(
                 onTap: () => _removeFromCart(cartItem, tripRecord.title),
@@ -558,7 +724,7 @@ class _CartWidgetState extends State<CartWidget> {
     );
   }
 
-  Widget _rowPrice(BuildContext context, String label, String value) {
+  Widget _rowPrice(BuildContext context, String label, String value, {bool isDiscount = false}) {
     return Padding(
       padding: const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 8.0),
       child: Row(
@@ -571,10 +737,10 @@ class _CartWidgetState extends State<CartWidget> {
                 fontWeight: FontWeight.normal,
                 fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
               ),
-              color: FlutterFlowTheme.of(context).secondaryText,
+              color: isDiscount ? const Color(0xFFD76B30) : FlutterFlowTheme.of(context).secondaryText,
               fontSize: 14.0,
               letterSpacing: 0.0,
-              fontWeight: FontWeight.normal,
+              fontWeight: isDiscount ? FontWeight.w600 : FontWeight.normal,
               fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
             ),
           ),
@@ -586,8 +752,9 @@ class _CartWidgetState extends State<CartWidget> {
                 fontWeight: FlutterFlowTheme.of(context).bodyLarge.fontWeight,
                 fontStyle: FlutterFlowTheme.of(context).bodyLarge.fontStyle,
               ),
+              color: isDiscount ? const Color(0xFFD76B30) : FlutterFlowTheme.of(context).primaryText,
               letterSpacing: 0.0,
-              fontWeight: FlutterFlowTheme.of(context).bodyLarge.fontWeight,
+              fontWeight: isDiscount ? FontWeight.w600 : FlutterFlowTheme.of(context).bodyLarge.fontWeight,
               fontStyle: FlutterFlowTheme.of(context).bodyLarge.fontStyle,
             ),
           ),

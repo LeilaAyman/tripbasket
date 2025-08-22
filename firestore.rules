@@ -29,10 +29,18 @@ service cloud.firestore {
       return request.resource.data.agency_reference == userAgency(); 
     }
 
-    // Users collection - users can read/update their own document
+    // Users collection - users can read/update their own document, but NOT loyaltyPoints directly
     match /users/{userId} {
-      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      allow read: if isSignedIn() && request.auth.uid == userId;
       allow read: if isSignedIn() && isAdmin(); // Admins can read all users
+      
+      // Allow updates except changing loyaltyPoints directly (only server can modify points)
+      allow update: if isSignedIn()
+        && request.auth.uid == userId
+        && !(('loyaltyPoints' in request.resource.data)
+             && request.resource.data.loyaltyPoints != resource.data.loyaltyPoints);
+      
+      allow create: if isSignedIn() && request.auth.uid == userId;
     }
 
     // Agencies collection - admins can do everything, agency users can read their own

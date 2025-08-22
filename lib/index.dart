@@ -19,5 +19,6 @@ export '/pages/agency_csv_upload/agency_csv_upload_widget.dart' show AgencyCsvUp
 export '/pages/create_trip/create_trip_widget.dart' show CreateTripWidget;
 export '/pages/edit_trip/edit_trip_widget.dart' show EditTripWidget;
 export '/pages/book_trip/book_trip_widget.dart' show BookTripWidget;
+export '/pages/loyalty_page/loyalty_page_widget.dart' show LoyaltyPageWidget;
 export '/components/currency_selector.dart' show CurrencySelector;
 export '/components/language_selector.dart' show LanguageSelector;

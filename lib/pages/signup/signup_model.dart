@@ -28,6 +28,12 @@ class SignupModel extends FlutterFlowModel<SignupWidget> {
   String? Function(BuildContext, String?)? phoneNumberControllerValidator;
   // State field(s) for Role DropDown widget
   String? roleValue;
+  // State field(s) for Agency Reference DropDown widget
+  DocumentReference? agencyReferenceValue;
+  // State field(s) for Admin Key TextField widget
+  FocusNode? adminKeyFocusNode;
+  TextEditingController? adminKeyController;
+  String? Function(BuildContext, String?)? adminKeyControllerValidator;
   // State field(s) for TextField widget.
   FocusNode? textFieldFocusNode3;
   TextEditingController? passwordTextController;
@@ -46,6 +52,7 @@ class SignupModel extends FlutterFlowModel<SignupWidget> {
     passwordVisibility2 = false;
     emailTextControllerValidator = _emailTextControllerValidator;
     phoneNumberControllerValidator = _phoneNumberControllerValidator;
+    adminKeyControllerValidator = _adminKeyControllerValidator;
     passwordTextControllerValidator = _passwordTextControllerValidator;
     confirmPasswordTextControllerValidator =
         _confirmPasswordTextControllerValidator;
@@ -89,6 +96,17 @@ class SignupModel extends FlutterFlowModel<SignupWidget> {
     return null;
   }
 
+  String? _adminKeyControllerValidator(BuildContext context, String? val) {
+    if (roleValue == 'admin') {
+      if (val == null || val.isEmpty) {
+        return 'Admin key is required for admin accounts';
+      } else if (val != 'TRIPBASKET_ADMIN_2024') {
+        return 'Invalid admin key';
+      }
+    }
+    return null;
+  }
+
   @override
   void dispose() {
     textFieldFocusNode1?.dispose();
@@ -99,6 +117,9 @@ class SignupModel extends FlutterFlowModel<SignupWidget> {
     
     phoneNumberFocusNode?.dispose();
     phoneNumberController?.dispose();
+
+    adminKeyFocusNode?.dispose();
+    adminKeyController?.dispose();
 
     textFieldFocusNode3?.dispose();
     passwordTextController?.dispose();

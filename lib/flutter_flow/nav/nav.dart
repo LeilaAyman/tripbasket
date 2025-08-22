@@ -252,6 +252,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
               collectionNamePath: ['trips'],
             ),
           ),
+        ),
+        FFRoute(
+          name: LoyaltyPageWidget.routeName,
+          path: LoyaltyPageWidget.routePath,
+          builder: (context, params) => LoyaltyPageWidget(),
         )
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );

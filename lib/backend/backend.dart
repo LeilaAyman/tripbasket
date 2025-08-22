@@ -440,6 +440,7 @@ Future maybeCreateUser(User user) async {
     uid: user.uid,
     phoneNumber: user.phoneNumber,
     createdTime: getCurrentTimestamp,
+    loyaltyPoints: 0, // Initialize loyalty points to 0
   );
 
   await userRecord.set(userData);

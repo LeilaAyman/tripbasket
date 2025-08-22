@@ -283,7 +283,49 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
               letterSpacing: 0.0,
             ),
           ),
-          actions: [],
+          actions: [
+            // Loyalty Points Badge
+            Padding(
+              padding: const EdgeInsets.only(right: 12.0),
+              child: InkWell(
+                onTap: () => context.pushNamed('loyaltyPage'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1.0,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.card_giftcard, color: Colors.white, size: 16),
+                      const SizedBox(width: 6),
+                      StreamBuilder<UsersRecord>(
+                        stream: UsersRecord.getDocument(currentUserReference!),
+                        builder: (context, snap) {
+                          final pts = snap.hasData ? snap.data!.loyaltyPoints : 0;
+                          return Text(
+                            "$pts pts",
+                            style: FlutterFlowTheme.of(context).labelMedium.override(
+                              fontFamily: 'Inter',
+                              color: Colors.white,
+                              fontSize: 12.0,
+                              letterSpacing: 0.0,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
           centerTitle: false,
           elevation: 2.0,
         ),
@@ -463,11 +505,11 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
             ],
           ),
         ),
-        body: Column(
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            Expanded(
-              child: Container(
+        body: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              Container(
                 height: 500.0,
                 child: Stack(
                   alignment: AlignmentDirectional(0.0, -1.0),
@@ -1527,8 +1569,8 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

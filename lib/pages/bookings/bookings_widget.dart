@@ -57,11 +57,12 @@ class _BookingsWidgetState extends State<BookingsWidget> {
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
         body: SafeArea(
           top: true,
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              // HEADER IMAGE
-              StreamBuilder<TripsRecord>(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                // HEADER IMAGE
+                StreamBuilder<TripsRecord>(
                 stream: TripsRecord.getDocument(widget.tripref!),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
@@ -262,12 +263,10 @@ class _BookingsWidgetState extends State<BookingsWidget> {
               ),
 
               // CONTENT
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(
-                      24.0, 0.0, 24.0, 0.0),
-                  child: SingleChildScrollView(
-                    child: Column(
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(
+                    24.0, 0.0, 24.0, 0.0),
+                child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Price + rating
@@ -753,8 +752,6 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                       ]
                           .divide(const SizedBox(height: 24.0))
                           .addToStart(const SizedBox(height: 24.0)),
-                    ),
-                  ),
                 ),
               ),
 
@@ -895,6 +892,7 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                 ),
               ),
             ],
+            ),
           ),
         ),
       ),

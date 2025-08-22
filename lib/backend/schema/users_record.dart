@@ -66,6 +66,11 @@ class UsersRecord extends FirestoreRecord {
   DocumentReference? get agencyReference => _agencyReference;
   bool hasAgencyReference() => _agencyReference != null;
 
+  // "loyaltyPoints" field.
+  int? _loyaltyPoints;
+  int get loyaltyPoints => _loyaltyPoints ?? 0;
+  bool hasLoyaltyPoints() => _loyaltyPoints != null;
+
   void _initializeFields() {
     _createdAt = snapshotData['created_at'] as DateTime?;
     _displayName = snapshotData['display_name'] as String?;
@@ -87,6 +92,7 @@ class UsersRecord extends FirestoreRecord {
     } else {
       _agencyReference = null;
     }
+    _loyaltyPoints = castToType<int>(snapshotData['loyaltyPoints']);
   }
 
   static CollectionReference get collection =>
@@ -132,6 +138,7 @@ Map<String, dynamic> createUsersRecordData({
   String? phoneNumber,
   String? name,
   DocumentReference? agencyReference,
+  int? loyaltyPoints,
 }) {
   final firestoreData = mapToFirestore(
     <String, dynamic>{
@@ -144,6 +151,7 @@ Map<String, dynamic> createUsersRecordData({
       'phone_number': phoneNumber,
       'name': name,
       'agency_reference': agencyReference,
+      'loyaltyPoints': loyaltyPoints,
     }.withoutNulls,
   );
 
@@ -165,7 +173,8 @@ class UsersRecordDocumentEquality implements Equality<UsersRecord> {
         e1?.phoneNumber == e2?.phoneNumber &&
         e1?.name == e2?.name &&
         listEquality.equals(e1?.role, e2?.role) &&
-        e1?.agencyReference == e2?.agencyReference;
+        e1?.agencyReference == e2?.agencyReference &&
+        e1?.loyaltyPoints == e2?.loyaltyPoints;
   }
 
   @override
@@ -179,7 +188,8 @@ class UsersRecordDocumentEquality implements Equality<UsersRecord> {
         e?.phoneNumber,
         e?.name,
         e?.role,
-        e?.agencyReference
+        e?.agencyReference,
+        e?.loyaltyPoints
       ]);
 
   @override
