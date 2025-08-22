@@ -113,7 +113,7 @@ class _CreateTripWidgetState extends State<CreateTripWidget> {
         location: _model.locationController!.text.trim(),
         description: _model.descriptionController!.text.trim(),
         image: _model.imageController!.text.trim(),
-        itenarary: [_model.itineraryController!.text.trim()],
+        itenarary: _model.itineraryControllers.map((controller) => controller.text.trim()).where((text) => text.isNotEmpty).toList(),
         startDate: startDate,
         endDate: endDate,
         quantity: quantity,
@@ -330,13 +330,7 @@ class _CreateTripWidgetState extends State<CreateTripWidget> {
                 Icons.image,
               ),
               SizedBox(height: 16),
-              _buildFormField(
-                'Itinerary',
-                _model.itineraryController!,
-                _model.itineraryFocusNode!,
-                Icons.list,
-                maxLines: 3,
-              ),
+              _buildItinerarySection(),
               SizedBox(height: 16),
               Row(
                 children: [
@@ -516,5 +510,182 @@ class _CreateTripWidgetState extends State<CreateTripWidget> {
         ),
       ],
     );
+  }
+
+  Widget _buildItinerarySection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Itinerary',
+              style: FlutterFlowTheme.of(context).titleMedium.override(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: FlutterFlowTheme.of(context).primaryText,
+              ),
+            ),
+            TextButton.icon(
+              onPressed: _addItineraryDay,
+              icon: Icon(Icons.add, size: 18, color: Color(0xFFD76B30)),
+              label: Text(
+                'Add Day',
+                style: TextStyle(color: Color(0xFFD76B30), fontSize: 14),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 12),
+        if (_model.itineraryControllers.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: FlutterFlowTheme.of(context).secondaryBackground,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: FlutterFlowTheme.of(context).alternate,
+                width: 1,
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.calendar_today,
+                  color: FlutterFlowTheme.of(context).secondaryText,
+                  size: 32,
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'No itinerary days added yet',
+                  style: FlutterFlowTheme.of(context).bodyMedium.override(
+                    color: FlutterFlowTheme.of(context).secondaryText,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Tap "Add Day" to create your first itinerary day',
+                  style: FlutterFlowTheme.of(context).bodySmall.override(
+                    color: FlutterFlowTheme.of(context).secondaryText,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ...List.generate(_model.itineraryControllers.length, (index) {
+            return Container(
+              margin: EdgeInsets.only(bottom: 12),
+              child: _buildItineraryDayCard(index),
+            );
+          }),
+      ],
+    );
+  }
+
+  Widget _buildItineraryDayCard(int index) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: FlutterFlowTheme.of(context).secondaryBackground,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: FlutterFlowTheme.of(context).alternate,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Color(0xFFD76B30),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Day ${index + 1}',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: () => _removeItineraryDay(index),
+                icon: Icon(
+                  Icons.delete_outline,
+                  color: Colors.red,
+                  size: 20,
+                ),
+                padding: EdgeInsets.all(4),
+                constraints: BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          TextFormField(
+            controller: _model.itineraryControllers[index],
+            focusNode: _model.itineraryFocusNodes[index],
+            maxLines: 3,
+            decoration: InputDecoration(
+              hintText: 'Describe activities for Day ${index + 1}...',
+              hintStyle: FlutterFlowTheme.of(context).bodyLarge.override(
+                color: FlutterFlowTheme.of(context).secondaryText,
+                fontSize: 16,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(
+                  color: FlutterFlowTheme.of(context).alternate,
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(
+                  color: Color(0xFFD76B30),
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: EdgeInsets.all(12),
+            ),
+            style: FlutterFlowTheme.of(context).bodyLarge.override(
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addItineraryDay() {
+    setState(() {
+      _model.itineraryControllers.add(TextEditingController());
+      _model.itineraryFocusNodes.add(FocusNode());
+    });
+  }
+
+  void _removeItineraryDay(int index) {
+    setState(() {
+      _model.itineraryControllers[index].dispose();
+      _model.itineraryFocusNodes[index].dispose();
+      _model.itineraryControllers.removeAt(index);
+      _model.itineraryFocusNodes.removeAt(index);
+    });
   }
 }

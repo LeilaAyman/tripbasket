@@ -42,6 +42,10 @@ class CreateTripModel extends FlutterFlowModel<CreateTripWidget> {
   // State field(s) for Itinerary (multiple days)
   List<TextEditingController> itineraryControllers = [];
   List<FocusNode> itineraryFocusNodes = [];
+  
+  // Single itinerary field for backwards compatibility
+  TextEditingController? itineraryController;
+  FocusNode? itineraryFocusNode;
 
   // State field(s) for DateTime picker
   DateTime? startDatePicked;
@@ -74,6 +78,10 @@ class CreateTripModel extends FlutterFlowModel<CreateTripWidget> {
 
     imageFocusNode?.dispose();
     imageController?.dispose();
+
+    // Dispose single itinerary field
+    itineraryFocusNode?.dispose();
+    itineraryController?.dispose();
 
     // Dispose itinerary controllers and focus nodes
     for (var controller in itineraryControllers) {
