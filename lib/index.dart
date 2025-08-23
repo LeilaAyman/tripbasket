@@ -18,8 +18,19 @@ export '/pages/agency_dashboard/agency_dashboard_widget.dart' show AgencyDashboa
 export '/pages/agency_csv_upload/agency_csv_upload_widget.dart' show AgencyCsvUploadWidget;
 export '/pages/create_trip/create_trip_widget.dart' show CreateTripWidget;
 export '/pages/edit_trip/edit_trip_widget.dart' show EditTripWidget;
+
+// Export responsive UI components
+export '/ui/responsive/home_responsive.dart' show HomeResponsive;
+export '/ui/responsive/breakpoints.dart';
+export '/ui/web/home_web_page.dart' show HomeWebPage;
+export '/widgets/trip_card.dart' show TripCard;
 export '/pages/book_trip/book_trip_widget.dart' show BookTripWidget;
 export '/pages/loyalty_page/loyalty_page_widget.dart' show LoyaltyPageWidget;
 export '/pages/favorites/favorites_page.dart' show FavoritesPage;
+export '/pages/national_id_upload/national_id_upload_page.dart' show NationalIdUploadPage;
 export '/components/currency_selector.dart' show CurrencySelector;
 export '/components/language_selector.dart' show LanguageSelector;
+export '/components/national_id_upload_widget.dart' show NationalIdUploadWidget;
+export '/widgets/price_text.dart' show PriceText;
+export '/state/currency_provider.dart' show CurrencyProvider;
+export '/utils/money.dart' show AppCurrency, formatMoney, tabular;

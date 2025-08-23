@@ -28,6 +28,11 @@ service cloud.firestore {
     function createsOwnTrip() { 
       return request.resource.data.agency_reference == userAgency(); 
     }
+    
+    function hasKyc(uid) {
+      let u = get(/databases/$(db)/documents/users/$(uid)).data;
+      return u.nationalIdUrl != null && (u.nationalIdStatus in ['uploaded','verified']);
+    }
 
     // Users collection - users can read/update their own document, but NOT loyaltyPoints directly
     match /users/{userId} {
@@ -35,10 +40,13 @@ service cloud.firestore {
       allow read: if isSignedIn() && isAdmin(); // Admins can read all users
       
       // Allow updates except changing loyaltyPoints directly (only server can modify points)
+      // Block clients from self-verifying National ID
       allow update: if isSignedIn()
         && request.auth.uid == userId
         && !(('loyaltyPoints' in request.resource.data)
-             && request.resource.data.loyaltyPoints != resource.data.loyaltyPoints);
+             && request.resource.data.loyaltyPoints != resource.data.loyaltyPoints)
+        && !(('nationalIdStatus' in request.resource.data) 
+             && request.resource.data.nationalIdStatus == 'verified');
       
       allow create: if isSignedIn() && request.auth.uid == userId;
     }
@@ -57,8 +65,12 @@ service cloud.firestore {
     }
 
     // Bookings collection - users can manage their own bookings, agencies can see bookings for their trips
+    // Require National ID for booking creation
     match /bookings/{bookingId} {
-      allow read, write: if isSignedIn() && request.auth.uid == resource.data.user_id;
+      allow create: if isSignedIn()
+        && get(request.resource.data.user_reference).id == request.auth.uid
+        && hasKyc(request.auth.uid);
+      allow read, update, delete: if isSignedIn() && get(resource.data.user_reference).id == request.auth.uid;
       allow read: if isSignedIn() && isAdmin();
       allow read: if isSignedIn() && get(resource.data.trip_reference).data.agency_reference == userAgency();
     }

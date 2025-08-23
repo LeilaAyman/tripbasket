@@ -6,9 +6,6 @@ import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/pages/national_id_upload/national_id_upload_page.dart';
-import '/pages/admin_upload/admin_upload_widget.dart';
-import '/pages/agency_dashboard/agency_dashboard_widget.dart';
-import '/pages/agency_csv_upload/agency_csv_upload_widget.dart';
 import '/state/currency_provider.dart';
 import '/utils/kyc_utils.dart';
 import '/utils/money.dart';
@@ -45,11 +42,6 @@ class _ProfileWidgetState extends State<ProfileWidget> {
   bool get isAdmin {
     if (currentUserDocument == null) return false;
     return currentUserDocument!.role.contains('admin');
-  }
-
-  bool get isAgency {
-    if (currentUserDocument == null) return false;
-    return currentUserDocument!.role.contains('agency');
   }
 
   String _getInitials(String? displayName, String? email) {
@@ -332,117 +324,6 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     );
   }
 
-  Widget _buildAdminSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.admin_panel_settings_rounded,
-                  color: Theme.of(context).colorScheme.error,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Admin Panel',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                Icons.upload_file_rounded,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              title: const Text('Upload Trips (CSV)'),
-              subtitle: const Text('Bulk upload trips from CSV file'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const AdminUploadWidget(),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAgencySection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.business_rounded,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Agency Dashboard',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                Icons.dashboard_rounded,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              title: const Text('Agency Dashboard'),
-              subtitle: const Text('View and manage your agency trips'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const AgencyDashboardWidget(),
-                  ),
-                );
-              },
-            ),
-            const Divider(height: 24),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                Icons.upload_file_rounded,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              title: const Text('Upload Trips (CSV)'),
-              subtitle: const Text('Bulk upload trips from CSV file'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const AgencyCsvUploadWidget(),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return AuthUserStreamWidget(
@@ -485,14 +366,6 @@ class _ProfileWidgetState extends State<ProfileWidget> {
               _buildHeaderCard(),
               const SizedBox(height: 24),
               _buildPreferencesSection(),
-              if (isAdmin) ...[
-                const SizedBox(height: 16),
-                _buildAdminSection(),
-              ],
-              if (isAgency) ...[
-                const SizedBox(height: 16),
-                _buildAgencySection(),
-              ],
               const SizedBox(height: 16),
               _buildAccountSection(),
             ],

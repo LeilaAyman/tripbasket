@@ -6,6 +6,8 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/backend/backend.dart';
 import '/auth/firebase_auth/auth_util.dart';
+import '/pages/national_id_upload/national_id_upload_page.dart';
+import '/utils/kyc_utils.dart';
 import 'book_trip_model.dart';
 export 'book_trip_model.dart';
 
@@ -512,6 +514,21 @@ class _BookTripWidgetState extends State<BookTripWidget> {
                           ),
                         );
                         return;
+                      }
+
+                      // Check if user has valid National ID
+                      final hasValidId = await KycUtils.hasValidNationalId(currentUserUid!);
+                      if (!hasValidId) {
+                        final result = await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const NationalIdUploadPage(isRequired: true),
+                          ),
+                        );
+                        
+                        // If user didn't upload ID, don't proceed
+                        if (result != true) {
+                          return;
+                        }
                       }
 
                       // Validate form

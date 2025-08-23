@@ -19,6 +19,7 @@ import 'serialization_util.dart';
 import '/index.dart';
 import '/pages/agency_dashboard/agency_dashboard_widget.dart';
 import '/pages/edit_profile/edit_profile_widget.dart';
+import '/ui/responsive/home_responsive.dart';
 
 export 'package:go_router/go_router.dart';
 export 'serialization_util.dart';
@@ -86,7 +87,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
       refreshListenable: appStateNotifier,
       navigatorKey: appNavigatorKey,
       errorBuilder: (context, state) =>
-          appStateNotifier.loggedIn ? HomeWidget() : LandingWidget(),
+          appStateNotifier.loggedIn ? const HomeResponsive() : LandingWidget(),
       routes: [
         FFRoute(
           name: '_initialize',
@@ -94,7 +95,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, _) {
             print('ROUTER DEBUG: loggedIn = ${appStateNotifier.loggedIn}');
             print('ROUTER DEBUG: loading = ${appStateNotifier.loading}');
-            final widget = appStateNotifier.loggedIn ? HomeWidget() : LandingWidget();
+            final widget = appStateNotifier.loggedIn ? const HomeResponsive() : LandingWidget();
             print('ROUTER DEBUG: Navigating to ${widget.runtimeType}');
             return widget;
           },
@@ -112,7 +113,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: HomeWidget.routeName,
           path: HomeWidget.routePath,
-          builder: (context, params) => HomeWidget(),
+          builder: (context, params) => const HomeResponsive(),
         ),
         FFRoute(
           name: SignupWidget.routeName,

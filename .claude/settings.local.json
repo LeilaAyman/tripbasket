@@ -13,7 +13,10 @@
       "Bash(timeout 10 flutter build:*)",
       "Bash(firebase deploy:*)",
       "Bash(flutter run:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(rm:*)",
+      "WebSearch",
+      "Bash(dart format:*)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\maria\\OneDrive\\Desktop"

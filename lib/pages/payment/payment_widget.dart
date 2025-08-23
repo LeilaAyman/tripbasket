@@ -212,6 +212,8 @@ class _PaymentWidgetState extends State<PaymentWidget> {
         'trip_title': widget.tripRecord.title,
         'trip_price': widget.tripRecord.price,
         'total_amount': widget.totalAmount,
+        'unitPriceEGP': widget.tripRecord.priceEGP,
+        'lineTotalEGP': widget.totalAmount,
         'booking_date': getCurrentTimestamp,
         'payment_status': 'completed',
         'payment_method': 'paymob',

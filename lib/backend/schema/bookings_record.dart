@@ -41,6 +41,15 @@ class BookingsRecord extends FirestoreRecord {
   double get totalAmount => _totalAmount ?? 0.0;
   bool hasTotalAmount() => _totalAmount != null;
 
+  // EGP price fields for currency consistency
+  double? _unitPriceEGP;
+  double get unitPriceEGP => _unitPriceEGP ?? _tripPrice ?? 0.0;
+  bool hasUnitPriceEGP() => _unitPriceEGP != null;
+
+  double? _lineTotalEGP;
+  double get lineTotalEGP => _lineTotalEGP ?? _totalAmount ?? 0.0;
+  bool hasLineTotalEGP() => _lineTotalEGP != null;
+
   // "booking_date" field.
   DateTime? _bookingDate;
   DateTime? get bookingDate => _bookingDate;
@@ -107,6 +116,8 @@ class BookingsRecord extends FirestoreRecord {
     _travelerCount = castToType<int>(snapshotData['traveler_count']);
     _travelerNames = getDataList(snapshotData['traveler_names']);
     _specialRequests = snapshotData['special_requests'] as String?;
+    _unitPriceEGP = castToType<double>(snapshotData['unitPriceEGP']);
+    _lineTotalEGP = castToType<double>(snapshotData['lineTotalEGP']);
   }
 
   static CollectionReference get collection =>
@@ -158,6 +169,8 @@ Map<String, dynamic> createBookingsRecordData({
   String? merchantOrderId,
   int? travelerCount,
   String? specialRequests,
+  double? unitPriceEGP,
+  double? lineTotalEGP,
 }) {
   final firestoreData = mapToFirestore(
     <String, dynamic>{
@@ -175,6 +188,8 @@ Map<String, dynamic> createBookingsRecordData({
       'merchant_order_id': merchantOrderId,
       'traveler_count': travelerCount,
       'special_requests': specialRequests,
+      'unitPriceEGP': unitPriceEGP,
+      'lineTotalEGP': lineTotalEGP,
     }.withoutNulls,
   );
 

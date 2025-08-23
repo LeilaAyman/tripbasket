@@ -71,6 +71,21 @@ class UsersRecord extends FirestoreRecord {
   int get loyaltyPoints => _loyaltyPoints ?? 0;
   bool hasLoyaltyPoints() => _loyaltyPoints != null;
 
+  // "nationalIdUrl" field.
+  String? _nationalIdUrl;
+  String get nationalIdUrl => _nationalIdUrl ?? '';
+  bool hasNationalIdUrl() => _nationalIdUrl != null;
+
+  // "nationalIdUploadedAt" field.
+  DateTime? _nationalIdUploadedAt;
+  DateTime? get nationalIdUploadedAt => _nationalIdUploadedAt;
+  bool hasNationalIdUploadedAt() => _nationalIdUploadedAt != null;
+
+  // "nationalIdStatus" field.
+  String? _nationalIdStatus;
+  String get nationalIdStatus => _nationalIdStatus ?? 'missing';
+  bool hasNationalIdStatus() => _nationalIdStatus != null;
+
   void _initializeFields() {
     _createdAt = snapshotData['created_at'] as DateTime?;
     _displayName = snapshotData['display_name'] as String?;
@@ -93,6 +108,9 @@ class UsersRecord extends FirestoreRecord {
       _agencyReference = null;
     }
     _loyaltyPoints = castToType<int>(snapshotData['loyaltyPoints']);
+    _nationalIdUrl = snapshotData['nationalIdUrl'] as String?;
+    _nationalIdUploadedAt = snapshotData['nationalIdUploadedAt'] as DateTime?;
+    _nationalIdStatus = snapshotData['nationalIdStatus'] as String?;
   }
 
   static CollectionReference get collection =>
@@ -139,6 +157,9 @@ Map<String, dynamic> createUsersRecordData({
   String? name,
   DocumentReference? agencyReference,
   int? loyaltyPoints,
+  String? nationalIdUrl,
+  DateTime? nationalIdUploadedAt,
+  String? nationalIdStatus,
 }) {
   final firestoreData = mapToFirestore(
     <String, dynamic>{
@@ -152,6 +173,9 @@ Map<String, dynamic> createUsersRecordData({
       'name': name,
       'agency_reference': agencyReference,
       'loyaltyPoints': loyaltyPoints,
+      'nationalIdUrl': nationalIdUrl,
+      'nationalIdUploadedAt': nationalIdUploadedAt,
+      'nationalIdStatus': nationalIdStatus,
     }.withoutNulls,
   );
 
@@ -174,7 +198,10 @@ class UsersRecordDocumentEquality implements Equality<UsersRecord> {
         e1?.name == e2?.name &&
         listEquality.equals(e1?.role, e2?.role) &&
         e1?.agencyReference == e2?.agencyReference &&
-        e1?.loyaltyPoints == e2?.loyaltyPoints;
+        e1?.loyaltyPoints == e2?.loyaltyPoints &&
+        e1?.nationalIdUrl == e2?.nationalIdUrl &&
+        e1?.nationalIdUploadedAt == e2?.nationalIdUploadedAt &&
+        e1?.nationalIdStatus == e2?.nationalIdStatus;
   }
 
   @override
@@ -189,7 +216,10 @@ class UsersRecordDocumentEquality implements Equality<UsersRecord> {
         e?.name,
         e?.role,
         e?.agencyReference,
-        e?.loyaltyPoints
+        e?.loyaltyPoints,
+        e?.nationalIdUrl,
+        e?.nationalIdUploadedAt,
+        e?.nationalIdStatus
       ]);
 
   @override

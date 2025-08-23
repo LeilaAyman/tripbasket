@@ -30,6 +30,9 @@ class TripsRecord extends FirestoreRecord {
   int? _price;
   int get price => _price ?? 0;
   bool hasPrice() => _price != null;
+  
+  // Canonical EGP price - backward compatible
+  double get priceEGP => (_price ?? 0).toDouble();
 
   // "created_at" field.
   DateTime? _createdAt;

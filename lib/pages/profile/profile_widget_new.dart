@@ -4,6 +4,8 @@ import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
+import '/pages/national_id_upload/national_id_upload_page.dart';
+import '/utils/kyc_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'profile_model.dart';
@@ -416,6 +418,140 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                                     ),
                                   ),
                                 ),
+
+                              // National ID Verification Section
+                              StreamBuilder<UsersRecord>(
+                                stream: UsersRecord.getDocument(currentUserReference!),
+                                builder: (context, snapshot) {
+                                  if (!snapshot.hasData) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  
+                                  final userDoc = snapshot.data!;
+                                  final idStatus = userDoc.nationalIdStatus;
+                                  final hasId = userDoc.hasNationalIdUrl() && userDoc.nationalIdUrl.isNotEmpty;
+                                  
+                                  Color statusColor;
+                                  IconData statusIcon;
+                                  String statusText = KycUtils.getNationalIdStatusDisplay(idStatus);
+                                  
+                                  switch (idStatus) {
+                                    case 'verified':
+                                      statusColor = Colors.green;
+                                      statusIcon = Icons.verified;
+                                      break;
+                                    case 'uploaded':
+                                      statusColor = Colors.orange;
+                                      statusIcon = Icons.pending;
+                                      break;
+                                    case 'rejected':
+                                      statusColor = Colors.red;
+                                      statusIcon = Icons.error;
+                                      break;
+                                    default:
+                                      statusColor = Colors.grey;
+                                      statusIcon = Icons.upload;
+                                  }
+                                  
+                                  return Container(
+                                    margin: EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 16.0),
+                                    child: InkWell(
+                                      onTap: () async {
+                                        final result = await Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => const NationalIdUploadPage(),
+                                          ),
+                                        );
+                                        if (result == true && mounted) {
+                                          setState(() {});
+                                        }
+                                      },
+                                      child: Container(
+                                        padding: EdgeInsetsDirectional.fromSTEB(16.0, 16.0, 16.0, 16.0),
+                                        decoration: BoxDecoration(
+                                          color: FlutterFlowTheme.of(context).secondaryBackground,
+                                          borderRadius: BorderRadius.circular(12.0),
+                                          border: Border.all(
+                                            color: statusColor.withOpacity(0.3),
+                                            width: 1.0,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              width: 48.0,
+                                              height: 48.0,
+                                              decoration: BoxDecoration(
+                                                color: statusColor.withOpacity(0.2),
+                                                borderRadius: BorderRadius.circular(12.0),
+                                              ),
+                                              child: Icon(
+                                                statusIcon,
+                                                color: statusColor,
+                                                size: 24.0,
+                                              ),
+                                            ),
+                                            SizedBox(width: 16.0),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'National ID Verification',
+                                                    style: GoogleFonts.poppins(
+                                                      color: FlutterFlowTheme.of(context).primaryText,
+                                                      fontSize: 16.0,
+                                                      fontWeight: FontWeight.w600,
+                                                      letterSpacing: 0.0,
+                                                    ),
+                                                  ),
+                                                  Row(
+                                                    children: [
+                                                      Text(
+                                                        'Status: ',
+                                                        style: GoogleFonts.poppins(
+                                                          color: FlutterFlowTheme.of(context).secondaryText,
+                                                          fontSize: 14.0,
+                                                          fontWeight: FontWeight.w400,
+                                                          letterSpacing: 0.0,
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        statusText,
+                                                        style: GoogleFonts.poppins(
+                                                          color: statusColor,
+                                                          fontSize: 14.0,
+                                                          fontWeight: FontWeight.w600,
+                                                          letterSpacing: 0.0,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  if (!hasId)
+                                                    Text(
+                                                      'Required for booking trips',
+                                                      style: GoogleFonts.poppins(
+                                                        color: Colors.orange,
+                                                        fontSize: 12.0,
+                                                        fontWeight: FontWeight.w500,
+                                                        letterSpacing: 0.0,
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                            ),
+                                            Icon(
+                                              Icons.chevron_right_rounded,
+                                              color: statusColor,
+                                              size: 24.0,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
 
                               // Help Center
                               Container(

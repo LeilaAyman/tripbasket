@@ -11,13 +11,5 @@ service firebase.storage {
         && request.resource.contentType.matches('image/(jpeg|jpg|png)');
       allow read: if isOwner(uid) || (request.auth.token.admin == true);
     }
-    
-    match /{allPaths=**} {
-      allow read, write: if false;
-    }
-    match /users/{userId}/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth.uid == userId;
-    }
   }
 }
