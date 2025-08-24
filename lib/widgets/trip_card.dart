@@ -186,11 +186,54 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
         'trip_reference': widget.trip.reference,
         'user_reference': currentUserReference,
         'rating': rating,
-        'review_text': reviewText,
+        'comment': reviewText,
         'created_at': FieldValue.serverTimestamp(),
       });
+      
+      // Update trip rating automatically
+      await _updateTripRating();
+      
     } catch (e) {
       print('Error submitting review: $e');
+    }
+  }
+
+  Future<void> _updateTripRating() async {
+    try {
+      final reviewsQuery = await FirebaseFirestore.instance
+          .collection('reviews')
+          .where('trip_reference', isEqualTo: widget.trip.reference)
+          .get();
+      
+      if (reviewsQuery.docs.isEmpty) {
+        await widget.trip.reference.update({
+          'rating_avg': 0.0,
+          'rating_count': 0,
+        });
+        return;
+      }
+      
+      double totalRating = 0;
+      int validReviews = 0;
+      
+      for (final doc in reviewsQuery.docs) {
+        final rating = doc.data()['rating'];
+        if (rating != null && rating is num) {
+          totalRating += rating.toDouble();
+          validReviews++;
+        }
+      }
+      
+      if (validReviews > 0) {
+        final average = totalRating / validReviews;
+        await widget.trip.reference.update({
+          'rating_avg': average,
+          'rating_count': validReviews,
+        });
+      }
+      
+    } catch (e) {
+      print('Error updating trip rating: $e');
     }
   }
 
@@ -415,6 +458,9 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
   }
 
   Widget _buildWebRating() {
+    final hasRatings = widget.trip.hasRatingAvg() && widget.trip.ratingCount > 0;
+    final displayRating = hasRatings ? widget.trip.ratingAvg : 0.0;
+    
     return Row(
       children: [
         RatingBarIndicator(
@@ -423,19 +469,29 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
             color: Color(0xFFF2D83B),
           ),
           direction: Axis.horizontal,
-          rating: 4.7,
+          rating: displayRating,
           unratedColor: Colors.grey[300],
           itemCount: 5,
           itemSize: 16,
         ),
         const SizedBox(width: 8),
         Text(
-          '4.7',
+          hasRatings ? displayRating.toStringAsFixed(1) : 'No ratings',
           style: TextStyle(
             color: const Color(0xFF6B7280),
             fontSize: 14,
           ),
         ),
+        if (hasRatings) ...[
+          const SizedBox(width: 4),
+          Text(
+            '(${widget.trip.ratingCount})',
+            style: TextStyle(
+              color: const Color(0xFF9CA3AF),
+              fontSize: 12,
+            ),
+          ),
+        ],
         const SizedBox(width: 8),
         OutlinedButton(
           onPressed: () => context.pushNamed('reviews', queryParameters: {
@@ -656,30 +712,49 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
                     ),
                     Padding(
                       padding: EdgeInsetsDirectional.fromSTEB(0.0, 8.0, 0.0, 0.0),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          RatingBarIndicator(
-                            itemBuilder: (context, index) => Icon(
-                              Icons.star,
-                              color: Color(0xFFF2D83B), // Bright yellow stars
-                            ),
-                            direction: Axis.horizontal,
-                            rating: 4.0,
-                            unratedColor: FlutterFlowTheme.of(context).secondaryText,
-                            itemCount: 5,
-                            itemSize: 16.0,
-                          ),
-                          Padding(
-                            padding: EdgeInsetsDirectional.fromSTEB(8.0, 0.0, 0.0, 0.0),
-                            child: Text(
-                              '4.7',
-                              style: GoogleFonts.poppins(
-                                letterSpacing: 0.0,
+                      child: Builder(
+                        builder: (context) {
+                          final hasRatings = widget.trip.hasRatingAvg() && widget.trip.ratingCount > 0;
+                          final displayRating = hasRatings ? widget.trip.ratingAvg : 0.0;
+                          
+                          return Row(
+                            mainAxisSize: MainAxisSize.max,
+                            children: [
+                              RatingBarIndicator(
+                                itemBuilder: (context, index) => Icon(
+                                  Icons.star,
+                                  color: Color(0xFFF2D83B),
+                                ),
+                                direction: Axis.horizontal,
+                                rating: displayRating,
+                                unratedColor: FlutterFlowTheme.of(context).secondaryText,
+                                itemCount: 5,
+                                itemSize: 16.0,
                               ),
-                            ),
-                          ),
-                        ],
+                              Padding(
+                                padding: EdgeInsetsDirectional.fromSTEB(8.0, 0.0, 0.0, 0.0),
+                                child: Text(
+                                  hasRatings ? displayRating.toStringAsFixed(1) : 'No ratings',
+                                  style: GoogleFonts.poppins(
+                                    letterSpacing: 0.0,
+                                  ),
+                                ),
+                              ),
+                              if (hasRatings)
+                                Padding(
+                                  padding: EdgeInsetsDirectional.fromSTEB(4.0, 0.0, 0.0, 0.0),
+                                  child: Text(
+                                    '(${widget.trip.ratingCount})',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12.0,
+                                      color: FlutterFlowTheme.of(context).secondaryText,
+                                      letterSpacing: 0.0,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          );
+                        }
                       ),
                     ),
                     Padding(

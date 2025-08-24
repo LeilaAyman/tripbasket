@@ -29,6 +29,11 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
   late TabController _tabController;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  
+  String? get tripId => GoRouterState.of(context).uri.queryParameters['tripId'];
+  DocumentReference? get tripReference => tripId != null 
+    ? FirebaseFirestore.instance.collection('trips').doc(tripId!) 
+    : null;
 
   @override
   void initState() {
@@ -123,7 +128,13 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
   Widget _buildTripReviewsTab() {
     return StreamBuilder<List<ReviewsRecord>>(
       stream: queryReviewsRecord(
-        queryBuilder: (q) => q.orderBy('created_at', descending: true),
+        queryBuilder: (q) {
+          var query = q.orderBy('created_at', descending: true);
+          if (tripReference != null) {
+            query = query.where('trip_reference', isEqualTo: tripReference);
+          }
+          return query;
+        },
       ),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -137,8 +148,8 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return _buildEmptyState(
             icon: Icons.rate_review,
-            title: 'No Trip Reviews Yet',
-            subtitle: 'Be the first to review a trip!',
+            title: tripReference != null ? 'No Reviews for This Trip Yet' : 'No Trip Reviews Yet',
+            subtitle: tripReference != null ? 'Be the first to review this trip!' : 'Be the first to review a trip!',
             buttonText: 'Browse Trips',
             onButtonPressed: () => context.pushNamed('home'),
           );

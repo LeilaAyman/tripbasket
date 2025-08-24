@@ -97,6 +97,16 @@ class TripsRecord extends FirestoreRecord {
   double get rating => _rating ?? 0.0;
   bool hasRating() => _rating != null;
 
+  // "rating_avg" field.
+  double? _ratingAvg;
+  double get ratingAvg => _ratingAvg ?? 0.0;
+  bool hasRatingAvg() => _ratingAvg != null;
+
+  // "rating_count" field.
+  int? _ratingCount;
+  int get ratingCount => _ratingCount ?? 0;
+  bool hasRatingCount() => _ratingCount != null;
+
   void _initializeFields() {
     _specifications = snapshotData['specifications'] as String?;
     _itenarary = getDataList(snapshotData['itenarary']);
@@ -113,6 +123,8 @@ class TripsRecord extends FirestoreRecord {
     _location = snapshotData['location'] as String?;
     _agencyReference = snapshotData['agency_reference'] as DocumentReference?;
     _rating = castToType<double>(snapshotData['rating']);
+    _ratingAvg = castToType<double>(snapshotData['rating_avg']);
+    _ratingCount = castToType<int>(snapshotData['rating_count']);
   }
 
   static CollectionReference get collection =>
@@ -167,6 +179,8 @@ Map<String, dynamic> createTripsRecordData({
   String? location,
   DocumentReference? agencyReference,
   double? rating,
+  double? ratingAvg,
+  int? ratingCount,
 }) {
   final firestoreData = mapToFirestore(
     <String, dynamic>{
@@ -188,6 +202,8 @@ Map<String, dynamic> createTripsRecordData({
       'location': location,
       'agency_reference': agencyReference,
       'rating': rating,
+      'rating_avg': ratingAvg,
+      'rating_count': ratingCount,
     }.withoutNulls,
   );
 
@@ -214,7 +230,9 @@ class TripsRecordDocumentEquality implements Equality<TripsRecord> {
         e1?.title == e2?.title &&
         e1?.location == e2?.location &&
         e1?.agencyReference == e2?.agencyReference &&
-        e1?.rating == e2?.rating;
+        e1?.rating == e2?.rating &&
+        e1?.ratingAvg == e2?.ratingAvg &&
+        e1?.ratingCount == e2?.ratingCount;
   }
 
   @override
@@ -233,7 +251,9 @@ class TripsRecordDocumentEquality implements Equality<TripsRecord> {
         e?.title,
         e?.location,
         e?.agencyReference,
-        e?.rating
+        e?.rating,
+        e?.ratingAvg,
+        e?.ratingCount
       ]);
 
   @override
