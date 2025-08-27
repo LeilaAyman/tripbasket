@@ -84,22 +84,62 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
     _slideTimer?.cancel();
   }
 
-  Future<bool> _isFavorite() async {
-    if (currentUserReference == null) return false;
-    final doc = FavoritesService.docFor(currentUserReference!, widget.trip.reference);
-    final snapshot = await doc.get();
-    return snapshot.exists;
+  Stream<bool> _isFavoriteStream() {
+    if (currentUserReference == null) return Stream.value(false);
+    return FavoritesService.isFavoriteStream(currentUserReference!, widget.trip.reference);
   }
 
   Future<void> _toggleFavorite() async {
-    if (currentUserReference == null) return;
-    final doc = FavoritesService.docFor(currentUserReference!, widget.trip.reference);
-    final snapshot = await doc.get();
+    if (currentUserReference == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please log in to add favorites'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
     
-    if (snapshot.exists) {
-      await FavoritesService.remove(currentUserReference!, widget.trip.reference);
-    } else {
-      await FavoritesService.add(currentUserReference!, widget.trip.reference);
+    try {
+      final doc = FavoritesService.docFor(currentUserReference!, widget.trip.reference);
+      final snapshot = await doc.get();
+      
+      if (snapshot.exists) {
+        await FavoritesService.remove(currentUserReference!, widget.trip.reference);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Removed from favorites'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        await FavoritesService.add(currentUserReference!, widget.trip.reference);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Added to favorites'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating favorites: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -385,21 +425,18 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
             ),
           ),
           // Favorite heart - only on hover
-          AnimatedOpacity(
-            opacity: _isHovered ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 200),
-            child: Positioned(
-              top: 12,
-              left: 12,
-              child: FutureBuilder<bool>(
-                future: _isFavorite(),
+          Positioned(
+            top: 12,
+            left: 12,
+            child: AnimatedOpacity(
+              opacity: _isHovered ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: StreamBuilder<bool>(
+                stream: _isFavoriteStream(),
                 builder: (context, snapshot) {
                   final isFavorite = snapshot.data ?? false;
                   return GestureDetector(
-                    onTap: () async {
-                      await _toggleFavorite();
-                      setState(() {}); // Refresh the widget
-                    },
+                    onTap: () => _toggleFavorite(),
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
@@ -634,15 +671,12 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
                       Positioned(
                         top: 16.0,
                         right: 16.0,
-                        child: FutureBuilder<bool>(
-                          future: _isFavorite(),
+                        child: StreamBuilder<bool>(
+                          stream: _isFavoriteStream(),
                           builder: (context, snapshot) {
                             final isFavorite = snapshot.data ?? false;
                             return GestureDetector(
-                              onTap: () async {
-                                await _toggleFavorite();
-                                setState(() {}); // Refresh the widget
-                              },
+                              onTap: () => _toggleFavorite(),
                               child: Container(
                                 padding: EdgeInsets.all(8),
                                 decoration: BoxDecoration(

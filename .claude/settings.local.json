@@ -16,7 +16,11 @@
       "Bash(git checkout:*)",
       "Bash(rm:*)",
       "WebSearch",
-      "Bash(dart format:*)"
+      "Bash(dart format:*)",
+      "Bash(ping:*)",
+      "Bash(flutter:*)",
+      "Bash(git config:*)",
+      "mcp__ide__getDiagnostics"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\maria\\OneDrive\\Desktop"
