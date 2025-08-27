@@ -11,6 +11,7 @@ import '/components/interactive_trip_rating.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
+import '/components/write_review_dialog.dart';
 
 class TripCard extends StatefulWidget {
   final TripsRecord trip;
@@ -143,139 +144,49 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
     }
   }
 
-  void _showWriteReviewDialog() {
-    if (currentUserReference == null) return;
+  Future<ReviewsRecord?> _getUserExistingReview() async {
+    if (currentUserReference == null) return null;
     
-    final TextEditingController reviewController = TextEditingController();
-    double rating = 5.0;
-    
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text('Write a Review'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Trip: ${widget.trip.title}',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 16),
-              Text('Rating:'),
-              const SizedBox(height: 8),
-              Row(
-                children: List.generate(5, (index) {
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        rating = (index + 1).toDouble();
-                      });
-                    },
-                    child: Icon(
-                      Icons.star,
-                      color: index < rating ? Color(0xFFF2D83B) : Colors.grey[300],
-                      size: 32,
-                    ),
-                  );
-                }),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: reviewController,
-                maxLines: 4,
-                decoration: InputDecoration(
-                  hintText: 'Write your review here...',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                if (reviewController.text.isNotEmpty) {
-                  await _submitReview(rating, reviewController.text);
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Review submitted successfully!')),
-                  );
-                }
-              },
-              child: Text('Submit Review'),
-              style: TextButton.styleFrom(
-                foregroundColor: Color(0xFFD76B30),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _submitReview(double rating, String reviewText) async {
-    if (currentUserReference == null) return;
-    
-    try {
-      await FirebaseFirestore.instance.collection('reviews').add({
-        'trip_reference': widget.trip.reference,
-        'user_reference': currentUserReference,
-        'rating': rating,
-        'comment': reviewText,
-        'created_at': FieldValue.serverTimestamp(),
-      });
-      
-      // Update trip rating automatically
-      await _updateTripRating();
-      
-    } catch (e) {
-      print('Error submitting review: $e');
-    }
-  }
-
-  Future<void> _updateTripRating() async {
     try {
       final reviewsQuery = await FirebaseFirestore.instance
           .collection('reviews')
           .where('trip_reference', isEqualTo: widget.trip.reference)
+          .where('user_reference', isEqualTo: currentUserReference)
+          .limit(1)
           .get();
       
-      if (reviewsQuery.docs.isEmpty) {
-        await widget.trip.reference.update({
-          'rating_avg': 0.0,
-          'rating_count': 0,
-        });
-        return;
+      if (reviewsQuery.docs.isNotEmpty) {
+        return ReviewsRecord.fromSnapshot(reviewsQuery.docs.first);
       }
-      
-      double totalRating = 0;
-      int validReviews = 0;
-      
-      for (final doc in reviewsQuery.docs) {
-        final rating = doc.data()['rating'];
-        if (rating != null && rating is num) {
-          totalRating += rating.toDouble();
-          validReviews++;
-        }
-      }
-      
-      if (validReviews > 0) {
-        final average = totalRating / validReviews;
-        await widget.trip.reference.update({
-          'rating_avg': average,
-          'rating_count': validReviews,
-        });
-      }
-      
     } catch (e) {
-      print('Error updating trip rating: $e');
+      print('Error checking existing review: $e');
+    }
+    
+    return null;
+  }
+
+  void _showWriteReviewDialog() async {
+    if (currentUserReference == null) return;
+    
+    // Check if user has already reviewed this trip
+    final existingReview = await _getUserExistingReview();
+    
+    if (mounted) {
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (context) => WriteReviewDialog(
+          tripRecord: widget.trip,
+          existingReview: existingReview,
+        ),
+      );
+      
+      if (result == true && mounted) {
+        // Review was successfully submitted/updated
+        setState(() {}); // Refresh the widget
+      }
     }
   }
+
 
   void _onHover(bool isHovered) {
     if (!widget.isWeb) return;
@@ -495,8 +406,9 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
   }
 
   Widget _buildWebRating() {
-    final hasRatings = widget.trip.hasRatingAvg() && widget.trip.ratingCount > 0;
-    final displayRating = hasRatings ? widget.trip.ratingAvg : 0.0;
+    final hasStoredRatings = widget.trip.hasRatingAvg() && widget.trip.ratingCount > 0;
+    final hasRatings = hasStoredRatings || (widget.trip.hasRating() && widget.trip.rating > 0);
+    final displayRating = hasRatings ? (widget.trip.hasRatingAvg() ? widget.trip.ratingAvg : widget.trip.rating) : 0.0;
     
     return Row(
       children: [
@@ -513,7 +425,7 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
         ),
         const SizedBox(width: 8),
         Text(
-          hasRatings ? displayRating.toStringAsFixed(1) : 'No ratings',
+          hasRatings ? displayRating.toStringAsFixed(1) : 'Be the first to share your review',
           style: TextStyle(
             color: const Color(0xFF6B7280),
             fontSize: 14,
@@ -522,7 +434,7 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
         if (hasRatings) ...[
           const SizedBox(width: 4),
           Text(
-            '(${widget.trip.ratingCount})',
+            '(${widget.trip.hasRatingCount() ? widget.trip.ratingCount : '•'})',
             style: TextStyle(
               color: const Color(0xFF9CA3AF),
               fontSize: 12,
@@ -549,21 +461,27 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
           ),
         ),
         const SizedBox(width: 8),
-        OutlinedButton(
-          onPressed: () => _showWriteReviewDialog(),
-          style: OutlinedButton.styleFrom(
-            side: BorderSide(color: Theme.of(context).colorScheme.outline),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-          child: Text(
-            'Write',
-            style: TextStyle(fontSize: 12),
-          ),
+        FutureBuilder<ReviewsRecord?>(
+          future: _getUserExistingReview(),
+          builder: (context, snapshot) {
+            final hasReview = snapshot.data != null;
+            return OutlinedButton(
+              onPressed: () => _showWriteReviewDialog(),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                hasReview ? 'Edit' : 'Write',
+                style: TextStyle(fontSize: 12),
+              ),
+            );
+          },
         ),
       ],
     );
@@ -748,8 +666,9 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
                       padding: EdgeInsetsDirectional.fromSTEB(0.0, 8.0, 0.0, 0.0),
                       child: Builder(
                         builder: (context) {
-                          final hasRatings = widget.trip.hasRatingAvg() && widget.trip.ratingCount > 0;
-                          final displayRating = hasRatings ? widget.trip.ratingAvg : 0.0;
+                          final hasStoredRatings = widget.trip.hasRatingAvg() && widget.trip.ratingCount > 0;
+                          final hasRatings = hasStoredRatings || (widget.trip.hasRating() && widget.trip.rating > 0);
+                          final displayRating = hasRatings ? (widget.trip.hasRatingAvg() ? widget.trip.ratingAvg : widget.trip.rating) : 0.0;
                           
                           return Row(
                             mainAxisSize: MainAxisSize.max,
@@ -768,7 +687,7 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
                               Padding(
                                 padding: EdgeInsetsDirectional.fromSTEB(8.0, 0.0, 0.0, 0.0),
                                 child: Text(
-                                  hasRatings ? displayRating.toStringAsFixed(1) : 'No ratings',
+                                  hasRatings ? displayRating.toStringAsFixed(1) : 'Be the first to share your review',
                                   style: GoogleFonts.poppins(
                                     letterSpacing: 0.0,
                                   ),
@@ -778,7 +697,7 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
                                 Padding(
                                   padding: EdgeInsetsDirectional.fromSTEB(4.0, 0.0, 0.0, 0.0),
                                   child: Text(
-                                    '(${widget.trip.ratingCount})',
+                                    '(${widget.trip.hasRatingCount() ? widget.trip.ratingCount : '•'})',
                                     style: GoogleFonts.poppins(
                                       fontSize: 12.0,
                                       color: FlutterFlowTheme.of(context).secondaryText,

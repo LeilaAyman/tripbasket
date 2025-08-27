@@ -90,17 +90,20 @@ class _SearchResultsWidgetState extends State<SearchResultsWidget>
   List<TripsRecord> _filterTrips(List<TripsRecord> trips, String query) {
     if (query.isEmpty) return trips;
     
-    final searchTerms = query.toLowerCase().split(' ');
+    final searchTerms = query.toLowerCase().trim().split(RegExp(r'\s+'));
     
     return trips.where((trip) {
       final title = trip.title.toLowerCase();
       final location = trip.location.toLowerCase();
       final description = trip.description.toLowerCase();
+      final specifications = trip.specifications.toLowerCase();
       
+      // Check if any search term matches any field
       return searchTerms.any((term) =>
         title.contains(term) ||
         location.contains(term) ||
-        description.contains(term)
+        description.contains(term) ||
+        specifications.contains(term)
       );
     }).toList();
   }
@@ -298,7 +301,7 @@ class _SearchResultsWidgetState extends State<SearchResultsWidget>
                                 padding: EdgeInsetsDirectional.fromSTEB(
                                     0.0, 8.0, 0.0, 0.0),
                                 child: Text(
-                                  'Try searching for "Japan", "Paris", or "Beach"',
+                                  'Try searching for destinations like "London", "Beach", "Adventure", or "Heritage"',
                                   style: GoogleFonts.poppins(
                                     fontSize: 14.0,
                                     color: Colors.grey[500],

@@ -141,15 +141,38 @@ class _HomeWebPageState extends State<HomeWebPage> {
                 constraints: const BoxConstraints(maxWidth: 400),
                 child: TextField(
                   controller: _searchController,
+                  onSubmitted: (value) {
+                    if (value.trim().isNotEmpty) {
+                      context.pushNamed(
+                        'searchResults',
+                        queryParameters: {
+                          'searchQuery': value.trim(),
+                        },
+                      );
+                    }
+                  },
                   decoration: InputDecoration(
                     hintText: 'Search destinations...',
                     hintStyle: TextStyle(
                       color: const Color(0xFF6B7280),
                       fontSize: 16,
                     ),
-                    prefixIcon: Icon(
-                      Icons.search,
-                      color: const Color(0xFF6B7280),
+                    prefixIcon: InkWell(
+                      onTap: () {
+                        final query = _searchController.text.trim();
+                        if (query.isNotEmpty) {
+                          context.pushNamed(
+                            'searchResults',
+                            queryParameters: {
+                              'searchQuery': query,
+                            },
+                          );
+                        }
+                      },
+                      child: Icon(
+                        Icons.search,
+                        color: const Color(0xFFD76B30),
+                      ),
                     ),
                     filled: true,
                     fillColor: Theme.of(context).colorScheme.surfaceVariant,
@@ -359,46 +382,6 @@ class _HomeWebPageState extends State<HomeWebPage> {
               ],
             ),
             textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          Container(
-            constraints: const BoxConstraints(maxWidth: 500),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Where do you want to go?',
-                hintStyle: TextStyle(
-                  color: const Color(0xFF6B7280),
-                  fontSize: 18,
-                ),
-                prefixIcon: Icon(
-                  Icons.search,
-                  color: const Color(0xFF6B7280),
-                  size: 24,
-                ),
-                suffixIcon: Container(
-                  margin: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD76B30),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.arrow_forward,
-                      color: Colors.white,
-                    ),
-                    onPressed: () {},
-                  ),
-                ),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              ),
-              style: const TextStyle(fontSize: 18),
-            ),
           ),
         ],
       ),

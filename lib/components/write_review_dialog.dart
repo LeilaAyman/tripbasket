@@ -30,7 +30,6 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
   bool _isSubmitting = false;
 
   static const int maxLength = 400;
-  static const int minLength = 20;
 
   @override
   void initState() {
@@ -47,15 +46,13 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
     super.dispose();
   }
 
-  bool get canSubmit => _overallRating > 0 && _commentController.text.trim().length >= minLength;
+  bool get canSubmit => _overallRating > 0;
 
   Future<void> _submitReview() async {
     if (!canSubmit) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_overallRating == 0 
-              ? 'Please select a rating'
-              : 'Please write at least $minLength characters'),
+          content: Text('Please select a rating'),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -140,6 +137,8 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
 
       await widget.tripRecord.reference.update({
         'rating': averageRating,
+        'rating_avg': averageRating,
+        'rating_count': reviews.length,
       });
     } catch (e) {
       print('Error updating trip average rating: $e');
@@ -170,13 +169,15 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Write Review',
+                            widget.existingReview != null ? 'Edit Review' : 'Write Review',
                             style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           Text(
-                            'Share your experience',
+                            widget.existingReview != null 
+                                ? 'Update your experience'
+                                : 'Share your experience',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: const Color(0xFF6B7280),
                             ),
@@ -271,7 +272,7 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
                 
                 // Experience text
                 Text(
-                  'Your Experience *',
+                  'Your Experience (Optional)',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
@@ -285,8 +286,8 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
                   minLines: 3,
                   maxLines: 6,
                   decoration: InputDecoration(
-                    hintText: 'Share your experience with this agency…',
-                    helperText: 'Ratings help other travelers choose confidently.',
+                    hintText: 'Share your experience with this trip… (optional)',
+                    helperText: 'A rating is all you need, but reviews help others!',
                     counterText: '$textLength/$maxLength',
                     border: const OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -319,7 +320,7 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
                                 height: 16,
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
-                            : const Text('Submit'),
+                            : Text(widget.existingReview != null ? 'Update' : 'Submit'),
                       ),
                     ),
                   ],

@@ -11,11 +11,8 @@ class WebHero extends StatefulWidget {
 }
 
 class _WebHeroState extends State<WebHero> {
-  final TextEditingController _searchController = TextEditingController();
-
   @override
   void dispose() {
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -69,72 +66,6 @@ class _WebHeroState extends State<WebHero> {
               ],
             ),
             textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          Container(
-            constraints: const BoxConstraints(maxWidth: 500),
-            child: TextField(
-              controller: _searchController,
-              onSubmitted: (value) {
-                if (value.isNotEmpty) {
-                  context.pushNamed(
-                    'searchResults',
-                    queryParameters: {
-                      'searchQuery': serializeParam(
-                        value,
-                        ParamType.String,
-                      ),
-                    }.withoutNulls,
-                  );
-                }
-              },
-              decoration: InputDecoration(
-                hintText: 'Where do you want to go?',
-                hintStyle: TextStyle(
-                  color: const Color(0xFF6B7280),
-                  fontSize: 18,
-                ),
-                prefixIcon: Icon(
-                  Icons.search,
-                  color: const Color(0xFF6B7280),
-                  size: 24,
-                ),
-                suffixIcon: Container(
-                  margin: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD76B30),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.arrow_forward,
-                      color: Colors.white,
-                    ),
-                    onPressed: () {
-                      if (_searchController.text.isNotEmpty) {
-                        context.pushNamed(
-                          'searchResults',
-                          queryParameters: {
-                            'searchQuery': serializeParam(
-                              _searchController.text,
-                              ParamType.String,
-                            ),
-                          }.withoutNulls,
-                        );
-                      }
-                    },
-                  ),
-                ),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              ),
-              style: const TextStyle(fontSize: 18),
-            ),
           ),
         ],
       ),

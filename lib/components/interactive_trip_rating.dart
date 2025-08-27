@@ -199,6 +199,8 @@ class _InteractiveTripRatingState extends State<InteractiveTripRating>
 
       await widget.tripRecord.reference.update({
         'rating': averageRating,
+        'rating_avg': averageRating,
+        'rating_count': reviews.length,
       });
     } catch (e) {
       print('Error updating trip average rating: $e');
@@ -296,7 +298,7 @@ class _InteractiveTripRatingState extends State<InteractiveTripRating>
                     ),
                 ] else ...[
                   Text(
-                    'No rating yet',
+                    'Be the first to share your review',
                     style: GoogleFonts.poppins(
                       fontSize: 10,
                       letterSpacing: 0.0,

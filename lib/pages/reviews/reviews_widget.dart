@@ -170,41 +170,107 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
   }
 
   Widget _buildAgencyReviewsTab() {
-    return StreamBuilder<List<AgencyReviewsRecord>>(
-      stream: queryAgencyReviewsRecord(
-        queryBuilder: (q) => q.orderBy('created_at', descending: true),
-      ),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD76B30)),
+    if (tripReference == null) {
+      // If no trip is selected, show all agency reviews
+      return StreamBuilder<List<AgencyReviewsRecord>>(
+        stream: queryAgencyReviewsRecord(
+          queryBuilder: (q) => q.orderBy('created_at', descending: true),
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD76B30)),
+              ),
+            );
+          }
+
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return _buildEmptyState(
+              icon: Icons.business,
+              title: 'No Agency Reviews Yet',
+              subtitle: 'Be the first to review a travel agency!',
+              buttonText: 'Browse Agencies',
+              onButtonPressed: () => context.pushNamed('agenciesList'),
+            );
+          }
+
+          final reviews = snapshot.data!;
+          return ListView.separated(
+            padding: EdgeInsets.all(16),
+            itemCount: reviews.length,
+            separatorBuilder: (context, index) => SizedBox(height: 16),
+            itemBuilder: (context, index) {
+              final review = reviews[index];
+              return _buildAgencyReviewCard(review);
+            },
+          );
+        },
+      );
+    } else {
+      // Trip is selected, show only reviews for the agency linked to this trip
+      return StreamBuilder<TripsRecord>(
+        stream: TripsRecord.getDocument(tripReference!),
+        builder: (context, tripSnapshot) {
+          if (tripSnapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD76B30)),
+              ),
+            );
+          }
+
+          if (!tripSnapshot.hasData || !tripSnapshot.data!.hasAgencyReference()) {
+            return _buildEmptyState(
+              icon: Icons.business,
+              title: 'No Agency Linked',
+              subtitle: 'This trip is not linked to any agency.',
+              buttonText: 'Browse Agencies',
+              onButtonPressed: () => context.pushNamed('agenciesList'),
+            );
+          }
+
+          final trip = tripSnapshot.data!;
+          return StreamBuilder<List<AgencyReviewsRecord>>(
+            stream: queryAgencyReviewsRecord(
+              queryBuilder: (q) => q
+                  .where('agency_reference', isEqualTo: trip.agencyReference)
+                  .orderBy('created_at', descending: true),
             ),
-          );
-        }
+            builder: (context, reviewSnapshot) {
+              if (reviewSnapshot.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD76B30)),
+                  ),
+                );
+              }
 
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return _buildEmptyState(
-            icon: Icons.business,
-            title: 'No Agency Reviews Yet',
-            subtitle: 'Be the first to review a travel agency!',
-            buttonText: 'Browse Agencies',
-            onButtonPressed: () => context.pushNamed('agenciesList'),
-          );
-        }
+              if (!reviewSnapshot.hasData || reviewSnapshot.data!.isEmpty) {
+                return _buildEmptyState(
+                  icon: Icons.business,
+                  title: 'No Reviews for This Agency',
+                  subtitle: 'Be the first to review this travel agency!',
+                  buttonText: 'Browse Agencies',
+                  onButtonPressed: () => context.pushNamed('agenciesList'),
+                );
+              }
 
-        final reviews = snapshot.data!;
-        return ListView.separated(
-          padding: EdgeInsets.all(16),
-          itemCount: reviews.length,
-          separatorBuilder: (context, index) => SizedBox(height: 16),
-          itemBuilder: (context, index) {
-            final review = reviews[index];
-            return _buildAgencyReviewCard(review);
-          },
-        );
-      },
-    );
+              final reviews = reviewSnapshot.data!;
+              return ListView.separated(
+                padding: EdgeInsets.all(16),
+                itemCount: reviews.length,
+                separatorBuilder: (context, index) => SizedBox(height: 16),
+                itemBuilder: (context, index) {
+                  final review = reviews[index];
+                  return _buildAgencyReviewCard(review);
+                },
+              );
+            },
+          );
+        },
+      );
+    }
   }
 
   Widget _buildLoginPrompt() {
