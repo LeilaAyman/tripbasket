@@ -86,7 +86,7 @@ class _CartWidgetState extends State<CartWidget> {
               ),
               SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () => context.pushNamed('SignInSignUp'),
+                onPressed: () => context.pushNamed('home'),
                 style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFD76B30)),
                 child: Text('Sign In', style: GoogleFonts.poppins(color: Colors.white)),
               ),

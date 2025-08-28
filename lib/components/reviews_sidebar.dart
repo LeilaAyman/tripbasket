@@ -163,7 +163,7 @@ class _ReviewsSidebarState extends State<ReviewsSidebar>
                     SizedBox(height: 16),
                     FFButtonWidget(
                       onPressed: () {
-                        context.pushNamed('login');
+                        context.pushNamed('home');
                       },
                       text: 'Sign In',
                       options: FFButtonOptions(

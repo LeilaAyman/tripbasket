@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '/auth/firebase_auth/auth_util.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '/backend/backend.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -11,6 +12,7 @@ import '/widgets/trip_card.dart';
 import '/widgets/hero_background.dart';
 import '/ui/responsive/breakpoints.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:math' as math;
 
 class HomeWebPage extends StatefulWidget {
@@ -149,6 +151,92 @@ class _HomeWebPageState extends State<HomeWebPage>
     }
   }
 
+  Widget _buildCartIcon() {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, authSnapshot) {
+        final isUserLoggedIn = authSnapshot.hasData && authSnapshot.data != null;
+        
+        return StreamBuilder<List<CartRecord>>(
+          stream: isUserLoggedIn 
+              ? queryCartRecord(
+                  queryBuilder: (cart) => cart.where('userReference', isEqualTo: currentUserReference),
+                )
+              : Stream.value([]),
+          builder: (context, snapshot) {
+            final cartItemCount = snapshot.hasData ? snapshot.data!.length : 0;
+            
+            return InkWell(
+              onTap: () {
+                if (isUserLoggedIn) {
+                  context.pushNamed('cart');
+                } else {
+                  _showLoginDialog();
+                }
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Stack(
+                  children: [
+                    Icon(
+                      Icons.shopping_cart_outlined,
+                      color: const Color(0xFFD76B30),
+                      size: 20,
+                    ),
+                    if (cartItemCount > 0)
+                      Positioned(
+                        right: -2,
+                        top: -2,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            '$cartItemCount',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showLoginDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => _LoginDialog(),
+    );
+  }
+
+  void _showRegisterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => _RegisterDialog(),
+    );
+  }
+
   Future<void> _handleLogout() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
@@ -264,120 +352,135 @@ class _HomeWebPageState extends State<HomeWebPage>
                 // Spacer to push points/buttons to right
                 const Spacer(),
                 
-                // Points and Sign In - right aligned
+                // Cart, Points and Sign In - right aligned
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (loggedIn) ...[
-                // Points pill
-                StreamBuilder<UsersRecord>(
-                  stream: currentUserReference != null 
-                      ? UsersRecord.getDocument(currentUserReference!)
-                      : null,
-                  builder: (context, snapshot) {
-                    final pts = snapshot.hasData ? snapshot.data!.loyaltyPoints : 0;
-                    return InkWell(
-                      onTap: () => context.pushNamed('loyaltyPage'),
-                      child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF2D83B).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: const Color(0xFFF2D83B).withOpacity(0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
+                    // Cart icon
+                    _buildCartIcon(),
+                    const SizedBox(width: 12),
+                    
+                    // Auth-responsive section
+                    StreamBuilder<User?>(
+                      stream: FirebaseAuth.instance.authStateChanges(),
+                      builder: (context, authSnapshot) {
+                        final isUserLoggedIn = authSnapshot.hasData && authSnapshot.data != null;
+                        
+                        return Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.card_giftcard,
-                              color: const Color(0xFFF2D83B),
-                                    size: 14,
-                            ),
-                                  const SizedBox(width: 4),
-                            Text(
-                              '$pts pts',
-                              style: GoogleFonts.poppins(
-                                color: const Color(0xFFF2D83B),
-                                      fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                            if (isUserLoggedIn) ...[
+                              // Points pill
+                              StreamBuilder<UsersRecord>(
+                                stream: currentUserReference != null 
+                                    ? UsersRecord.getDocument(currentUserReference!)
+                                    : null,
+                                builder: (context, snapshot) {
+                                  final pts = snapshot.hasData ? snapshot.data!.loyaltyPoints : 0;
+                                  return InkWell(
+                                    onTap: () => context.pushNamed('loyaltyPage'),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF2D83B).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: const Color(0xFFF2D83B).withOpacity(0.3),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.card_giftcard,
+                                            color: const Color(0xFFF2D83B),
+                                            size: 14,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            '$pts pts',
+                                            style: GoogleFonts.poppins(
+                                              color: const Color(0xFFF2D83B),
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
-                            ),
+                              const SizedBox(width: 12),
+                              
+                              // Profile avatar
+                              GestureDetector(
+                                onTap: () => context.pushNamed('profile'),
+                                child: CircleAvatar(
+                                  radius: 18,
+                                  backgroundColor: const Color(0xFFD76B30),
+                                  child: Text(
+                                    currentUserDisplayName?.substring(0, 1).toUpperCase() ?? 
+                                    currentUserEmail.substring(0, 1).toUpperCase(),
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ] else ...[
+                              // Sign In / Get Started buttons
+                              Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: const Color(0xFFD76B30)),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: InkWell(
+                                  onTap: () => _showLoginDialog(),
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                    child: Text(
+                                      'Sign In',
+                                      style: GoogleFonts.poppins(
+                                        color: const Color(0xFFD76B30),
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFD76B30),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: InkWell(
+                                  onTap: () => _showRegisterDialog(),
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                    child: Text(
+                                      'Get Started',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                      const SizedBox(width: 12),
-                    ],
-                    
-                    // Sign In / Get Started buttons
-                    if (!loggedIn) ...[
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: const Color(0xFFD76B30)),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: InkWell(
-                          onTap: () => context.pushNamed('login'),
-                          borderRadius: BorderRadius.circular(20),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                            child: Text(
-                              'Sign In',
-                              style: GoogleFonts.poppins(
-                                color: const Color(0xFFD76B30),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD76B30),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: InkWell(
-                          onTap: () => context.pushNamed('signup'),
-                          borderRadius: BorderRadius.circular(20),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                            child: Text(
-                              'Get Started',
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ] else ...[
-                      // Profile button for logged in users
-                GestureDetector(
-                  onTap: () => context.pushNamed('profile'),
-                  child: CircleAvatar(
-                          radius: 18,
-                          backgroundColor: const Color(0xFFD76B30),
-                    child: Text(
-                      currentUserDisplayName?.substring(0, 1).toUpperCase() ?? 
-                      currentUserEmail.substring(0, 1).toUpperCase(),
-                      style: GoogleFonts.poppins(
-                              color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                      ),
+                        );
+                      },
                     ),
-                  ),
-                ),
-                    ],
               ],
             ),
           ],
@@ -1105,14 +1208,50 @@ class _HomeWebPageState extends State<HomeWebPage>
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 64),
-            Row(
-              children: [
-                Expanded(child: _buildTestimonialCard('ET', 'Santorini with TripBasket was pure perfection. The sunset views, wine tastings, and')),
-                const SizedBox(width: 32),
-                Expanded(child: _buildTestimonialCard('DK', 'Tokyo was an incredible adventure! The blend of traditional and modern')),
-                const SizedBox(width: 32),
-                Expanded(child: _buildTestimonialCard('LA', 'Bali\'s serenity and beauty captured our hearts. The yoga retreats, rice terrace')),
-              ],
+            // Stream real reviews from database
+            StreamBuilder<List<ReviewsRecord>>(
+              stream: queryReviewsRecord(
+                queryBuilder: (q) => q
+                    .where('rating', isGreaterThanOrEqualTo: 4.0) // Only high ratings
+                    .orderBy('rating', descending: true)
+                    .orderBy('created_at', descending: true)
+                    .limit(3), // Only show 3 testimonials
+              ),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  // Fallback to sample testimonials if no reviews exist
+                  return Row(
+                    children: [
+                      Expanded(child: _buildFallbackTestimonialCard('ET', 'Amazing experience with professional service', 5.0)),
+                      const SizedBox(width: 32),
+                      Expanded(child: _buildFallbackTestimonialCard('DK', 'Exceeded all expectations, highly recommended', 5.0)),
+                      const SizedBox(width: 32),
+                      Expanded(child: _buildFallbackTestimonialCard('LA', 'Unforgettable journey with attention to detail', 5.0)),
+                    ],
+                  );
+                }
+
+                final reviews = snapshot.data!;
+                // Ensure we have exactly 3 reviews for display
+                final displayReviews = <ReviewsRecord>[];
+                displayReviews.addAll(reviews);
+                
+                // Fill with fallback if needed
+                while (displayReviews.length < 3) {
+                  displayReviews.add(displayReviews.isNotEmpty 
+                      ? displayReviews.first 
+                      : reviews.first);
+                }
+
+                return Row(
+                  children: [
+                    for (int i = 0; i < 3; i++) ...[
+                      if (i > 0) const SizedBox(width: 32),
+                      Expanded(child: _buildRealTestimonialCard(displayReviews[i])),
+                    ],
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -1120,7 +1259,28 @@ class _HomeWebPageState extends State<HomeWebPage>
     );
   }
 
-  Widget _buildTestimonialCard(String initials, String text) {
+  Widget _buildRealTestimonialCard(ReviewsRecord review) {
+    // Get user initials from user name or email
+    String getInitials() {
+      if (review.userName.isNotEmpty) {
+        final parts = review.userName.split(' ');
+        if (parts.length >= 2) {
+          return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+        } else {
+          return review.userName.substring(0, math.min(2, review.userName.length)).toUpperCase();
+        }
+      }
+      return 'U';
+    }
+
+    // Truncate comment to ~120 characters
+    String getTruncatedComment() {
+      if (review.comment.length <= 120) {
+        return review.comment;
+      }
+      return '${review.comment.substring(0, 120)}...';
+    }
+
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
@@ -1129,11 +1289,64 @@ class _HomeWebPageState extends State<HomeWebPage>
       ),
       child: Column(
         children: [
-          // 5 star rating
+          // Star rating based on actual rating
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(5, (index) => 
-              Icon(Icons.star, color: Colors.amber, size: 20)
+              Icon(
+                Icons.star, 
+                color: index < review.rating.round() ? Colors.amber : Colors.grey.shade300, 
+                size: 20
+              )
+            ),
+          ),
+          const SizedBox(height: 24),
+          CircleAvatar(
+            radius: 30,
+            backgroundColor: const Color(0xFFD76B30),
+            child: Text(
+              getInitials(),
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            '"${getTruncatedComment()}"',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              color: Colors.grey.shade600,
+              height: 1.5,
+              fontStyle: FontStyle.italic,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFallbackTestimonialCard(String initials, String text, double rating) {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          // Star rating
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(5, (index) => 
+              Icon(
+                Icons.star, 
+                color: index < rating.round() ? Colors.amber : Colors.grey.shade300, 
+                size: 20
+              )
             ),
           ),
           const SizedBox(height: 24),
@@ -1242,10 +1455,10 @@ class _HomeWebPageState extends State<HomeWebPage>
                           ),
                         ),
                         const SizedBox(height: 16),
-                        _buildFooterLink('Profile'),
-                        _buildFooterLink('My Bookings'),
-                        _buildFooterLink('My Favorites'),
-                        _buildFooterLink('Loyalty Points'),
+                        _buildFooterLink('Profile', () => context.pushNamed('profile')),
+                        _buildFooterLink('My Bookings', () => context.pushNamed('mybookings')),
+                        _buildFooterLink('My Favorites', () => context.pushNamed('favorites')),
+                        _buildFooterLink('Loyalty Points', () => context.pushNamed('loyaltyPage')),
                       ],
                     ),
                   ),
@@ -1262,10 +1475,30 @@ class _HomeWebPageState extends State<HomeWebPage>
                           ),
                         ),
                         const SizedBox(height: 16),
-                        _buildFooterLink('Facebook'),
-                        _buildFooterLink('Instagram'),
-                        _buildFooterLink('Twitter'),
-                        _buildFooterLink('LinkedIn'),
+                        _buildFooterLink('Facebook', () async {
+                          final url = Uri.parse('https://facebook.com/tripsbasket');
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url, mode: LaunchMode.externalApplication);
+                          }
+                        }),
+                        _buildFooterLink('Instagram', () async {
+                          final url = Uri.parse('https://instagram.com/tripsbasket');
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url, mode: LaunchMode.externalApplication);
+                          }
+                        }),
+                        _buildFooterLink('Twitter', () async {
+                          final url = Uri.parse('https://twitter.com/tripsbasket');
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url, mode: LaunchMode.externalApplication);
+                          }
+                        }),
+                        _buildFooterLink('LinkedIn', () async {
+                          final url = Uri.parse('https://linkedin.com/company/tripsbasket');
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url, mode: LaunchMode.externalApplication);
+                          }
+                        }),
                       ],
                     ),
                   ),
@@ -1311,16 +1544,555 @@ class _HomeWebPageState extends State<HomeWebPage>
     );
   }
 
-  Widget _buildFooterLink(String text) {
+  Widget _buildFooterLink(String text, VoidCallback? onTap) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: InkWell(
-        onTap: () {},
+        onTap: onTap,
         child: Text(
           text,
           style: GoogleFonts.poppins(
             fontSize: 16,
             color: Colors.white.withOpacity(0.9),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Login Dialog Widget
+class _LoginDialog extends StatefulWidget {
+  @override
+  State<_LoginDialog> createState() => _LoginDialogState();
+}
+
+class _LoginDialogState extends State<_LoginDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isPasswordVisible = false;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      GoRouter.of(context).prepareAuthEvent();
+      final user = await authManager.signInWithEmail(
+        context,
+        _emailController.text.trim(),
+        _passwordController.text,
+      );
+
+      if (user != null && mounted) {
+        Navigator.of(context).pop(); // Close dialog
+        
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Welcome back!', style: GoogleFonts.poppins()),
+            backgroundColor: const Color(0xFFD76B30),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Login failed. Please check your credentials.', style: GoogleFonts.poppins()),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        width: 400,
+        padding: const EdgeInsets.all(32),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'Sign In',
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.grey.shade100,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Welcome back! Please sign in to your account.',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Email field
+              TextFormField(
+                controller: _emailController,
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  hintText: 'Enter your email',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  prefixIcon: const Icon(Icons.email_outlined),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your email';
+                  }
+                  if (!value.contains('@')) {
+                    return 'Please enter a valid email';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              
+              // Password field
+              TextFormField(
+                controller: _passwordController,
+                obscureText: !_isPasswordVisible,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  hintText: 'Enter your password',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                    icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your password';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
+              
+              // Login button
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _handleLogin,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD76B30),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text(
+                          'Sign In',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Register link
+              Center(
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    showDialog(
+                      context: context,
+                      builder: (context) => _RegisterDialog(),
+                    );
+                  },
+                  child: RichText(
+                    text: TextSpan(
+                      text: "Don't have an account? ",
+                      style: GoogleFonts.poppins(color: Colors.grey.shade600),
+                      children: [
+                        TextSpan(
+                          text: 'Sign Up',
+                          style: GoogleFonts.poppins(
+                            color: const Color(0xFFD76B30),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Register Dialog Widget
+class _RegisterDialog extends StatefulWidget {
+  @override
+  State<_RegisterDialog> createState() => _RegisterDialogState();
+}
+
+class _RegisterDialogState extends State<_RegisterDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
+  bool _isLoading = false;
+  String _selectedRole = 'user';
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleRegister() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final user = await authManager.createAccountWithEmail(
+        context,
+        _emailController.text.trim(),
+        _passwordController.text,
+      );
+
+      if (user != null && mounted) {
+        // Update user profile with additional info
+        await currentUserDocument?.reference.update({
+          'display_name': _nameController.text.trim(),
+          'name': _nameController.text.trim(),
+          'phone_number': _phoneController.text.trim(),
+          'role': [_selectedRole],
+          'loyaltyPoints': 0,
+        });
+
+        Navigator.of(context).pop(); // Close dialog
+        
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Account created successfully! Welcome to TripBasket!', style: GoogleFonts.poppins()),
+            backgroundColor: const Color(0xFFD76B30),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Registration failed. Please try again.', style: GoogleFonts.poppins()),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        width: 400,
+        constraints: const BoxConstraints(maxHeight: 600),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(32),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Create Account',
+                      style: GoogleFonts.poppins(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.grey.shade100,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Join us today and start planning your dream travels!',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                // Name field
+                TextFormField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Full Name',
+                    hintText: 'Enter your full name',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.person_outline),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter your full name';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Email field
+                TextFormField(
+                  controller: _emailController,
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    hintText: 'Enter your email',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.email_outlined),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your email';
+                    }
+                    if (!value.contains('@')) {
+                      return 'Please enter a valid email';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Phone field
+                TextFormField(
+                  controller: _phoneController,
+                  decoration: InputDecoration(
+                    labelText: 'Phone Number',
+                    hintText: 'Enter your phone number',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.phone_outlined),
+                  ),
+                  keyboardType: TextInputType.phone,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter your phone number';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Account type dropdown
+                DropdownButtonFormField<String>(
+                  value: _selectedRole,
+                  decoration: InputDecoration(
+                    labelText: 'Account Type',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.account_circle_outlined),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'user', child: Text('Traveler')),
+                    DropdownMenuItem(value: 'agency', child: Text('Travel Agency')),
+                  ],
+                  onChanged: (value) => setState(() => _selectedRole = value ?? 'user'),
+                ),
+                const SizedBox(height: 16),
+                
+                // Password field
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: !_isPasswordVisible,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    hintText: 'Enter your password',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                      icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a password';
+                    }
+                    if (value.length < 6) {
+                      return 'Password must be at least 6 characters';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Confirm password field
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: !_isConfirmPasswordVisible,
+                  decoration: InputDecoration(
+                    labelText: 'Confirm Password',
+                    hintText: 'Re-enter your password',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      onPressed: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+                      icon: Icon(_isConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please confirm your password';
+                    }
+                    if (value != _passwordController.text) {
+                      return 'Passwords do not match';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+                
+                // Register button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _handleRegister,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD76B30),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Text(
+                            'Create Account',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Login link
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      showDialog(
+                        context: context,
+                        builder: (context) => _LoginDialog(),
+                      );
+                    },
+                    child: RichText(
+                      text: TextSpan(
+                        text: "Already have an account? ",
+                        style: GoogleFonts.poppins(color: Colors.grey.shade600),
+                        children: [
+                          TextSpan(
+                            text: 'Sign In',
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFFD76B30),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

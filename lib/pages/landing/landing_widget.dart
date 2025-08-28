@@ -39,7 +39,7 @@ class _LandingWidgetState extends State<LandingWidget>
     // Auto-navigate to login page after 4 seconds
     Future.delayed(Duration(seconds: 4), () {
       if (mounted) {
-        context.pushNamed('login');
+        context.pushNamed('home');
       }
     });
 

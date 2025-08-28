@@ -323,7 +323,7 @@ class _FloatingNavigationState extends State<FloatingNavigation>
           text: 'Sign In',
           type: PremiumButtonType.primary,
           size: PremiumButtonSize.small,
-          onPressed: () => context.pushNamed('login'),
+          onPressed: () => context.pushNamed('home'),
         ),
       ],
     );

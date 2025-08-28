@@ -105,21 +105,13 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: LandingWidget.routePath,
           builder: (context, params) => LandingWidget(),
         ),
-        FFRoute(
-          name: LoginWidget.routeName,
-          path: LoginWidget.routePath,
-          builder: (context, params) => LoginWidget(),
-        ),
+
         FFRoute(
           name: HomeWidget.routeName,
           path: HomeWidget.routePath,
           builder: (context, params) => const HomeResponsive(),
         ),
-        FFRoute(
-          name: SignupWidget.routeName,
-          path: SignupWidget.routePath,
-          builder: (context, params) => SignupWidget(),
-        ),
+
         FFRoute(
           name: BookingsWidget.routeName,
           path: BookingsWidget.routePath,

@@ -64,7 +64,7 @@ class FavoritesPage extends StatelessWidget {
               ),
               SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () => context.pushNamed('login'),
+                onPressed: () => context.pushNamed('home'),
                 style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFD76B30)),
                 child: Text('Sign In', style: GoogleFonts.poppins(color: Colors.white)),
               ),
