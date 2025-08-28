@@ -86,6 +86,36 @@ class UsersRecord extends FirestoreRecord {
   String get nationalIdStatus => _nationalIdStatus ?? 'missing';
   bool hasNationalIdStatus() => _nationalIdStatus != null;
 
+  // "profilePhotoUrl" field.
+  String? _profilePhotoUrl;
+  String get profilePhotoUrl => _profilePhotoUrl ?? '';
+  bool hasProfilePhotoUrl() => _profilePhotoUrl != null;
+
+  // "instagramLink" field.
+  String? _instagramLink;
+  String get instagramLink => _instagramLink ?? '';
+  bool hasInstagramLink() => _instagramLink != null;
+
+  // "favoriteDestination" field.
+  String? _favoriteDestination;
+  String get favoriteDestination => _favoriteDestination ?? '';
+  bool hasFavoriteDestination() => _favoriteDestination != null;
+
+  // "tripType" field.
+  String? _tripType;
+  String get tripType => _tripType ?? '';
+  bool hasTripType() => _tripType != null;
+
+  // "foodPreferences" field.
+  List<String>? _foodPreferences;
+  List<String> get foodPreferences => _foodPreferences ?? const [];
+  bool hasFoodPreferences() => _foodPreferences != null;
+
+  // "hobbies" field.
+  List<String>? _hobbies;
+  List<String> get hobbies => _hobbies ?? const [];
+  bool hasHobbies() => _hobbies != null;
+
   void _initializeFields() {
     _createdAt = snapshotData['created_at'] as DateTime?;
     _displayName = snapshotData['display_name'] as String?;
@@ -111,6 +141,12 @@ class UsersRecord extends FirestoreRecord {
     _nationalIdUrl = snapshotData['nationalIdUrl'] as String?;
     _nationalIdUploadedAt = snapshotData['nationalIdUploadedAt'] as DateTime?;
     _nationalIdStatus = snapshotData['nationalIdStatus'] as String?;
+    _profilePhotoUrl = snapshotData['profilePhotoUrl'] as String?;
+    _instagramLink = snapshotData['instagramLink'] as String?;
+    _favoriteDestination = snapshotData['favoriteDestination'] as String?;
+    _tripType = snapshotData['tripType'] as String?;
+    _foodPreferences = getDataList(snapshotData['foodPreferences']);
+    _hobbies = getDataList(snapshotData['hobbies']);
   }
 
   static CollectionReference get collection =>
@@ -160,6 +196,10 @@ Map<String, dynamic> createUsersRecordData({
   String? nationalIdUrl,
   DateTime? nationalIdUploadedAt,
   String? nationalIdStatus,
+  String? profilePhotoUrl,
+  String? instagramLink,
+  String? favoriteDestination,
+  String? tripType,
 }) {
   final firestoreData = mapToFirestore(
     <String, dynamic>{
@@ -176,6 +216,10 @@ Map<String, dynamic> createUsersRecordData({
       'nationalIdUrl': nationalIdUrl,
       'nationalIdUploadedAt': nationalIdUploadedAt,
       'nationalIdStatus': nationalIdStatus,
+      'profilePhotoUrl': profilePhotoUrl,
+      'instagramLink': instagramLink,
+      'favoriteDestination': favoriteDestination,
+      'tripType': tripType,
     }.withoutNulls,
   );
 
@@ -201,7 +245,13 @@ class UsersRecordDocumentEquality implements Equality<UsersRecord> {
         e1?.loyaltyPoints == e2?.loyaltyPoints &&
         e1?.nationalIdUrl == e2?.nationalIdUrl &&
         e1?.nationalIdUploadedAt == e2?.nationalIdUploadedAt &&
-        e1?.nationalIdStatus == e2?.nationalIdStatus;
+        e1?.nationalIdStatus == e2?.nationalIdStatus &&
+        e1?.profilePhotoUrl == e2?.profilePhotoUrl &&
+        e1?.instagramLink == e2?.instagramLink &&
+        e1?.favoriteDestination == e2?.favoriteDestination &&
+        e1?.tripType == e2?.tripType &&
+        listEquality.equals(e1?.foodPreferences, e2?.foodPreferences) &&
+        listEquality.equals(e1?.hobbies, e2?.hobbies);
   }
 
   @override
@@ -219,7 +269,13 @@ class UsersRecordDocumentEquality implements Equality<UsersRecord> {
         e?.loyaltyPoints,
         e?.nationalIdUrl,
         e?.nationalIdUploadedAt,
-        e?.nationalIdStatus
+        e?.nationalIdStatus,
+        e?.profilePhotoUrl,
+        e?.instagramLink,
+        e?.favoriteDestination,
+        e?.tripType,
+        e?.foodPreferences,
+        e?.hobbies
       ]);
 
   @override

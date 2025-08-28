@@ -12,7 +12,10 @@ import '/pages/agency_csv_upload/agency_csv_upload_widget.dart';
 import '/state/currency_provider.dart';
 import '/utils/kyc_utils.dart';
 import '/utils/money.dart';
+import '/components/user_interests_form.dart';
+import '/services/profile_service.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'profile_model.dart';
 export 'profile_model.dart';
 
@@ -52,6 +55,12 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     return currentUserDocument!.role.isNotEmpty && currentUserDocument!.role.contains('agency');
   }
 
+  bool get isRegularUser {
+    if (currentUserDocument == null) return false;
+    return currentUserDocument!.role.isNotEmpty && currentUserDocument!.role.contains('user') && 
+           !isAdmin && !isAgency;
+  }
+
   String _getInitials(String? displayName, String? email) {
     if (displayName != null && displayName.isNotEmpty) {
       final parts = displayName.split(' ');
@@ -75,22 +84,31 @@ class _ProfileWidgetState extends State<ProfileWidget> {
         padding: const EdgeInsets.all(24),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 32,
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              backgroundImage: currentUserPhoto.isNotEmpty 
-                ? NetworkImage(currentUserPhoto) 
-                : null,
-              child: currentUserPhoto.isEmpty 
-                ? Text(
-                    _getInitials(currentUserDisplayName, currentUserEmail),
-                    style: GoogleFonts.poppins(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
-                  )
-                : null,
+            StreamBuilder<UsersRecord>(
+              stream: UsersRecord.getDocument(currentUserReference!),
+              builder: (context, snapshot) {
+                final userDoc = snapshot.data;
+                final profilePhotoUrl = userDoc?.profilePhotoUrl ?? '';
+                final displayPhoto = profilePhotoUrl.isNotEmpty ? profilePhotoUrl : currentUserPhoto;
+                
+                return CircleAvatar(
+                  radius: 32,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  backgroundImage: displayPhoto.isNotEmpty 
+                    ? NetworkImage(displayPhoto) 
+                    : null,
+                  child: displayPhoto.isEmpty 
+                    ? Text(
+                        _getInitials(currentUserDisplayName, currentUserEmail),
+                        style: GoogleFonts.poppins(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                      )
+                    : null,
+                );
+              },
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -484,6 +502,10 @@ class _ProfileWidgetState extends State<ProfileWidget> {
             children: [
               _buildHeaderCard(),
               const SizedBox(height: 24),
+              if (isRegularUser) ...[
+                _buildUserProfileSection(),
+                const SizedBox(height: 16),
+              ],
               _buildPreferencesSection(),
               if (isAdmin) ...[
                 const SizedBox(height: 16),
@@ -500,5 +522,390 @@ class _ProfileWidgetState extends State<ProfileWidget> {
         ),
       ),
     );
+  }
+
+  Widget _buildUserProfileSection() {
+    return StreamBuilder<UsersRecord>(
+      stream: UsersRecord.getDocument(currentUserReference!),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Card(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          );
+        }
+
+        final userDoc = snapshot.data!;
+        final hasProfileData = userDoc.hasFavoriteDestination() ||
+                               userDoc.hasTripType() ||
+                               userDoc.hasFoodPreferences() ||
+                               userDoc.hasHobbies() ||
+                               userDoc.hasInstagramLink();
+
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '✈️ Travel Profile',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => _showInterestsFormDialog(),
+                      child: Text(
+                        hasProfileData ? 'Edit' : 'Setup',
+                        style: GoogleFonts.poppins(
+                          color: const Color(0xFFD76B30),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                if (!hasProfileData) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD76B30).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFFD76B30).withOpacity(0.3),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.edit_note_rounded,
+                          size: 48,
+                          color: const Color(0xFFD76B30),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Complete your travel profile',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFFD76B30),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tell us about your travel preferences to get personalized recommendations',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else ...[
+                  _buildProfileInfo(userDoc),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildProfileInfo(UsersRecord userDoc) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (userDoc.favoriteDestination.isNotEmpty) ...[
+          _buildInfoTile(
+            icon: Icons.place_rounded,
+            title: 'Favorite Destination',
+            value: userDoc.favoriteDestination,
+          ),
+          const SizedBox(height: 12),
+        ],
+        
+        if (userDoc.tripType.isNotEmpty) ...[
+          _buildInfoTile(
+            icon: Icons.travel_explore_rounded,
+            title: 'Preferred Trip Type',
+            value: userDoc.tripType,
+          ),
+          const SizedBox(height: 12),
+        ],
+        
+        if (userDoc.foodPreferences.isNotEmpty) ...[
+          _buildInfoTile(
+            icon: Icons.restaurant_rounded,
+            title: 'Food Preferences',
+            value: userDoc.foodPreferences.join(', '),
+          ),
+          const SizedBox(height: 12),
+        ],
+        
+        if (userDoc.hobbies.isNotEmpty) ...[
+          _buildInfoTile(
+            icon: Icons.interests_rounded,
+            title: 'Interests',
+            value: userDoc.hobbies.join(', '),
+          ),
+          const SizedBox(height: 12),
+        ],
+        
+        if (userDoc.instagramLink.isNotEmpty) ...[
+          GestureDetector(
+            onTap: () => _launchInstagram(userDoc.instagramLink),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.camera_alt_rounded,
+                    color: const Color(0xFFE1306C), // Instagram pink
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Instagram',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          ProfileService.getInstagramUsername(userDoc.instagramLink) ?? userDoc.instagramLink,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: const Color(0xFFE1306C),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.open_in_new_rounded,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildInfoTile({
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: const Color(0xFFD76B30),
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showInterestsFormDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        child: Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(maxHeight: 600),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD76B30),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Travel Preferences',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: StreamBuilder<UsersRecord>(
+                    stream: UsersRecord.getDocument(currentUserReference!),
+                    builder: (context, snapshot) {
+                      final userDoc = snapshot.data;
+                      final initialData = userDoc != null ? {
+                        'favoriteDestination': userDoc.favoriteDestination,
+                        'tripType': userDoc.tripType,
+                        'foodPreferences': userDoc.foodPreferences,
+                        'hobbies': userDoc.hobbies,
+                        'instagramLink': userDoc.instagramLink,
+                      } : null;
+
+                      return UserInterestsForm(
+                        initialData: initialData,
+                        onSave: ({
+                          favoriteDestination,
+                          tripType,
+                          foodPreferences,
+                          hobbies,
+                          profilePhoto,
+                          instagramLink,
+                        }) async {
+                          // Show loading
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (context) => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+
+                          try {
+                            final success = await ProfileService.saveUserProfileWithPhoto(
+                              favoriteDestination: favoriteDestination,
+                              tripType: tripType,
+                              foodPreferences: foodPreferences,
+                              hobbies: hobbies,
+                              profilePhoto: profilePhoto,
+                              instagramLink: instagramLink,
+                            );
+
+                            // Close loading dialog
+                            Navigator.of(context).pop();
+                            
+                            if (success) {
+                              // Close form dialog
+                              Navigator.of(context).pop();
+                              
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Profile updated successfully!'),
+                                  backgroundColor: Color(0xFFD76B30),
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Failed to update profile. Please try again.'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            // Close loading dialog
+                            Navigator.of(context).pop();
+                            
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _launchInstagram(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open Instagram link'),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening link: $e'),
+          ),
+        );
+      }
+    }
   }
 }
