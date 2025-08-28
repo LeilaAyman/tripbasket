@@ -44,21 +44,21 @@ class _ProfileWidgetState extends State<ProfileWidget> {
 
   bool get isAdmin {
     if (currentUserDocument == null) return false;
-    return currentUserDocument!.role.contains('admin');
+    return currentUserDocument!.role.isNotEmpty && currentUserDocument!.role.contains('admin');
   }
 
   bool get isAgency {
     if (currentUserDocument == null) return false;
-    return currentUserDocument!.role.contains('agency');
+    return currentUserDocument!.role.isNotEmpty && currentUserDocument!.role.contains('agency');
   }
 
   String _getInitials(String? displayName, String? email) {
     if (displayName != null && displayName.isNotEmpty) {
       final parts = displayName.split(' ');
-      if (parts.length >= 2) {
+      if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
         return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
       }
-      return displayName[0].toUpperCase();
+      return displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
     }
     if (email != null && email.isNotEmpty) {
       return email[0].toUpperCase();
@@ -100,7 +100,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                   Text(
                     currentUserDisplayName.isNotEmpty 
                       ? currentUserDisplayName 
-                      : currentUserEmail.split('@').first,
+                      : (currentUserEmail.split('@').isNotEmpty ? currentUserEmail.split('@').first : 'User'),
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),

@@ -646,10 +646,12 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
     String getInitials() {
       if (review.userName.isNotEmpty) {
         final parts = review.userName.split(' ');
-        if (parts.length >= 2) {
+        if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
           return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-        } else {
+        } else if (review.userName.isNotEmpty) {
           return review.userName.substring(0, math.min(2, review.userName.length)).toUpperCase();
+        } else {
+          return 'U';
         }
       }
       return 'U';
@@ -826,7 +828,7 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
                   final userName = userSnapshot.hasData && userSnapshot.data != null 
                       ? (userSnapshot.data!.displayName.isNotEmpty 
                           ? userSnapshot.data!.displayName 
-                          : userSnapshot.data!.email.split('@')[0])
+                          : (userSnapshot.data!.email.split('@').isNotEmpty ? userSnapshot.data!.email.split('@')[0] : 'User'))
                       : 'Anonymous';
                   
                   return Row(
@@ -901,10 +903,12 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
     String getInitials() {
       if (review.userName.isNotEmpty) {
         final parts = review.userName.split(' ');
-        if (parts.length >= 2) {
+        if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
           return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-        } else {
+        } else if (review.userName.isNotEmpty) {
           return review.userName.substring(0, math.min(2, review.userName.length)).toUpperCase();
+        } else {
+          return 'U';
         }
       }
       return 'U';
@@ -1154,7 +1158,7 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
                   final userName = userSnapshot.hasData && userSnapshot.data != null 
                       ? (userSnapshot.data!.displayName.isNotEmpty 
                           ? userSnapshot.data!.displayName 
-                          : userSnapshot.data!.email.split('@')[0])
+                          : (userSnapshot.data!.email.split('@').isNotEmpty ? userSnapshot.data!.email.split('@')[0] : 'User'))
                       : 'Anonymous';
                   
                   return Row(

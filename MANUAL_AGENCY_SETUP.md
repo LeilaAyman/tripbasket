@@ -4,7 +4,7 @@ Since the automated script isn't working due to Flutter compilation issues, here
 
 ## Step 1: Open Firebase Console
 1. Go to https://console.firebase.google.com/
-2. Select your TripBasket project
+2. Select your TripsBasket project
 3. Navigate to Firestore Database
 
 ## Step 2: Create Agency Collection

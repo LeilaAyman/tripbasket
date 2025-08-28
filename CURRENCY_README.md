@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation provides a single source of truth for currency management across the TripBasket app, with EGP as the base currency and support for USD and EUR conversions.
+This implementation provides a single source of truth for currency management across the TripsBasket app, with EGP as the base currency and support for USD and EUR conversions.
 
 ## Architecture
 

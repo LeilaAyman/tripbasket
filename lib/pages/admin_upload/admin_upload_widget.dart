@@ -40,7 +40,7 @@ class _AdminUploadWidgetState extends State<AdminUploadWidget> {
   }
 
   bool get isAdmin {
-    return currentUserDocument?.role.contains('admin') ?? false;
+    return (currentUserDocument?.role.isNotEmpty == true && currentUserDocument!.role.contains('admin'));
   }
 
   Future<void> _pickAndProcessCSV() async {

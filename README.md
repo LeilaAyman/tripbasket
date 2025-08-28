@@ -1,4 +1,4 @@
-# tripbasket
+# tripsbasket
 
 A new Flutter project.
 

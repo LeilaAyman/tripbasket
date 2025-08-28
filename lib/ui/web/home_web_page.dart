@@ -277,7 +277,7 @@ class _HomeWebPageState extends State<HomeWebPage>
           _buildAppBar(),
                 _buildHeroSection(),
           _buildFindYourTripSection(),
-          _buildWhyChooseTripBasketSection(),
+          _buildWhyChooseTripsBasketSection(),
           _buildPremiumDestinationsSection(),
           _buildTravelersTestimonialsSection(),
           _buildFooterSection(),
@@ -311,7 +311,7 @@ class _HomeWebPageState extends State<HomeWebPage>
           children: [
             // Logo
             Text(
-              'TripBasket',
+              'TripsBasket',
               style: GoogleFonts.poppins(
                     fontSize: 28,
                 fontWeight: FontWeight.w700,
@@ -421,8 +421,9 @@ class _HomeWebPageState extends State<HomeWebPage>
                                   radius: 18,
                                   backgroundColor: const Color(0xFFD76B30),
                                   child: Text(
-                                    currentUserDisplayName?.substring(0, 1).toUpperCase() ?? 
-                                    currentUserEmail.substring(0, 1).toUpperCase(),
+                                    currentUserDisplayName?.isNotEmpty == true && currentUserDisplayName!.isNotEmpty 
+                                        ? currentUserDisplayName!.substring(0, 1).toUpperCase() 
+                                        : (currentUserEmail.isNotEmpty ? currentUserEmail.substring(0, 1).toUpperCase() : 'U'),
                                     style: GoogleFonts.poppins(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w600,
@@ -531,7 +532,7 @@ class _HomeWebPageState extends State<HomeWebPage>
                       child: FadeTransition(
                         opacity: _titleFadeAnimation,
                         child: Text(
-                          'TripBasket',
+                          'TripsBasket',
             style: GoogleFonts.poppins(
                             fontSize: 64,
               fontWeight: FontWeight.w700,
@@ -991,7 +992,7 @@ class _HomeWebPageState extends State<HomeWebPage>
     }
   }
 
-  Widget _buildWhyChooseTripBasketSection() {
+  Widget _buildWhyChooseTripsBasketSection() {
     return SliverToBoxAdapter(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 1200),
@@ -1000,7 +1001,7 @@ class _HomeWebPageState extends State<HomeWebPage>
         child: Column(
           children: [
             Text(
-              'Why Choose TripBasket',
+              'Why Choose TripsBasket',
               style: GoogleFonts.poppins(
                 fontSize: 48,
                 fontWeight: FontWeight.w700,
@@ -1264,10 +1265,12 @@ class _HomeWebPageState extends State<HomeWebPage>
     String getInitials() {
       if (review.userName.isNotEmpty) {
         final parts = review.userName.split(' ');
-        if (parts.length >= 2) {
+        if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
           return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-        } else {
+        } else if (review.userName.isNotEmpty) {
           return review.userName.substring(0, math.min(2, review.userName.length)).toUpperCase();
+        } else {
+          return 'U';
         }
       }
       return 'U';
@@ -1396,7 +1399,7 @@ class _HomeWebPageState extends State<HomeWebPage>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'TripBasket',
+                          'TripsBasket',
                           style: GoogleFonts.poppins(
                             fontSize: 28,
                             fontWeight: FontWeight.w700,
@@ -1516,7 +1519,7 @@ class _HomeWebPageState extends State<HomeWebPage>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      '© 2024 TripBasket. All rights reserved. Crafted with ',
+                      '© 2024 TripsBasket. All rights reserved. Crafted with ',
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         color: Colors.white.withOpacity(0.8),
@@ -1838,7 +1841,7 @@ class _RegisterDialogState extends State<_RegisterDialog> {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Account created successfully! Welcome to TripBasket!', style: GoogleFonts.poppins()),
+            content: Text('Account created successfully! Welcome to TripsBasket!', style: GoogleFonts.poppins()),
             backgroundColor: const Color(0xFFD76B30),
             behavior: SnackBarBehavior.floating,
           ),

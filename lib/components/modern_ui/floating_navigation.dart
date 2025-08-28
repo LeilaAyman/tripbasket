@@ -217,7 +217,7 @@ class _FloatingNavigationState extends State<FloatingNavigation>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Text(
-          'TripBasket',
+          'TripsBasket',
           style: AppDesignSystem.heading5.copyWith(
             color: AppDesignSystem.primaryBlue,
             fontWeight: FontWeight.w700,

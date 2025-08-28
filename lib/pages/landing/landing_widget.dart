@@ -186,7 +186,7 @@ class _LandingWidgetState extends State<LandingWidget>
               children: [
                 // Only show the TripBasket title with bold, black text
                 Text(
-                  'TripBasket',
+                  'TripsBasket',
                   style: FlutterFlowTheme.of(context)
                       .displaySmall
                       .override(

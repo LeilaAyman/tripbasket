@@ -124,7 +124,7 @@ class _PremiumHomePageState extends State<PremiumHomePage>
           child: Column(
             children: [
               Text(
-                'Why Choose TripBasket?',
+                'Why Choose TripsBasket?',
                 style: AppDesignSystem.heading2,
                 textAlign: TextAlign.center,
               ),
@@ -489,7 +489,7 @@ class _PremiumHomePageState extends State<PremiumHomePage>
         child: Column(
           children: [
             Text(
-              'TripBasket',
+              'TripsBasket',
               style: AppDesignSystem.heading3.copyWith(
                 color: AppDesignSystem.neutralWhite,
               ),
@@ -503,7 +503,7 @@ class _PremiumHomePageState extends State<PremiumHomePage>
             ),
             SizedBox(height: AppDesignSystem.space32),
             Text(
-              '© 2024 TripBasket. All rights reserved.',
+              '© 2024 TripsBasket. All rights reserved.',
               style: AppDesignSystem.bodySmall.copyWith(
                 color: AppDesignSystem.neutralGray500,
               ),

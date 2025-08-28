@@ -6,7 +6,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/components/write_agency_review_dialog.dart';
 import '/auth/firebase_auth/auth_util.dart';
-import 'dart:math';
+import 'dart:math' as math;
 import 'dart:ui';
 import '/index.dart';
 import 'package:flutter/material.dart';
@@ -382,7 +382,7 @@ class _AgenciesListWidgetState extends State<AgenciesListWidget>
                                             .fromSTEB(0.0, 12.0, 0.0, 0.0),
                                         child: Text(
                                           agency.description.length > 100
-                                              ? '${agency.description.substring(0, 100)}...'
+                                              ? '${agency.description.substring(0, math.min(100, agency.description.length))}...'
                                               : agency.description,
                                           style: GoogleFonts.poppins(
                                             fontSize: 14.0,

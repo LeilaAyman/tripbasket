@@ -79,7 +79,7 @@ class _PaymentWidgetState extends State<PaymentWidget> {
         'apartment': 'NA',
         'email': userData.email,
         'floor': 'NA',
-        'first_name': userData.displayName.isNotEmpty ? userData.displayName.split(' ').first : 'User',
+        'first_name': userData.displayName.isNotEmpty && userData.displayName.split(' ').isNotEmpty ? userData.displayName.split(' ').first : 'User',
         'street': 'NA',
         'building': 'NA',
         'phone_number': userData.phoneNumber.isNotEmpty ? userData.phoneNumber : '+201000000000',

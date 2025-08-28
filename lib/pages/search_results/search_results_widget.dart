@@ -7,7 +7,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/components/interactive_trip_rating.dart';
 import '/services/favorites_service.dart';
-import 'dart:math';
+import 'dart:math' as math;
 import 'dart:ui';
 import '/index.dart';
 import 'package:easy_debounce/easy_debounce.dart';
@@ -454,7 +454,7 @@ class _SearchResultsWidgetState extends State<SearchResultsWidget>
                                                         .fromSTEB(0.0, 4.0, 0.0, 0.0),
                                                     child: Text(
                                                       trip.description.length > 60
-                                                          ? '${trip.description.substring(0, 60)}...'
+                                                          ? '${trip.description.substring(0, math.min(60, trip.description.length))}...'
                                                           : trip.description,
                                                       style: GoogleFonts.poppins(
                                                         fontSize: 12.0,

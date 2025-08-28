@@ -605,12 +605,12 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                                       final item = itineraryItems[index];
                                       final dayNumber = (index + 1).toString();
                                       final hasTitle = item.contains(':');
-                                      final title = hasTitle
-                                          ? '${item.split(':')[0]}:'
+                                      final splitParts = hasTitle ? item.split(':') : [];
+                                      final title = hasTitle && splitParts.isNotEmpty
+                                          ? '${splitParts[0]}:'
                                           : 'Day $dayNumber';
-                                      final desc = hasTitle
-                                          ? item
-                                              .split(':')
+                                      final desc = hasTitle && splitParts.length > 1
+                                          ? splitParts
                                               .skip(1)
                                               .join(':')
                                               .trim()

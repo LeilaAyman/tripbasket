@@ -48,7 +48,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
       return false;
     }
     
-    bool adminStatus = currentUserDocument!.role.contains('admin');
+    bool adminStatus = (currentUserDocument!.role.isNotEmpty && currentUserDocument!.role.contains('admin'));
     print('DEBUG: isAdmin result: $adminStatus');
     return adminStatus;
   }
@@ -133,7 +133,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                         currentUserDisplayName.isNotEmpty 
                             ? currentUserDisplayName 
                             : (currentUserEmail.isNotEmpty 
-                                ? currentUserEmail.split('@')[0] 
+                                ? (currentUserEmail.split('@').isNotEmpty ? currentUserEmail.split('@')[0] : 'User') 
                                 : 'User'),
                         style: GoogleFonts.poppins(
                           color: Colors.white,
@@ -309,7 +309,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                                 currentUserDisplayName.isNotEmpty 
                                     ? currentUserDisplayName 
                                     : (currentUserEmail.isNotEmpty 
-                                        ? currentUserEmail.split('@')[0] 
+                                        ? (currentUserEmail.split('@').isNotEmpty ? currentUserEmail.split('@')[0] : 'User') 
                                         : 'User'),
                                 style: GoogleFonts.poppins(
                                   color: FlutterFlowTheme.of(context).primaryText,

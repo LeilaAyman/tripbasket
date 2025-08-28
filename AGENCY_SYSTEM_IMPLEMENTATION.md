@@ -1,7 +1,7 @@
 # Agency System Implementation Guide
 
 ## Overview
-This document outlines the complete implementation of the agency system for TripBasket, including unique agency IDs, user connections, CSV upload capabilities, and enhanced dashboard functionality.
+This document outlines the complete implementation of the agency system for TripsBasket, including unique agency IDs, user connections, CSV upload capabilities, and enhanced dashboard functionality.
 
 ## 🏗️ **System Architecture**
 

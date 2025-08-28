@@ -101,7 +101,7 @@ class _MyAppState extends State<MyApp> {
       value: _currencyProvider,
       child: MaterialApp.router(
         debugShowCheckedModeBanner: false,
-        title: 'tripbasket',
+        title: 'tripsbasket',
         localizationsDelegates: [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
