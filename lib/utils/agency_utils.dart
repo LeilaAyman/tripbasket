@@ -153,4 +153,126 @@ class AgencyUtils {
     final userAgencyRef = getCurrentAgencyRef();
     return trip.agencyReference == userAgencyRef;
   }
+
+  /// Calculate booking rate (sold seats vs total seats)
+  static double calculateBookingRate(List<TripsRecord> trips) {
+    if (trips.isEmpty) return 0.0;
+    
+    int totalSeats = trips.fold<int>(0, (sum, trip) => sum + trip.quantity);
+    int soldSeats = trips.fold<int>(0, (sum, trip) => sum + (trip.quantity - trip.availableSeats).clamp(0, trip.quantity));
+    
+    if (totalSeats == 0) return 0.0;
+    return (soldSeats / totalSeats) * 100;
+  }
+
+  /// Get monthly revenue data for charts
+  static Map<String, int> getMonthlyRevenue(List<TripsRecord> trips) {
+    Map<String, int> monthlyRevenue = {};
+    
+    final now = DateTime.now();
+    for (int i = 5; i >= 0; i--) {
+      final month = DateTime(now.year, now.month - i, 1);
+      final monthKey = "${month.year}-${month.month.toString().padLeft(2, '0')}";
+      monthlyRevenue[monthKey] = 0;
+    }
+    
+    for (final trip in trips) {
+      if (trip.createdAt != null) {
+        final tripDate = trip.createdAt!;
+        final monthKey = "${tripDate.year}-${tripDate.month.toString().padLeft(2, '0')}";
+        
+        if (monthlyRevenue.containsKey(monthKey)) {
+          final soldSeats = (trip.quantity - trip.availableSeats).clamp(0, trip.quantity);
+          monthlyRevenue[monthKey] = (monthlyRevenue[monthKey] ?? 0) + (trip.price * soldSeats);
+        }
+      }
+    }
+    
+    return monthlyRevenue;
+  }
+
+  /// Get top performing destinations
+  static List<Map<String, dynamic>> getTopDestinations(List<TripsRecord> trips, {int limit = 5}) {
+    Map<String, Map<String, dynamic>> destinationStats = {};
+    
+    for (final trip in trips) {
+      final location = trip.location.isNotEmpty ? trip.location : 'Unknown';
+      final soldSeats = (trip.quantity - trip.availableSeats).clamp(0, trip.quantity);
+      final revenue = trip.price * soldSeats;
+      
+      if (destinationStats.containsKey(location)) {
+        destinationStats[location]!['bookings'] += soldSeats;
+        destinationStats[location]!['revenue'] += revenue;
+        destinationStats[location]!['trips'] += 1;
+      } else {
+        destinationStats[location] = {
+          'location': location,
+          'bookings': soldSeats,
+          'revenue': revenue,
+          'trips': 1,
+        };
+      }
+    }
+    
+    final sortedDestinations = destinationStats.values.toList();
+    sortedDestinations.sort((a, b) => (b['revenue'] as int).compareTo(a['revenue'] as int));
+    
+    return sortedDestinations.take(limit).toList();
+  }
+
+  /// Calculate customer activity metrics
+  static Map<String, dynamic> getCustomerActivityStats(List<TripsRecord> trips) {
+    Set<String> uniqueCustomers = {};
+    int totalBookings = 0;
+    int repeatCustomers = 0;
+    Map<String, int> customerBookingCount = {};
+    
+    // This would require booking records, but for now we'll estimate based on sold seats
+    for (final trip in trips) {
+      final soldSeats = (trip.quantity - trip.availableSeats).clamp(0, trip.quantity);
+      totalBookings += soldSeats;
+      // For demonstration, we'll assume each sold seat represents a unique booking
+      uniqueCustomers.add(trip.reference.id + '_booking_' + soldSeats.toString());
+    }
+    
+    return {
+      'totalCustomers': uniqueCustomers.length,
+      'totalBookings': totalBookings,
+      'averageBookingsPerCustomer': uniqueCustomers.isEmpty ? 0.0 : totalBookings / uniqueCustomers.length,
+      'customerRetentionRate': 0.0, // Would need booking history to calculate properly
+    };
+  }
+
+  /// Get performance trends (comparing current vs previous period)
+  static Map<String, dynamic> getPerformanceTrends(List<TripsRecord> trips) {
+    final now = DateTime.now();
+    final currentMonthStart = DateTime(now.year, now.month, 1);
+    final previousMonthStart = DateTime(now.year, now.month - 1, 1);
+    
+    final currentMonthTrips = trips.where((trip) => 
+        trip.createdAt != null && trip.createdAt!.isAfter(currentMonthStart)).toList();
+    final previousMonthTrips = trips.where((trip) => 
+        trip.createdAt != null && 
+        trip.createdAt!.isAfter(previousMonthStart) && 
+        trip.createdAt!.isBefore(currentMonthStart)).toList();
+    
+    final currentRevenue = calculateTotalRevenue(currentMonthTrips);
+    final previousRevenue = calculateTotalRevenue(previousMonthTrips);
+    final revenueGrowth = previousRevenue == 0 ? 0.0 : ((currentRevenue - previousRevenue) / previousRevenue) * 100;
+    
+    final currentBookings = currentMonthTrips.fold<int>(0, (sum, trip) => 
+        sum + (trip.quantity - trip.availableSeats).clamp(0, trip.quantity));
+    final previousBookings = previousMonthTrips.fold<int>(0, (sum, trip) => 
+        sum + (trip.quantity - trip.availableSeats).clamp(0, trip.quantity));
+    final bookingGrowth = previousBookings == 0 ? 0.0 : ((currentBookings - previousBookings) / previousBookings) * 100;
+    
+    return {
+      'revenueGrowth': revenueGrowth,
+      'bookingGrowth': bookingGrowth,
+      'currentMonthRevenue': currentRevenue,
+      'previousMonthRevenue': previousRevenue,
+      'currentMonthBookings': currentBookings,
+      'previousMonthBookings': previousBookings,
+    };
+  }
 }

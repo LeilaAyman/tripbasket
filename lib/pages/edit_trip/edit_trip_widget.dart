@@ -5,6 +5,7 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/utils/agency_utils.dart';
+import '/components/image_upload_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -30,6 +31,7 @@ class _EditTripWidgetState extends State<EditTripWidget> {
   late EditTripModel _model;
   TripsRecord? _trip;
   bool _isLoading = true;
+  String? _uploadedImageUrl;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -87,8 +89,8 @@ class _EditTripWidgetState extends State<EditTripWidget> {
     _model.descriptionController = TextEditingController(text: _trip!.description);
     _model.descriptionFocusNode = FocusNode();
 
-    _model.imageController = TextEditingController(text: _trip!.image);
-    _model.imageFocusNode = FocusNode();
+    // Initialize uploaded image URL with existing image
+    _uploadedImageUrl = _trip!.image.isNotEmpty ? _trip!.image : null;
 
     // Initialize itinerary controllers for each day
     _initializeItineraryControllers(_trip!.itenarary);
@@ -158,6 +160,12 @@ class _EditTripWidgetState extends State<EditTripWidget> {
       return;
     }
 
+    // Validate image upload
+    if (_uploadedImageUrl == null || _uploadedImageUrl!.isEmpty) {
+      _showErrorMessage('Please upload a trip image');
+      return;
+    }
+
     if (!_canEditTrip()) {
       _showErrorMessage('You do not have permission to edit this trip');
       return;
@@ -209,7 +217,7 @@ class _EditTripWidgetState extends State<EditTripWidget> {
         'price': price,
         'location': _model.locationController!.text.trim(),
         'description': _model.descriptionController!.text.trim(),
-        'image': _model.imageController!.text.trim(),
+        'image': _uploadedImageUrl ?? '',
         'itenarary': days,
         'start_date': startDate,
         'end_date': endDate,
@@ -460,11 +468,17 @@ class _EditTripWidgetState extends State<EditTripWidget> {
                 validator: (value) => value?.isEmpty == true ? 'Please enter a description' : null,
               ),
               SizedBox(height: 16),
-              _buildFormField(
-                'Image URL',
-                _model.imageController!,
-                _model.imageFocusNode!,
-                Icons.image,
+              ImageUploadWidget(
+                agencyId: _trip?.agencyReference?.id ?? 'unknown',
+                tripId: _trip?.reference.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                initialImageUrl: _uploadedImageUrl,
+                onImageUploaded: (url) {
+                  setState(() {
+                    _uploadedImageUrl = url;
+                  });
+                },
+                label: 'Trip Image',
+                isRequired: true,
               ),
               SizedBox(height: 16),
               _buildItinerarySection(),

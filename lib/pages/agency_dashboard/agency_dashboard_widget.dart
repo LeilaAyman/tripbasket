@@ -6,7 +6,9 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/utils/agency_utils.dart';
+import '/components/review_import_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'agency_dashboard_model.dart';
 export 'agency_dashboard_model.dart';
@@ -29,6 +31,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
   String _searchQuery = '';
   String _filterStatus = 'all';
   Timer? _debounce;
+  bool _isPreviewMode = false;
 
   // Currency formatter
   static final _currency = NumberFormat.currency(symbol: '\$');
@@ -243,6 +246,8 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
             _buildSearchAndFilter(),
             _buildDashboardStats(),
             _buildQuickActions(),
+            _buildAnalyticsSection(),
+            _buildReviewsSection(),
             _buildTripsSection(),
           ],
         ),
@@ -255,45 +260,88 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
       margin: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Search Bar with clear icon
+          // Enhanced Search Bar with better styling
           Container(
             decoration: BoxDecoration(
               color: FlutterFlowTheme.of(context).secondaryBackground,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: const Color(0xFFD76B30).withOpacity(0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
             child: TextField(
               controller: _searchController,
               onChanged: _onSearchChanged,
+              style: FlutterFlowTheme.of(context).bodyLarge.override(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
               decoration: InputDecoration(
-                hintText: 'Search trips...',
+                hintText: '🔍 Search trips by name, location, or category...',
                 hintStyle: FlutterFlowTheme.of(context).bodyLarge.override(
-                  color: FlutterFlowTheme.of(context).secondaryText,
+                  color: FlutterFlowTheme.of(context).secondaryText.withOpacity(0.7),
                   fontSize: 16,
+                  fontWeight: FontWeight.w400,
                 ),
-                prefixIcon: Icon(
-                  Icons.search,
-                  color: FlutterFlowTheme.of(context).secondaryText,
+                prefixIcon: Container(
+                  margin: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD76B30).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.search_rounded,
+                    color: const Color(0xFFD76B30),
+                    size: 20,
+                  ),
                 ),
                 suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: Icon(
-                          Icons.clear,
-                          color: FlutterFlowTheme.of(context).secondaryText,
+                    ? Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        child: IconButton(
+                          icon: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.close_rounded,
+                              color: FlutterFlowTheme.of(context).secondaryText,
+                              size: 16,
+                            ),
+                          ),
+                          onPressed: _clearSearch,
                         ),
-                        onPressed: _clearSearch,
                       )
                     : null,
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
+                  horizontal: 24,
+                  vertical: 18,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide(
+                    color: Colors.transparent,
+                    width: 0,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide(
+                    color: const Color(0xFFD76B30).withOpacity(0.3),
+                    width: 2,
+                  ),
                 ),
               ),
             ),
@@ -329,48 +377,79 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
           });
         }
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
+          gradient: isSelected
+              ? const LinearGradient(
+                  colors: [Color(0xFFD76B30), Color(0xFFDBA237)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
           color: isSelected
-              ? const Color(0xFFD76B30)
+              ? null
               : FlutterFlowTheme.of(context).secondaryBackground,
-          borderRadius: BorderRadius.circular(25),
+          borderRadius: BorderRadius.circular(30),
           border: Border.all(
             color: isSelected
-                ? const Color(0xFFD76B30)
-                : FlutterFlowTheme.of(context).secondaryText.withOpacity(0.3),
+                ? Colors.transparent
+                : FlutterFlowTheme.of(context).secondaryText.withOpacity(0.2),
             width: 1.5,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFFD76B30).withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
+                    color: const Color(0xFFD76B30).withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                  BoxShadow(
+                    color: const Color(0xFFDBA237).withOpacity(0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
                   ),
                 ]
-              : null,
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isSelected
-                  ? Colors.white
-                  : FlutterFlowTheme.of(context).secondaryText,
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.white.withOpacity(0.2)
+                    : const Color(0xFFD76B30).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 16,
+                color: isSelected
+                    ? Colors.white
+                    : const Color(0xFFD76B30),
+              ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             Text(
               label,
               style: FlutterFlowTheme.of(context).labelMedium.override(
                 color: isSelected
                     ? Colors.white
-                    : FlutterFlowTheme.of(context).secondaryText,
+                    : FlutterFlowTheme.of(context).primaryText,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
               ),
             ),
           ],
@@ -392,7 +471,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
             _buildAgencyInfoCard(),
             const SizedBox(height: 16),
             Container(
-              height: 140,
+              height: 160,
               child: Row(
                 children: [
                   Expanded(
@@ -451,8 +530,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
           ? queryTripsRecord() // Admin sees all trips
           : queryTripsRecord(
             queryBuilder: (r) => r
-              .where('agency_reference', isEqualTo: agencyRef)
-              .orderBy('created_at', descending: true),
+              .where('agency_reference', isEqualTo: agencyRef),
           ),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
@@ -529,7 +607,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
 
   Widget _buildStatsLoading() {
     return Container(
-      height: 140,
+      height: 160,
       child: Row(
         children: List.generate(4, (index) => Expanded(
           child: Container(
@@ -591,77 +669,121 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: colors[0].withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: colors[0].withOpacity(0.25),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+          BoxShadow(
+            color: colors[1].withOpacity(0.15),
+            blurRadius: 25,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(24),
+        child: InkWell(
+          onTap: () {
+            // Add haptic feedback
+            HapticFeedback.lightImpact();
+          },
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              // Add subtle inner glow
+              border: Border.all(
+                color: Colors.white.withOpacity(0.1),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-                if (type == 'trips' || type == 'total')
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      type == 'trips' ? 'trips' : 'total',
-                      style: const TextStyle(
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.25),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        icon,
                         color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
+                        size: 24,
                       ),
                     ),
-                  ),
+                    if (type == 'trips' || type == 'total')
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          type == 'trips' ? 'TRIPS' : 'TOTAL',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        value,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                          height: 0.9,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      title.toUpperCase(),
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.85),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -673,15 +795,50 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 12),
-            child: Text(
-              'Quick Actions',
-              style: FlutterFlowTheme.of(context).titleMedium.override(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: FlutterFlowTheme.of(context).primaryText,
-              ),
+          Container(
+            margin: const EdgeInsets.only(left: 4, bottom: 16),
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFD76B30), Color(0xFFDBA237)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Quick Actions',
+                  style: FlutterFlowTheme.of(context).titleMedium.override(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: FlutterFlowTheme.of(context).primaryText,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD76B30).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '5 ACTIONS',
+                    style: TextStyle(
+                      color: const Color(0xFFD76B30),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Row(
@@ -714,60 +871,157 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          // Second row with review import
+          Row(
+            children: [
+              Expanded(
+                child: _buildQuickActionCard(
+                  'Import Reviews',
+                  Icons.rate_review,
+                  const [Color(0xFF4CAF50), Color(0xFF66BB6A)],
+                  () => _showReviewImportDialog(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildQuickActionCard(
+                  'Preview Mode',
+                  Icons.preview,
+                  const [Color(0xFF2196F3), Color(0xFF42A5F5)],
+                  () => _togglePreviewMode(),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildQuickActionCard(String title, IconData icon, List<Color> colors, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 88, // Increased height to prevent overflow
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: colors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: colors[0].withOpacity(0.15),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
+  void _showReviewImportDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => const ReviewImportDialog(),
+    );
+  }
+
+  void _togglePreviewMode() {
+    if (_isPreviewMode) {
+      // Exit preview mode - stay on dashboard
+      setState(() {
+        _isPreviewMode = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Exited customer preview mode'),
+          backgroundColor: Colors.grey.shade600,
+          behavior: SnackBarBehavior.floating,
         ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
+      );
+    } else {
+      // Enter preview mode - go to customer view
+      setState(() {
+        _isPreviewMode = true;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Viewing as customer - tap "Exit Preview" to return'),
+          backgroundColor: const Color(0xFF2196F3),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      
+      // Navigate to home page to see customer view
+      context.pushNamed('home');
+    }
+  }
+
+  Widget _buildQuickActionCard(String title, IconData icon, List<Color> colors, VoidCallback onTap) {
+    return Container(
+      height: 100,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: colors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: colors[0].withOpacity(0.25),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: colors[1].withOpacity(0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap();
+          },
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.15),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
                     icon,
                     color: Colors.white,
-                    size: 28,
+                    size: 20,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                ),
+                const SizedBox(height: 6),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      title.toUpperCase(),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.6,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -794,13 +1048,10 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
             // NOTE: A composite index may be required for this query combining
             // .where('agency_reference', ...) + .orderBy('created_at', ...)
             stream: isAdmin 
-              ? queryTripsRecord(
-                  queryBuilder: (r) => r.orderBy('created_at', descending: true),
-                ) // Admin sees all trips
+              ? queryTripsRecord() // Admin sees all trips
               : queryTripsRecord(
                   queryBuilder: (r) => r
-                    .where('agency_reference', isEqualTo: agencyRef)
-                    .orderBy('created_at', descending: true),
+                    .where('agency_reference', isEqualTo: agencyRef),
                 ),
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
@@ -1719,5 +1970,803 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
         );
       },
     );
+  }
+
+  Widget _buildAnalyticsSection() {
+    final isAdmin = _isCurrentUserAdmin();
+    final agencyRef = isAdmin ? null : AgencyUtils.getCurrentAgencyRef();
+    
+    // If no agency reference and not admin, show empty analytics
+    if (!isAdmin && agencyRef == null) {
+      return Container();
+    }
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD76B30),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Analytics & Insights',
+                  style: FlutterFlowTheme.of(context).titleLarge.override(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: FlutterFlowTheme.of(context).primaryText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          StreamBuilder<List<TripsRecord>>(
+            stream: isAdmin 
+              ? queryTripsRecord() 
+              : queryTripsRecord(
+                  queryBuilder: (r) => r
+                    .where('agency_reference', isEqualTo: agencyRef),
+                ),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return _buildAnalyticsLoading();
+              }
+              
+              final trips = snapshot.data!;
+              final bookingRate = AgencyUtils.calculateBookingRate(trips);
+              final monthlyRevenue = AgencyUtils.getMonthlyRevenue(trips);
+              final topDestinations = AgencyUtils.getTopDestinations(trips, limit: 3);
+              final customerStats = AgencyUtils.getCustomerActivityStats(trips);
+              final trends = AgencyUtils.getPerformanceTrends(trips);
+              
+              return Column(
+                children: [
+                  // Performance Metrics Row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildMetricCard(
+                          'Booking Rate',
+                          '${bookingRate.toStringAsFixed(1)}%',
+                          Icons.trending_up,
+                          trends['bookingGrowth'] >= 0 ? Colors.green : Colors.red,
+                          trends['bookingGrowth'] >= 0 ? '+${trends['bookingGrowth'].toStringAsFixed(1)}%' : '${trends['bookingGrowth'].toStringAsFixed(1)}%',
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildMetricCard(
+                          'Revenue Growth',
+                          '${trends['revenueGrowth'] >= 0 ? '+' : ''}${trends['revenueGrowth'].toStringAsFixed(1)}%',
+                          Icons.attach_money,
+                          trends['revenueGrowth'] >= 0 ? Colors.green : Colors.red,
+                          'This Month',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Customer Activity Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: FlutterFlowTheme.of(context).secondaryBackground,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.people,
+                              color: const Color(0xFFD76B30),
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Customer Activity',
+                              style: FlutterFlowTheme.of(context).titleMedium.override(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: FlutterFlowTheme.of(context).primaryText,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildCustomerStatItem(
+                                'Total Bookings',
+                                customerStats['totalBookings'].toString(),
+                                Icons.book_online,
+                              ),
+                            ),
+                            Container(
+                              width: 1,
+                              height: 40,
+                              color: Colors.grey.shade300,
+                            ),
+                            Expanded(
+                              child: _buildCustomerStatItem(
+                                'Avg per Customer',
+                                customerStats['averageBookingsPerCustomer'].toStringAsFixed(1),
+                                Icons.person,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Top Destinations Card
+                  if (topDestinations.isNotEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: FlutterFlowTheme.of(context).secondaryBackground,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.location_on,
+                                color: const Color(0xFFD76B30),
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Top Performing Destinations',
+                                style: FlutterFlowTheme.of(context).titleMedium.override(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: FlutterFlowTheme.of(context).primaryText,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          ...topDestinations.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final destination = entry.value;
+                            return Padding(
+                              padding: EdgeInsets.only(bottom: index < topDestinations.length - 1 ? 12 : 0),
+                              child: _buildDestinationItem(
+                                destination['location'],
+                                destination['revenue'],
+                                destination['bookings'],
+                                index + 1,
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnalyticsLoading() {
+    return Container(
+      height: 200,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 30,
+              height: 30,
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Color(0xFFD76B30),
+                ),
+                strokeWidth: 3,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Loading analytics...',
+              style: FlutterFlowTheme.of(context).bodyMedium.override(
+                color: FlutterFlowTheme.of(context).secondaryText,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetricCard(String title, String value, IconData icon, Color color, String subtitle) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: FlutterFlowTheme.of(context).secondaryBackground,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 20,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                subtitle,
+                style: FlutterFlowTheme.of(context).labelSmall.override(
+                  color: color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: FlutterFlowTheme.of(context).titleLarge.override(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: FlutterFlowTheme.of(context).primaryText,
+            ),
+          ),
+          Text(
+            title,
+            style: FlutterFlowTheme.of(context).labelMedium.override(
+              fontSize: 12,
+              color: FlutterFlowTheme.of(context).secondaryText,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomerStatItem(String title, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: const Color(0xFFD76B30),
+            size: 20,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: FlutterFlowTheme.of(context).titleMedium.override(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: FlutterFlowTheme.of(context).primaryText,
+            ),
+          ),
+          Text(
+            title,
+            style: FlutterFlowTheme.of(context).labelSmall.override(
+              fontSize: 11,
+              color: FlutterFlowTheme.of(context).secondaryText,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDestinationItem(String location, int revenue, int bookings, int rank) {
+    return Row(
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: const Color(0xFFD76B30),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Text(
+              '$rank',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                location,
+                style: FlutterFlowTheme.of(context).titleSmall.override(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: FlutterFlowTheme.of(context).primaryText,
+                ),
+              ),
+              Text(
+                '$bookings bookings',
+                style: FlutterFlowTheme.of(context).labelSmall.override(
+                  fontSize: 11,
+                  color: FlutterFlowTheme.of(context).secondaryText,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Text(
+          _currency.format(revenue),
+          style: FlutterFlowTheme.of(context).titleSmall.override(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFFD76B30),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReviewsSection() {
+    final isAdmin = _isCurrentUserAdmin();
+    final agencyRef = isAdmin ? null : AgencyUtils.getCurrentAgencyRef();
+    
+    // If no agency reference and not admin, show empty reviews
+    if (!isAdmin && agencyRef == null) {
+      return Container();
+    }
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD76B30),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Customer Reviews',
+                  style: FlutterFlowTheme.of(context).titleLarge.override(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: FlutterFlowTheme.of(context).primaryText,
+                  ),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => _showAllReviews(),
+                  child: Text(
+                    'View All',
+                    style: FlutterFlowTheme.of(context).bodyMedium.override(
+                      color: const Color(0xFFD76B30),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          StreamBuilder<List<TripsRecord>>(
+            stream: isAdmin 
+              ? queryTripsRecord() 
+              : queryTripsRecord(
+                  queryBuilder: (r) => r
+                    .where('agency_reference', isEqualTo: agencyRef),
+                ),
+            builder: (context, tripsSnapshot) {
+              if (!tripsSnapshot.hasData) {
+                return _buildReviewsLoading();
+              }
+              
+              final trips = tripsSnapshot.data!;
+              final tripRefs = trips.map((trip) => trip.reference).toList();
+              
+              if (tripRefs.isEmpty) {
+                return _buildNoReviewsState();
+              }
+              
+              return StreamBuilder<List<ReviewsRecord>>(
+                stream: queryReviewsRecord(
+                  queryBuilder: (r) => r
+                    .limit(10), // Show recent reviews
+                ),
+                builder: (context, reviewsSnapshot) {
+                  if (!reviewsSnapshot.hasData) {
+                    return _buildReviewsLoading();
+                  }
+                  
+                  final reviews = reviewsSnapshot.data!;
+                  
+                  if (reviews.isEmpty) {
+                    return _buildNoReviewsState();
+                  }
+                  
+                  return Column(
+                    children: [
+                      // Reviews summary
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: FlutterFlowTheme.of(context).secondaryBackground,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFD76B30).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.star,
+                                color: Color(0xFFD76B30),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${reviews.length} Recent Reviews',
+                                    style: FlutterFlowTheme.of(context).titleMedium.override(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: FlutterFlowTheme.of(context).primaryText,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Average: ${_calculateAverageRating(reviews).toStringAsFixed(1)}★',
+                                    style: FlutterFlowTheme.of(context).bodyMedium.override(
+                                      color: FlutterFlowTheme.of(context).secondaryText,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _buildRatingDistribution(reviews),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Recent reviews list
+                      ...reviews.take(3).map((review) => _buildReviewCard(review)).toList(),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewsLoading() {
+    return Container(
+      height: 120,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 30,
+              height: 30,
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Color(0xFFD76B30),
+                ),
+                strokeWidth: 3,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Loading reviews...',
+              style: FlutterFlowTheme.of(context).bodyMedium.override(
+                color: FlutterFlowTheme.of(context).secondaryText,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoReviewsState() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(40),
+      decoration: BoxDecoration(
+        color: FlutterFlowTheme.of(context).secondaryBackground,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.rate_review_outlined,
+            size: 64,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No reviews yet',
+            style: FlutterFlowTheme.of(context).titleMedium.override(
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Customer reviews will appear here once your trips receive feedback',
+            style: FlutterFlowTheme.of(context).bodyMedium.override(
+              color: Colors.grey.shade500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewCard(ReviewsRecord review) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: FlutterFlowTheme.of(context).secondaryBackground,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // User avatar or initials
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD76B30).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Center(
+                  child: Text(
+                    _getUserInitials(review.userName),
+                    style: const TextStyle(
+                      color: Color(0xFFD76B30),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      review.userName.isNotEmpty ? review.userName : 'Anonymous',
+                      style: FlutterFlowTheme.of(context).titleSmall.override(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      review.tripTitle.isNotEmpty ? review.tripTitle : 'Trip Review',
+                      style: FlutterFlowTheme.of(context).bodySmall.override(
+                        color: FlutterFlowTheme.of(context).secondaryText,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                children: List.generate(5, (index) => 
+                  Icon(
+                    Icons.star,
+                    color: index < review.rating.round() ? Colors.amber : Colors.grey.shade300,
+                    size: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (review.comment.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              review.comment,
+              style: FlutterFlowTheme.of(context).bodyMedium,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          if (review.createdAt != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _formatReviewDate(review.createdAt!),
+              style: FlutterFlowTheme.of(context).bodySmall.override(
+                color: FlutterFlowTheme.of(context).secondaryText,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRatingDistribution(List<ReviewsRecord> reviews) {
+    final ratingCounts = <int, int>{};
+    for (int i = 1; i <= 5; i++) {
+      ratingCounts[i] = reviews.where((r) => r.rating.round() == i).length;
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        for (int rating = 5; rating >= 1; rating--)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '$rating',
+                style: const TextStyle(fontSize: 10),
+              ),
+              const SizedBox(width: 4),
+              Container(
+                width: 40,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: reviews.isEmpty ? 0.0 : (ratingCounts[rating] ?? 0) / reviews.length,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD76B30),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  double _calculateAverageRating(List<ReviewsRecord> reviews) {
+    if (reviews.isEmpty) return 0.0;
+    return reviews.fold<double>(0.0, (sum, review) => sum + review.rating) / reviews.length;
+  }
+
+  String _getUserInitials(String name) {
+    if (name.isEmpty) return 'A';
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return name.substring(0, 1).toUpperCase();
+  }
+
+  String _formatReviewDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    
+    if (difference.inDays > 30) {
+      return DateFormat('MMM d, yyyy').format(date);
+    } else if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
+  }
+
+  void _showAllReviews() {
+    // Navigate to a dedicated reviews page or show in a dialog
+    context.pushNamed('reviews');
   }
 }

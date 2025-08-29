@@ -5,6 +5,7 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/utils/agency_utils.dart';
+import '/components/image_upload_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -25,6 +26,7 @@ class _CreateTripWidgetState extends State<CreateTripWidget> {
   late CreateTripModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  String? _uploadedImageUrl;
 
   @override
   void initState() {
@@ -45,9 +47,6 @@ class _CreateTripWidgetState extends State<CreateTripWidget> {
 
     _model.descriptionController ??= TextEditingController();
     _model.descriptionFocusNode ??= FocusNode();
-
-    _model.imageController ??= TextEditingController();
-    _model.imageFocusNode ??= FocusNode();
 
     _model.itineraryController ??= TextEditingController();
     _model.itineraryFocusNode ??= FocusNode();
@@ -72,6 +71,12 @@ class _CreateTripWidgetState extends State<CreateTripWidget> {
 
   Future<void> _createTrip() async {
     if (!_model.formKey.currentState!.validate()) {
+      return;
+    }
+
+    // Validate image upload
+    if (_uploadedImageUrl == null || _uploadedImageUrl!.isEmpty) {
+      _showErrorMessage('Please upload a trip image');
       return;
     }
 
@@ -112,7 +117,7 @@ class _CreateTripWidgetState extends State<CreateTripWidget> {
         price: price,
         location: _model.locationController!.text.trim(),
         description: _model.descriptionController!.text.trim(),
-        image: _model.imageController!.text.trim(),
+        image: _uploadedImageUrl ?? '',
         itenarary: _model.itineraryControllers.map((controller) => controller.text.trim()).where((text) => text.isNotEmpty).toList(),
         startDate: startDate,
         endDate: endDate,
@@ -323,11 +328,16 @@ class _CreateTripWidgetState extends State<CreateTripWidget> {
                 validator: (value) => value?.isEmpty == true ? 'Please enter a description' : null,
               ),
               SizedBox(height: 16),
-              _buildFormField(
-                'Image URL',
-                _model.imageController!,
-                _model.imageFocusNode!,
-                Icons.image,
+              ImageUploadWidget(
+                agencyId: AgencyUtils.getCurrentAgencyRef()?.id ?? 'unknown',
+                tripId: DateTime.now().millisecondsSinceEpoch.toString(),
+                onImageUploaded: (url) {
+                  setState(() {
+                    _uploadedImageUrl = url;
+                  });
+                },
+                label: 'Trip Image',
+                isRequired: true,
               ),
               SizedBox(height: 16),
               _buildItinerarySection(),

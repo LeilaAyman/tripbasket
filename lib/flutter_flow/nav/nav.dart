@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '/backend/backend.dart';
 
 import '/auth/base_auth_user_provider.dart';
+import '/auth/firebase_auth/auth_util.dart';
 
 import '/main.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -95,9 +96,21 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, _) {
             print('ROUTER DEBUG: loggedIn = ${appStateNotifier.loggedIn}');
             print('ROUTER DEBUG: loading = ${appStateNotifier.loading}');
-            final widget = appStateNotifier.loggedIn ? const HomeResponsive() : LandingWidget();
-            print('ROUTER DEBUG: Navigating to ${widget.runtimeType}');
-            return widget;
+            
+            if (appStateNotifier.loggedIn) {
+              final userDoc = currentUserDocument;
+              if (userDoc != null && userDoc.role.isNotEmpty) {
+                final roles = userDoc.role.map((role) => role.toLowerCase()).toList();
+                // Check if user has agency role
+                if (roles.contains('agency') || roles.contains('admin')) {
+                  print('ROUTER DEBUG: Agency user detected, redirecting to agency dashboard');
+                  return AgencyDashboardWidget();
+                }
+              }
+              return const HomeResponsive();
+            } else {
+              return LandingWidget();
+            }
           },
         ),
         FFRoute(

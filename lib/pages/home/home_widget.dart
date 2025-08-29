@@ -1,6 +1,7 @@
 import '/backend/backend.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/widgets/hero_background.dart';
+import '/utils/agency_utils.dart';
 import '/flutter_flow/flutter_flow_animations.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -290,6 +291,72 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildPreviewModeBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF2196F3), Color(0xFF1976D2)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            offset: Offset(0, 2),
+            blurRadius: 4,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.visibility,
+            color: Colors.white,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Preview Mode - Viewing as Customer',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          TextButton.icon(
+            onPressed: () {
+              Navigator.pushNamed(context, '/agency_dashboard');
+            },
+            icon: Icon(
+              Icons.arrow_back,
+              color: Colors.white,
+              size: 16,
+            ),
+            label: Text(
+              'Back to Dashboard',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              backgroundColor: Colors.white.withOpacity(0.2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -566,11 +633,17 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
             ],
           ),
         ),
-        body: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              HeroBackground(
+        body: Column(
+          children: [
+            // Preview mode banner for agency users
+            if (AgencyUtils.isCurrentUserAgency())
+              _buildPreviewModeBanner(),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    HeroBackground(
                 height: 420.0,
                 child: Align(
                   alignment: AlignmentDirectional(0.0, 0.0),
@@ -1084,8 +1157,11 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                   ),
                 ),
               ),
-            ],
-          ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

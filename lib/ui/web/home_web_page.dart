@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '/backend/backend.dart';
+import '/utils/agency_utils.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/state/currency_provider.dart';
@@ -269,18 +270,114 @@ class _HomeWebPageState extends State<HomeWebPage>
 
   @override
   Widget build(BuildContext context) {
+    final isAgencyUser = AgencyUtils.isCurrentUserAgency();
+    
     return Scaffold(
       backgroundColor: Colors.white,
-      body: CustomScrollView(
+      body: Column(
+        children: [
+          // Preview mode banner for agency users
+          if (isAgencyUser) _buildPreviewModeBanner(),
+          
+          Expanded(
+            child: CustomScrollView(
               controller: _scrollController,
               slivers: [
-          _buildAppBar(),
+                _buildAppBar(),
                 _buildHeroSection(),
           _buildFindYourTripSection(),
           _buildWhyChooseTripsBasketSection(),
+          _buildTrustedPartnersSection(),
           _buildPremiumDestinationsSection(),
           _buildTravelersTestimonialsSection(),
-          _buildFooterSection(),
+          _buildContactUsSection(),
+                _buildFooterSection(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreviewModeBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF2196F3),
+            const Color(0xFF1976D2),
+          ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2196F3).withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.preview,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Preview Mode - Viewing as Customer',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          TextButton.icon(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Returning to agency dashboard...'),
+                  backgroundColor: Colors.green.shade600,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+              context.pushNamed('agency_dashboard');
+            },
+            icon: const Icon(
+              Icons.dashboard,
+              color: Colors.white,
+              size: 18,
+            ),
+            label: Text(
+              'Back to Dashboard',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.white.withOpacity(0.2),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1020,14 +1117,17 @@ class _HomeWebPageState extends State<HomeWebPage>
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 64),
-            Row(
-              children: [
-                Expanded(child: _buildFeatureCard(Icons.star, 'Luxury Experiences', 'Handpicked premium accommodations and exclusive experiences tailored for discerning travelers')),
-                const SizedBox(width: 32),
-                Expanded(child: _buildFeatureCard(Icons.room_service, '24/7 Concierge', 'Personal travel concierge available around the clock to ensure your journey is flawless')),
-                const SizedBox(width: 32),
-                Expanded(child: _buildFeatureCard(Icons.security, 'Travel Protection', 'Comprehensive travel insurance and protection plans for complete peace of mind')),
-              ],
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: _buildFeatureCard(Icons.price_check, 'Best Price Guarantee', 'Book with confidence knowing you get the lowest rates, with no hidden fees.')),
+                  const SizedBox(width: 32),
+                  Expanded(child: _buildFeatureCard(Icons.verified, 'Verified Agencies & Trusted Partners', 'Every travel agency on our platform is verified for quality and reliability, so your trip is always in safe hands.')),
+                  const SizedBox(width: 32),
+                  Expanded(child: _buildFeatureCard(Icons.credit_card, 'Easy Refund Policies', '💳 Hassle-free cancellation and refund options to give you peace of mind when plans change.')),
+                ],
+              ),
             ),
           ],
         ),
@@ -1043,6 +1143,8 @@ class _HomeWebPageState extends State<HomeWebPage>
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             width: 80,
@@ -1061,24 +1163,385 @@ class _HomeWebPageState extends State<HomeWebPage>
           Text(
             title,
             style: GoogleFonts.poppins(
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: FontWeight.w700,
               color: Colors.black87,
             ),
             textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 16),
-          Text(
-            description,
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              color: Colors.grey.shade600,
-              height: 1.5,
+          Flexible(
+            child: Text(
+              description,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTrustedPartnersSection() {
+    return SliverToBoxAdapter(
+      child: Container(
+        color: Colors.white,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          margin: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(vertical: 80),
+          child: Column(
+            children: [
+              // Section Header
+              Column(
+                children: [
+                  Text(
+                    'Trusted Partners',
+                    style: GoogleFonts.poppins(
+                      fontSize: 42,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF2D3142),
+                      letterSpacing: -0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Partner with the best travel agencies worldwide, trusted by thousands of travelers',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      color: Colors.grey.shade600,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD76B30).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    child: Text(
+                      'Verified & Certified Since 2020',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFFD76B30),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 60),
+              // Partners Grid
+              StreamBuilder<List<AgenciesRecord>>(
+                stream: queryAgenciesRecord(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    print('Partners query error: ${snapshot.error}');
+                    return Center(
+                      child: Column(
+                        children: [
+                          Icon(Icons.error_outline, size: 48, color: Colors.red),
+                          SizedBox(height: 16),
+                          Text('Error loading partners: ${snapshot.error}'),
+                          SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => setState(() {}),
+                            child: Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return _buildPartnersSkeleton();
+                  }
+                  
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(
+                      child: Column(
+                        children: [
+                          Icon(Icons.business_outlined, size: 48, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text(
+                            'No partner agencies found',
+                            style: GoogleFonts.poppins(
+                              fontSize: 18,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => context.pushNamed('agenciesList'),
+                            child: Text('Browse All Agencies'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  
+                  final allPartners = snapshot.data!;
+                  final partners = allPartners.take(6).toList(); // Show only first 6
+                  
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 24,
+                      mainAxisSpacing: 24,
+                      childAspectRatio: 1.1,
+                    ),
+                    itemCount: partners.length,
+                    itemBuilder: (context, index) {
+                      final partner = partners[index];
+                      return _buildPartnerCard(partner);
+                    },
+                  );
+                },
+              ),
+              const SizedBox(height: 50),
+              // View All Partners Button
+              ElevatedButton(
+                onPressed: () => context.pushNamed('agenciesList'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD76B30),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  elevation: 0,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'View All Partners',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.arrow_forward, size: 18),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPartnerCard(AgenciesRecord partner) {
+    print('Building partner card for: ${partner.name}');
+    final joinDate = partner.createdAt;
+    final yearsActive = joinDate != null 
+        ? DateTime.now().difference(joinDate).inDays ~/ 365
+        : 0;
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: const Color(0xFFD76B30).withOpacity(0.05),
+            blurRadius: 30,
+            offset: const Offset(0, 15),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => context.pushNamed('agencyTrips', queryParameters: {
+            'agencyRef': partner.reference.id,
+          }),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Partner Logo/Avatar
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFFD76B30).withOpacity(0.1),
+                        const Color(0xFFDBA237).withOpacity(0.1),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFD76B30).withOpacity(0.2),
+                      width: 2,
+                    ),
+                  ),
+                  child: partner.logo.isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            partner.logo,
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return _buildPartnerInitials(partner.name);
+                            },
+                          ),
+                        )
+                      : _buildPartnerInitials(partner.name),
+                ),
+                const SizedBox(height: 20),
+                // Partner Name
+                Text(
+                  partner.name,
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF2D3142),
+                    letterSpacing: 0.5,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                // Rating
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.star_rounded,
+                      color: const Color(0xFFF2D83B),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      partner.rating.toStringAsFixed(1),
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF2D3142),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Partner Since
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFFD76B30).withOpacity(0.1),
+                        const Color(0xFFDBA237).withOpacity(0.1),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Text(
+                    yearsActive > 0 
+                        ? 'Partner since ${DateTime.now().year - yearsActive}'
+                        : 'New Partner',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFD76B30),
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPartnerInitials(String name) {
+    final initials = name.split(' ').take(2).map((word) => word[0]).join().toUpperCase();
+    
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFD76B30),
+            const Color(0xFFDBA237),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: GoogleFonts.poppins(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+            letterSpacing: 1,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPartnersSkeleton() {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 24,
+        mainAxisSpacing: 24,
+        childAspectRatio: 1.1,
+      ),
+      itemCount: 6,
+      itemBuilder: (context, index) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(
+                const Color(0xFFD76B30),
+              ),
+              strokeWidth: 2,
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1214,9 +1677,7 @@ class _HomeWebPageState extends State<HomeWebPage>
               stream: queryReviewsRecord(
                 queryBuilder: (q) => q
                     .where('rating', isGreaterThanOrEqualTo: 4.0) // Only high ratings
-                    .orderBy('rating', descending: true)
-                    .orderBy('created_at', descending: true)
-                    .limit(3), // Only show 3 testimonials
+                    .limit(10), // Get more reviews to filter from
               ),
               builder: (context, snapshot) {
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -1233,9 +1694,19 @@ class _HomeWebPageState extends State<HomeWebPage>
                 }
 
                 final reviews = snapshot.data!;
-                // Ensure we have exactly 3 reviews for display
-                final displayReviews = <ReviewsRecord>[];
-                displayReviews.addAll(reviews);
+                
+                // Sort reviews by rating (descending) then by created time (descending)
+                reviews.sort((a, b) {
+                  int ratingComparison = b.rating.compareTo(a.rating);
+                  if (ratingComparison != 0) return ratingComparison;
+                  if (a.createdAt != null && b.createdAt != null) {
+                    return b.createdAt!.compareTo(a.createdAt!);
+                  }
+                  return 0;
+                });
+                
+                // Take top 3 reviews
+                final displayReviews = reviews.take(3).toList();
                 
                 // Fill with fallback if needed
                 while (displayReviews.length < 3) {
@@ -1377,6 +1848,498 @@ class _HomeWebPageState extends State<HomeWebPage>
             textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildContactUsSection() {
+    return SliverToBoxAdapter(
+      child: Container(
+        color: Colors.grey.shade50,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          margin: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(vertical: 80),
+          child: Column(
+            children: [
+              // Section Header
+              Column(
+                children: [
+                  Text(
+                    'Get in Touch',
+                    style: GoogleFonts.poppins(
+                      fontSize: 42,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF2D3142),
+                      letterSpacing: -0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Have questions? We\'re here to help 24/7. Reach out through live chat, phone, or email',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      color: Colors.grey.shade600,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 60),
+              // Contact Content
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Left Side - Contact Methods & Live Chat
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Contact Methods',
+                          style: GoogleFonts.poppins(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF2D3142),
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        // Contact Options
+                        _buildContactMethod(
+                          Icons.chat_bubble_outline,
+                          'Live Chat',
+                          'Chat with our travel experts',
+                          'Available 24/7',
+                          const [Color(0xFF4CAF50), Color(0xFF66BB6A)],
+                          () => _startLiveChat(),
+                        ),
+                        const SizedBox(height: 20),
+                        _buildContactMethod(
+                          Icons.phone_outlined,
+                          'Call Us',
+                          '+1 (555) 123-TRIP',
+                          'Mon-Sun 8AM-10PM EST',
+                          const [Color(0xFF2196F3), Color(0xFF42A5F5)],
+                          () => _makePhoneCall(),
+                        ),
+                        const SizedBox(height: 20),
+                        _buildContactMethod(
+                          Icons.email_outlined,
+                          'Email Support',
+                          'support@tripsbasket.com',
+                          'Response within 2 hours',
+                          const [Color(0xFFFF9800), Color(0xFFFFB74D)],
+                          () => _sendEmail(),
+                        ),
+                        const SizedBox(height: 20),
+                        _buildContactMethod(
+                          Icons.help_outline,
+                          'Help Center',
+                          'Browse our FAQ & guides',
+                          'Self-service resources',
+                          const [Color(0xFF9C27B0), Color(0xFFBA68C8)],
+                          () => _openHelpCenter(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 40),
+                  // Right Side - Contact Form
+                  Expanded(
+                    flex: 3,
+                    child: Container(
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 25,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFD76B30), Color(0xFFDBA237)],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.send,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Text(
+                                'Send us a Message',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF2D3142),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 32),
+                          // Contact Form
+                          _buildContactForm(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 60),
+              // Live Chat Widget
+              _buildLiveChatWidget(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContactMethod(IconData icon, String title, String subtitle, String description, List<Color> colors, VoidCallback onTap) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: colors),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF2D3142),
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: colors[0],
+                        ),
+                      ),
+                      Text(
+                        description,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.grey.shade400,
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContactForm() {
+    return Column(
+      children: [
+        // Name and Email Row
+        Row(
+          children: [
+            Expanded(
+              child: _buildFormField(
+                'Full Name',
+                Icons.person_outline,
+                TextInputType.name,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildFormField(
+                'Email Address',
+                Icons.email_outlined,
+                TextInputType.emailAddress,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        // Subject
+        _buildFormField(
+          'Subject',
+          Icons.subject_outlined,
+          TextInputType.text,
+        ),
+        const SizedBox(height: 20),
+        // Message
+        _buildFormField(
+          'Your Message',
+          Icons.message_outlined,
+          TextInputType.multiline,
+          maxLines: 5,
+        ),
+        const SizedBox(height: 32),
+        // Submit Button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _submitContactForm,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD76B30),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.send, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Send Message',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFormField(String label, IconData icon, TextInputType keyboardType, {int maxLines = 1}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF2D3142),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          keyboardType: keyboardType,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            prefixIcon: Icon(
+              icon,
+              color: const Color(0xFFD76B30),
+              size: 20,
+            ),
+            hintText: 'Enter your $label',
+            hintStyle: GoogleFonts.poppins(
+              color: Colors.grey.shade500,
+              fontSize: 14,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFD76B30), width: 2),
+            ),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLiveChatWidget() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.chat_bubble,
+              color: Colors.white,
+              size: 32,
+            ),
+          ),
+          const SizedBox(width: 24),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Need Immediate Help?',
+                  style: GoogleFonts.poppins(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Chat with our travel experts now! Average response time: 30 seconds',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    color: Colors.white.withOpacity(0.9),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: _startLiveChat,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF4CAF50),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+            ),
+            child: Text(
+              'Start Chat',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Contact Methods
+  void _startLiveChat() {
+    // Implement live chat functionality
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Live Chat'),
+        content: Text('Live chat feature will be implemented here. This could integrate with services like Intercom, Zendesk Chat, or custom chat solution.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _makePhoneCall() async {
+    final url = Uri.parse('tel:+15551234TRIP');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    }
+  }
+
+  void _sendEmail() async {
+    final url = Uri.parse('mailto:support@tripsbasket.com?subject=Support Request');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    }
+  }
+
+  void _openHelpCenter() {
+    // Navigate to help center or FAQ page
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Help Center'),
+        content: Text('This would navigate to a comprehensive FAQ section or help documentation.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _submitContactForm() {
+    // Implement form submission
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Thank you for your message! We\'ll get back to you within 2 hours.'),
+        backgroundColor: const Color(0xFF4CAF50),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -1626,6 +2589,48 @@ class _LoginDialogState extends State<_LoginDialog> {
     }
   }
 
+  Future<void> _handleGoogleLogin() async {
+    setState(() => _isLoading = true);
+
+    try {
+      GoRouter.of(context).prepareAuthEvent();
+      final user = await authManager.signInWithGoogle(context);
+
+      if (user != null && mounted) {
+        // Update user profile to ensure we have customer role if no role exists
+        await currentUserDocument?.reference.update({
+          'role': currentUserDocument?.role.isEmpty ?? true ? ['user'] : currentUserDocument!.role,
+          'loyaltyPoints': currentUserDocument?.loyaltyPoints ?? 0,
+        });
+        
+        Navigator.of(context).pop(); // Close dialog
+        
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Welcome back!', style: GoogleFonts.poppins()),
+            backgroundColor: const Color(0xFFD76B30),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Google sign-in failed. Please try again.', style: GoogleFonts.poppins()),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -1751,6 +2756,61 @@ class _LoginDialogState extends State<_LoginDialog> {
               ),
               const SizedBox(height: 16),
               
+              // Or divider
+              Row(
+                children: [
+                  Expanded(child: Divider(color: Colors.grey.shade300)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'OR',
+                      style: GoogleFonts.poppins(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  Expanded(child: Divider(color: Colors.grey.shade300)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              
+              // Google Sign In button
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _handleGoogleLogin,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black87,
+                    side: BorderSide(color: Colors.grey.shade300),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  icon: Image.asset(
+                    'assets/images/google_logo.png',
+                    height: 20,
+                    width: 20,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.account_circle,
+                      color: Colors.red,
+                      size: 20,
+                    ),
+                  ),
+                  label: Text(
+                    'Continue with Google',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
               // Register link
               Center(
                 child: TextButton(
@@ -1852,6 +2912,54 @@ class _RegisterDialogState extends State<_RegisterDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Registration failed. Please try again.', style: GoogleFonts.poppins()),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleGoogleRegister() async {
+    setState(() => _isLoading = true);
+
+    try {
+      GoRouter.of(context).prepareAuthEvent();
+      final user = await authManager.signInWithGoogle(context);
+
+      if (user != null && mounted) {
+        // Update user profile for new Google users (default to user role)
+        await currentUserDocument?.reference.update({
+          'role': currentUserDocument?.role.isEmpty ?? true ? ['user'] : currentUserDocument!.role,
+          'loyaltyPoints': currentUserDocument?.loyaltyPoints ?? 0,
+          'display_name': currentUserDocument?.displayName.isEmpty ?? true 
+              ? user.displayName ?? '' 
+              : currentUserDocument!.displayName,
+          'name': currentUserDocument?.name.isEmpty ?? true 
+              ? user.displayName ?? '' 
+              : currentUserDocument!.name,
+        });
+        
+        Navigator.of(context).pop(); // Close dialog
+        
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Account created successfully! Welcome to TripsBasket!', style: GoogleFonts.poppins()),
+            backgroundColor: const Color(0xFFD76B30),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Google sign-up failed. Please try again.', style: GoogleFonts.poppins()),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),
@@ -2063,6 +3171,61 @@ class _RegisterDialogState extends State<_RegisterDialog> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Or divider
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'OR',
+                        style: GoogleFonts.poppins(
+                          color: Colors.grey.shade600,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                // Google Sign Up button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _handleGoogleRegister,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black87,
+                      side: BorderSide(color: Colors.grey.shade300),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: Image.asset(
+                      'assets/images/google_logo.png',
+                      height: 20,
+                      width: 20,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.account_circle,
+                        color: Colors.red,
+                        size: 20,
+                      ),
+                    ),
+                    label: Text(
+                      'Continue with Google',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
