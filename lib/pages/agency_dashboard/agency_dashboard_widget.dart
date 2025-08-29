@@ -1039,7 +1039,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
     }
     
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1096,7 +1096,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: crossAxisCount,
-                            crossAxisSpacing: 16,
+                            crossAxisSpacing: 12,
                             mainAxisSpacing: 16,
                             childAspectRatio: 0.75,
                           ),

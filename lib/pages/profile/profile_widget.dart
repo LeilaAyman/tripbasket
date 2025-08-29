@@ -829,8 +829,10 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                             ),
                           );
 
+                          bool success = false;
+
                           try {
-                            final success = await ProfileService.saveUserProfileWithPhoto(
+                            success = await ProfileService.saveUserProfileWithPhoto(
                               favoriteDestination: favoriteDestination,
                               tripType: tripType,
                               foodPreferences: foodPreferences,
@@ -838,35 +840,32 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                               profilePhoto: profilePhoto,
                               instagramLink: instagramLink,
                             );
-
-                            // Close loading dialog
-                            Navigator.of(context).pop();
-                            
-                            if (success) {
-                              // Close form dialog
-                              Navigator.of(context).pop();
-                              
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Profile updated successfully!'),
-                                  backgroundColor: Color(0xFFD76B30),
-                                ),
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Failed to update profile. Please try again.'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
                           } catch (e) {
-                            // Close loading dialog
+                            print('Profile save error: $e');
+                            success = false;
+                          }
+
+                          // Ensure we close the loading dialog if context is still mounted
+                          if (mounted && Navigator.of(context).canPop()) {
+                            Navigator.of(context).pop();
+                          }
+                          
+                          if (!mounted) return;
+                          
+                          if (success) {
+                            // Close form dialog
                             Navigator.of(context).pop();
                             
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error: $e'),
+                              const SnackBar(
+                                content: Text('Profile updated successfully!'),
+                                backgroundColor: Color(0xFFD76B30),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Failed to update profile. Please try again.'),
                                 backgroundColor: Colors.red,
                               ),
                             );

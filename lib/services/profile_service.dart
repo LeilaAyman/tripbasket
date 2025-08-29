@@ -49,35 +49,58 @@ class ProfileService {
   }) async {
     try {
       final user = currentUser;
-      if (user == null) return false;
+      print('Current user: ${user?.uid}');
+      if (user == null || user.uid == null) {
+        print('User not authenticated - user is null or uid is null');
+        return false;
+      }
 
       final Map<String, dynamic> updateData = {};
+      print('Building update data...');
       
-      if (favoriteDestination != null) {
+      if (favoriteDestination != null && favoriteDestination.isNotEmpty) {
         updateData['favoriteDestination'] = favoriteDestination;
       }
       
-      if (tripType != null) {
+      if (tripType != null && tripType.isNotEmpty) {
         updateData['tripType'] = tripType;
       }
       
-      if (foodPreferences != null) {
+      if (foodPreferences != null && foodPreferences.isNotEmpty) {
         updateData['foodPreferences'] = foodPreferences;
       }
       
-      if (hobbies != null) {
+      if (hobbies != null && hobbies.isNotEmpty) {
         updateData['hobbies'] = hobbies;
       }
       
-      if (profilePhotoUrl != null) {
+      if (profilePhotoUrl != null && profilePhotoUrl.isNotEmpty) {
         updateData['profilePhotoUrl'] = profilePhotoUrl;
       }
       
-      if (instagramLink != null) {
+      if (instagramLink != null && instagramLink.isNotEmpty) {
         updateData['instagramLink'] = instagramLink;
       }
 
-      await _firestore.collection('users').doc(user.uid ?? 'unknown').update(updateData);
+      // Add timestamp for tracking
+      updateData['profileUpdatedAt'] = DateTime.now();
+      print('Final update data: $updateData');
+
+      if (updateData.length <= 1) { // Only timestamp, no actual data
+        print('No data to update - only timestamp present');
+        return false; // Return false instead of throwing
+      }
+
+      print('Attempting Firestore update for user: ${user.uid}');
+      try {
+        await _firestore.collection('users').doc(user.uid!).update(updateData);
+        print('Firestore update successful');
+      } catch (firestoreError) {
+        print('Firestore update failed, trying set with merge: $firestoreError');
+        // If update fails (document might not exist), try set with merge
+        await _firestore.collection('users').doc(user.uid!).set(updateData, SetOptions(merge: true));
+        print('Firestore set with merge successful');
+      }
       return true;
     } catch (e) {
       print('Error updating user profile: $e');
@@ -95,19 +118,31 @@ class ProfileService {
     String? instagramLink,
   }) async {
     try {
+      print('Starting profile save with data:');
+      print('  favoriteDestination: $favoriteDestination');
+      print('  tripType: $tripType');
+      print('  foodPreferences: $foodPreferences');
+      print('  hobbies: $hobbies');
+      print('  instagramLink: $instagramLink');
+      print('  profilePhoto: ${profilePhoto != null ? "provided" : "null"}');
+      
       String? photoUrl;
       
       // Upload photo if provided
       if (profilePhoto != null) {
+        print('Uploading profile photo...');
         photoUrl = await uploadProfilePhoto(profilePhoto);
         if (photoUrl == null) {
           print('Failed to upload profile photo');
           // Continue without photo rather than failing completely
+        } else {
+          print('Photo uploaded successfully: $photoUrl');
         }
       }
       
       // Update profile with all data
-      return await updateUserProfile(
+      print('Calling updateUserProfile...');
+      final result = await updateUserProfile(
         favoriteDestination: favoriteDestination,
         tripType: tripType,
         foodPreferences: foodPreferences,
@@ -115,6 +150,8 @@ class ProfileService {
         profilePhotoUrl: photoUrl,
         instagramLink: instagramLink,
       );
+      print('updateUserProfile result: $result');
+      return result;
     } catch (e) {
       print('Error saving user profile: $e');
       return false;
