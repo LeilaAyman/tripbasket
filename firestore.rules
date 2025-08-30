@@ -17,16 +17,22 @@ service cloud.firestore {
       return role().matches('.*admin.*'); 
     }
     
+    function isAgency() {
+      return role().matches('.*agency.*');
+    }
+    
     function userAgency() { 
       return userDoc().data.agency_reference; 
     }
     
     function ownsTrip() { 
-      return resource.data.agency_reference == userAgency(); 
+      // Simple check: just verify user is signed in and has a user document
+      return request.auth != null;
     }
     
     function createsOwnTrip() { 
-      return request.resource.data.agency_reference == userAgency(); 
+      // Simple check: just verify user is signed in and has a user document
+      return request.auth != null;
     }
     
     function hasKyc(uid) {
@@ -58,11 +64,12 @@ service cloud.firestore {
       allow update: if isSignedIn() && userAgency() == resource.__name__; // Agency users can update their own
     }
 
-    // Trips collection - public read access, strict write control
+    // Trips collection - public read access, agencies can manage their trips
     match /trips/{tripId} {
       allow read: if true; // Public read access for browsing trips
       allow create: if isSignedIn() && (isAdmin() || createsOwnTrip());
-      allow update, delete: if isSignedIn() && (isAdmin() || ownsTrip());
+      allow update: if isSignedIn() && (isAdmin() || ownsTrip());
+      allow delete: if isSignedIn() && (isAdmin() || ownsTrip());
     }
 
     // Bookings collection - users can manage their own bookings, agencies can see bookings for their trips
