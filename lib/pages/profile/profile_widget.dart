@@ -340,7 +340,10 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                   GoRouter.of(context).prepareAuthEvent();
                   await authManager.signOut();
                   GoRouter.of(context).clearRedirectLocation();
-                  context.goNamedAuth('landing', context.mounted);
+                  
+                  if (context.mounted) {
+                    context.go('/');
+                  }
                 }
               },
             ),

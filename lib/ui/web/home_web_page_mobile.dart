@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:go_router/go_router.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/backend/backend.dart';
 import '/auth/firebase_auth/auth_util.dart';
-import '/ui/responsive/breakpoints.dart';
 import '/widgets/hero_background.dart';
 import 'dart:math' as math;
 
@@ -91,6 +89,7 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
         slivers: [
           _buildMobileAppBar(),
           _buildMobileHeroSection(),
+          _buildMobileNavigationSection(),
           _buildMobileSearchSection(),
           _buildMobileFeaturesSection(),
           _buildMobileStatsSection(),
@@ -107,22 +106,167 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
       elevation: 0,
       floating: true,
       snap: true,
-      title: Row(
-        children: [
-          Text(
-            'TripsBasket',
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFFD76B30),
+      toolbarHeight: 80,
+      flexibleSpace: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            bottom: BorderSide(
+              color: Colors.grey.shade200,
+              width: 1,
             ),
           ),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.menu, color: Color(0xFFD76B30)),
-            onPressed: () => _showMobileMenu(),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                // Logo
+                Text(
+                  'TripsBasket',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFD76B30),
+                  ),
+                ),
+                const Spacer(),
+                
+                // Authentication State dependent widgets
+                StreamBuilder<User?>(
+                  stream: FirebaseAuth.instance.authStateChanges(),
+                  builder: (context, snapshot) {
+                    if (loggedIn) {
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Cart icon with badge
+                          _buildCartIcon(),
+                          const SizedBox(width: 8),
+                          
+                          // Profile menu
+                          PopupMenuButton<String>(
+                            onSelected: _handleMenuSelection,
+                            icon: CircleAvatar(
+                              radius: 16,
+                              backgroundColor: const Color(0xFFD76B30),
+                              child: Text(
+                                currentUserDisplayName?.isNotEmpty == true && currentUserDisplayName!.isNotEmpty 
+                                    ? currentUserDisplayName!.substring(0, 1).toUpperCase() 
+                                    : (currentUserEmail.isNotEmpty ? currentUserEmail.substring(0, 1).toUpperCase() : 'U'),
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            itemBuilder: (context) => [
+                              PopupMenuItem(
+                                value: 'profile',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.person, color: Color(0xFFD76B30), size: 16),
+                                    SizedBox(width: 8),
+                                    Text('Profile', style: TextStyle(fontSize: 14)),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem(
+                                value: 'bookings',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.book, color: Color(0xFFD76B30), size: 16),
+                                    SizedBox(width: 8),
+                                    Text('My Bookings', style: TextStyle(fontSize: 14)),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem(
+                                value: 'favorites',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.favorite, color: Color(0xFFD76B30), size: 16),
+                                    SizedBox(width: 8),
+                                    Text('Favorites', style: TextStyle(fontSize: 14)),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuDivider(),
+                              PopupMenuItem(
+                                value: 'logout',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.logout, color: Colors.red.shade600, size: 16),
+                                    SizedBox(width: 8),
+                                    Text('Logout', style: TextStyle(fontSize: 14, color: Colors.red.shade600)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    } else {
+                      // Sign In / Get Started buttons for mobile
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Sign In button (compact for mobile)
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: const Color(0xFFD76B30), width: 1),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: InkWell(
+                              onTap: () => _showSignInDialog(),
+                              borderRadius: BorderRadius.circular(16),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                child: Text(
+                                  'Sign In',
+                                  style: GoogleFonts.poppins(
+                                    color: const Color(0xFFD76B30),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          // Get Started button (compact for mobile)
+                          Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFD76B30),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: InkWell(
+                              onTap: () => _showRegisterDialog(),
+                              borderRadius: BorderRadius.circular(16),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                child: Text(
+                                  'Get Started',
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -238,6 +382,88 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileNavigationSection() {
+    return SliverToBoxAdapter(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildNavigationItem(
+              icon: Icons.business,
+              label: 'Agencies',
+              onTap: () => context.pushNamed('agenciesList'),
+            ),
+            _buildNavigationItem(
+              icon: Icons.rate_review,
+              label: 'Reviews',
+              onTap: () => context.pushNamed('reviews'),
+            ),
+            if (loggedIn) ...[
+              _buildNavigationItem(
+                icon: Icons.favorite,
+                label: 'Favorites',
+                onTap: () => context.pushNamed('favorites'),
+              ),
+            ] else ...[
+              _buildNavigationItem(
+                icon: Icons.search,
+                label: 'Search',
+                onTap: () => _scrollToSearch(),
+              ),
+            ],
+            _buildNavigationItem(
+              icon: Icons.help_outline,
+              label: 'Support',
+              onTap: () => _scrollToContact(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavigationItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD76B30).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: const Color(0xFFD76B30),
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
@@ -739,59 +965,6 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
     return name.isNotEmpty ? name[0].toUpperCase() : 'U';
   }
 
-  void _showMobileMenu() {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.home, color: Color(0xFFD76B30)),
-              title: const Text('Home'),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.search, color: Color(0xFFD76B30)),
-              title: const Text('Search Trips'),
-              onTap: () {
-                Navigator.pop(context);
-                context.pushNamed('searchResults');
-              },
-            ),
-            if (loggedIn) ...[
-              ListTile(
-                leading: const Icon(Icons.person, color: Color(0xFFD76B30)),
-                title: const Text('Profile'),
-                onTap: () {
-                  Navigator.pop(context);
-                  context.pushNamed('profile');
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.book, color: Color(0xFFD76B30)),
-                title: const Text('My Bookings'),
-                onTap: () {
-                  Navigator.pop(context);
-                  context.pushNamed('mybookings');
-                },
-              ),
-            ] else ...[
-              ListTile(
-                leading: const Icon(Icons.login, color: Color(0xFFD76B30)),
-                title: const Text('Sign In'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showSignInDialog();
-                },
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
 
   void _scrollToFeatures() {
     // Scroll to features section
@@ -906,5 +1079,238 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
         );
       }
     }
+  }
+
+  Widget _buildCartIcon() {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, authSnapshot) {
+        final isUserLoggedIn = authSnapshot.hasData && authSnapshot.data != null;
+        
+        return StreamBuilder<List<CartRecord>>(
+          stream: isUserLoggedIn 
+              ? queryCartRecord(
+                  queryBuilder: (cart) => cart.where('userReference', isEqualTo: currentUserReference),
+                )
+              : Stream.value([]),
+          builder: (context, snapshot) {
+            final cartItemCount = snapshot.hasData ? snapshot.data!.length : 0;
+            
+            return InkWell(
+              onTap: () {
+                if (isUserLoggedIn) {
+                  context.pushNamed('cart');
+                } else {
+                  _showSignInDialog();
+                }
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Stack(
+                  children: [
+                    Icon(
+                      Icons.shopping_cart_outlined,
+                      color: const Color(0xFFD76B30),
+                      size: 20,
+                    ),
+                    if (cartItemCount > 0)
+                      Positioned(
+                        right: -2,
+                        top: -2,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            cartItemCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _handleMenuSelection(String value) {
+    switch (value) {
+      case 'profile':
+        context.pushNamed('profile');
+        break;
+      case 'bookings':
+        context.pushNamed('mybookings');
+        break;
+      case 'favorites':
+        context.pushNamed('favorites');
+        break;
+      case 'logout':
+        _handleLogout();
+        break;
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sign Out'),
+        content: const Text('Are you sure you want to sign out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Sign Out'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red[600],
+            ),
+          ),
+        ],
+      ),
+    );
+    
+    if (shouldLogout == true) {
+      GoRouter.of(context).prepareAuthEvent();
+      await authManager.signOut();
+      GoRouter.of(context).clearRedirectLocation();
+      context.goNamedAuth('landing', context.mounted);
+    }
+  }
+
+  void _showRegisterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Get Started',
+                style: GoogleFonts.poppins(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFFD76B30),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Create your account to start booking amazing trips!',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: () => _registerWithGoogle(),
+                  icon: const Icon(Icons.account_circle, color: Colors.white),
+                  label: Text(
+                    'Sign up with Google',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD76B30),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _registerWithGoogle() async {
+    try {
+      GoRouter.of(context).prepareAuthEvent();
+      final user = await authManager.signInWithGoogle(context);
+      
+      if (user != null && mounted) {
+        Navigator.of(context).pop(); // Close dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Welcome to TripsBasket!'),
+            backgroundColor: Color(0xFFD76B30),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Registration failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _scrollToSearch() {
+    // For now, just show a snackbar since we'd need a scroll controller to implement this
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Scroll down to see search options'),
+        backgroundColor: Color(0xFFD76B30),
+      ),
+    );
+  }
+
+  void _scrollToContact() {
+    // For now, just show a snackbar since we'd need a scroll controller to implement this
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Scroll down to see contact information'),
+        backgroundColor: Color(0xFFD76B30),
+      ),
+    );
   }
 }
