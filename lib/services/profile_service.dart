@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -11,11 +12,25 @@ class ProfileService {
   /// Upload profile photo to Firebase Storage and return the download URL
   static Future<String?> uploadProfilePhoto(FFUploadedFile photo) async {
     try {
+      print('Starting photo upload...');
       final user = currentUser;
-      if (user == null) return null;
+      if (user == null) {
+        print('Upload failed: user not authenticated');
+        return null;
+      }
+      
+      if (photo.bytes == null || photo.bytes!.isEmpty) {
+        print('Upload failed: photo bytes are null or empty');
+        return null;
+      }
+      
+      print('Photo bytes length: ${photo.bytes!.length}');
+      print('User ID: ${user.uid}');
 
       final String fileName = 'profile_photos/${user.uid ?? "unknown"}_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final Reference storageRef = _storage.ref().child(fileName);
+      
+      print('Uploading to Firebase Storage: $fileName');
       
       final UploadTask uploadTask = storageRef.putData(
         photo.bytes!,
@@ -28,12 +43,25 @@ class ProfileService {
         ),
       );
 
-      final TaskSnapshot snapshot = await uploadTask;
+      // Add timeout and progress tracking
+      print('Waiting for upload completion...');
+      final TaskSnapshot snapshot = await uploadTask.timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          print('Upload timed out after 30 seconds');
+          uploadTask.cancel();
+          throw Exception('Upload timeout');
+        },
+      );
+      
+      print('Upload completed, getting download URL...');
       final String downloadUrl = await snapshot.ref.getDownloadURL();
+      print('Download URL obtained: $downloadUrl');
       
       return downloadUrl;
     } catch (e) {
       print('Error uploading profile photo: $e');
+      print('Error type: ${e.runtimeType}');
       return null;
     }
   }
@@ -59,27 +87,45 @@ class ProfileService {
       print('Building update data...');
       
       if (favoriteDestination != null && favoriteDestination.isNotEmpty) {
+        print('Adding favoriteDestination: $favoriteDestination');
         updateData['favoriteDestination'] = favoriteDestination;
+      } else {
+        print('Skipping favoriteDestination - null or empty');
       }
       
       if (tripType != null && tripType.isNotEmpty) {
+        print('Adding tripType: $tripType');
         updateData['tripType'] = tripType;
+      } else {
+        print('Skipping tripType - null or empty');
       }
       
       if (foodPreferences != null && foodPreferences.isNotEmpty) {
+        print('Adding foodPreferences: $foodPreferences');
         updateData['foodPreferences'] = foodPreferences;
+      } else {
+        print('Skipping foodPreferences - null or empty');
       }
       
       if (hobbies != null && hobbies.isNotEmpty) {
+        print('Adding hobbies: $hobbies');
         updateData['hobbies'] = hobbies;
+      } else {
+        print('Skipping hobbies - null or empty');
       }
       
       if (profilePhotoUrl != null && profilePhotoUrl.isNotEmpty) {
+        print('Adding profilePhotoUrl: $profilePhotoUrl');
         updateData['profilePhotoUrl'] = profilePhotoUrl;
+      } else {
+        print('Skipping profilePhotoUrl - null or empty');
       }
       
       if (instagramLink != null && instagramLink.isNotEmpty) {
+        print('Adding instagramLink: $instagramLink');
         updateData['instagramLink'] = instagramLink;
+      } else {
+        print('Skipping instagramLink - null or empty');
       }
 
       // Add timestamp for tracking
@@ -91,16 +137,9 @@ class ProfileService {
         return false; // Return false instead of throwing
       }
 
-      print('Attempting Firestore update for user: ${user.uid}');
-      try {
-        await _firestore.collection('users').doc(user.uid!).update(updateData);
-        print('Firestore update successful');
-      } catch (firestoreError) {
-        print('Firestore update failed, trying set with merge: $firestoreError');
-        // If update fails (document might not exist), try set with merge
-        await _firestore.collection('users').doc(user.uid!).set(updateData, SetOptions(merge: true));
-        print('Firestore set with merge successful');
-      }
+      print('Saving to Firestore...');
+      await _firestore.collection('users').doc(user.uid!).set(updateData, SetOptions(merge: true));
+      print('Profile saved successfully');
       return true;
     } catch (e) {
       print('Error updating user profile: $e');
@@ -128,20 +167,17 @@ class ProfileService {
       
       String? photoUrl;
       
-      // Upload photo if provided
-      if (profilePhoto != null) {
-        print('Uploading profile photo...');
-        photoUrl = await uploadProfilePhoto(profilePhoto);
-        if (photoUrl == null) {
-          print('Failed to upload profile photo');
-          // Continue without photo rather than failing completely
-        } else {
-          print('Photo uploaded successfully: $photoUrl');
-        }
+      // Convert photo to base64 for immediate display
+      if (profilePhoto != null && profilePhoto.bytes != null && profilePhoto.bytes!.isNotEmpty) {
+        print('Converting photo to base64...');
+        final base64String = base64Encode(profilePhoto.bytes!);
+        photoUrl = 'data:image/jpeg;base64,$base64String';
+        print('Photo ready (${(profilePhoto.bytes!.length / 1024).round()}KB)');
       }
       
-      // Update profile with all data
+      // Update profile with all data (prioritize travel preferences)
       print('Calling updateUserProfile...');
+      print('About to save - favoriteDestination: $favoriteDestination, tripType: $tripType');
       final result = await updateUserProfile(
         favoriteDestination: favoriteDestination,
         tripType: tripType,

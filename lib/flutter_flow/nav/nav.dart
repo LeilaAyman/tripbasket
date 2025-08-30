@@ -87,8 +87,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
       debugLogDiagnostics: true,
       refreshListenable: appStateNotifier,
       navigatorKey: appNavigatorKey,
-      errorBuilder: (context, state) =>
-          appStateNotifier.loggedIn ? const HomeResponsive() : LandingWidget(),
+      errorBuilder: (context, state) => const HomeResponsive(),
       routes: [
         FFRoute(
           name: '_initialize',
@@ -109,14 +108,9 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
               }
               return const HomeResponsive();
             } else {
-              return LandingWidget();
+              return const HomeResponsive();
             }
           },
-        ),
-        FFRoute(
-          name: LandingWidget.routeName,
-          path: LandingWidget.routePath,
-          builder: (context, params) => LandingWidget(),
         ),
 
         FFRoute(
@@ -140,21 +134,25 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: ProfileWidget.routeName,
           path: ProfileWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => ProfileWidget(),
         ),
         FFRoute(
           name: MybookingsWidget.routeName,
           path: MybookingsWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => MybookingsWidget(),
         ),
         FFRoute(
           name: CartWidget.routeName,
           path: CartWidget.routePath,
+          requireAuth: true,
           builder: (context, params) => CartWidget(),
         ),
         FFRoute(
           name: PaymentWidget.routeName,
           path: PaymentWidget.routePath,
+          requireAuth: true,
           builder: (context, params) {
             final tripRecordId = params.getParam('tripRecord', ParamType.String);
             final totalAmount = params.getParam('totalAmount', ParamType.String);
@@ -438,7 +436,7 @@ class FFRoute {
 
           if (requireAuth && !appStateNotifier.loggedIn) {
             appStateNotifier.setRedirectLocationIfUnset(state.uri.toString());
-            return '/landing';
+            return '/';
           }
           return null;
         },

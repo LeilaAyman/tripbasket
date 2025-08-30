@@ -216,7 +216,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
       ),
       actions: [
         Container(
-          margin: const EdgeInsets.only(right: 16),
+          margin: const EdgeInsets.only(right: 8),
           child: FlutterFlowIconButton(
             borderColor: Colors.white.withOpacity(0.2),
             borderRadius: 12,
@@ -257,7 +257,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
 
   Widget _buildSearchAndFilter() {
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
       child: Column(
         children: [
           // Enhanced Search Bar with better styling
@@ -471,7 +471,9 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
             _buildAgencyInfoCard(),
             const SizedBox(height: 16),
             Container(
-              height: 160,
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height * 0.12, // 12% of screen height
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -553,7 +555,9 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
               _buildAgencyInfoCard(),
               const SizedBox(height: 16),
               Container(
-                height: 140,
+                constraints: BoxConstraints(
+                  minHeight: MediaQuery.of(context).size.height * 0.12, // 12% of screen height
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -770,13 +774,16 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      title.toUpperCase(),
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.85),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.2,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        title.toUpperCase(),
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.85),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.2,
+                        ),
                       ),
                     ),
                   ],
@@ -796,7 +803,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            margin: const EdgeInsets.only(left: 4, bottom: 16),
+            margin: const EdgeInsets.only(left: 4, bottom: 12),
             child: Row(
               children: [
                 Container(
@@ -1757,7 +1764,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
 
   Widget _buildFloatingActionButton() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16, right: 16),
+      margin: const EdgeInsets.only(bottom: 8, right: 8),
       child: FloatingActionButton.extended(
         onPressed: () async {
           context.pushNamed('create_trip');
@@ -2599,7 +2606,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: FlutterFlowTheme.of(context).secondaryBackground,
         borderRadius: BorderRadius.circular(12),

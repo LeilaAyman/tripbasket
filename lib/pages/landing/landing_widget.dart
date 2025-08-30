@@ -36,12 +36,7 @@ class _LandingWidgetState extends State<LandingWidget>
     super.initState();
     _model = createModel(context, () => LandingModel());
     
-    // Auto-navigate to login page after 4 seconds
-    Future.delayed(Duration(seconds: 4), () {
-      if (mounted) {
-        context.pushNamed('home');
-      }
-    });
+    // Show sign-in options immediately instead of auto-redirect
 
     animationsMap.addAll({
       'containerOnPageLoadAnimation1': AnimationInfo(

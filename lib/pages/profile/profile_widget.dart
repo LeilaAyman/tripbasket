@@ -856,6 +856,9 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                             // Close form dialog
                             Navigator.of(context).pop();
                             
+                            // Trigger UI refresh by calling setState
+                            setState(() {});
+                            
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Profile updated successfully!'),

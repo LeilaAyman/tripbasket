@@ -135,7 +135,15 @@ class _UserInterestsFormState extends State<UserInterestsForm> {
   }
 
   void _handleSave() {
+    print('Form validation check...');
+    print('Favorite destination: "${_favoriteDestinationController.text.trim()}"');
+    print('Trip type: $_selectedTripType');
+    print('Food preferences: $_selectedFoodPreferences');
+    print('Hobbies: $_selectedHobbies');
+    print('Instagram link: "${_instagramController.text.trim()}"');
+    
     if (_formKey.currentState!.validate()) {
+      print('Form validation passed, calling onSave...');
       widget.onSave?.call(
         favoriteDestination: _favoriteDestinationController.text.trim(),
         tripType: _selectedTripType,
@@ -144,6 +152,8 @@ class _UserInterestsFormState extends State<UserInterestsForm> {
         profilePhoto: _profilePhoto,
         instagramLink: _instagramController.text.trim(),
       );
+    } else {
+      print('Form validation failed!');
     }
   }
 

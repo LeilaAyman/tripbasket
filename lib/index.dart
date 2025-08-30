@@ -1,6 +1,4 @@
 // Export pages
-export '/pages/landing/landing_widget.dart' show LandingWidget;
-
 export '/pages/home/home_widget.dart' show HomeWidget;
 
 export '/pages/bookings/bookings_widget.dart' show BookingsWidget;

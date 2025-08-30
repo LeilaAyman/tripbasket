@@ -20,7 +20,10 @@
       "Bash(ping:*)",
       "Bash(flutter:*)",
       "Bash(git config:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(gsutil cors:*)",
+      "Bash(firebase --version)",
+      "Bash(firebase use:*)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\maria\\OneDrive\\Desktop"

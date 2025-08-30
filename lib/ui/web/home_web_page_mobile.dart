@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/backend/backend.dart';
@@ -33,6 +34,11 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
       duration: const Duration(milliseconds: 1200),
       vsync: this,
     );
+    
+    // Check if user was redirected from a protected page and show sign-in dialog
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkForAuthRedirect();
+    });
     
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -777,7 +783,7 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
                 title: const Text('Sign In'),
                 onTap: () {
                   Navigator.pop(context);
-                  context.pushNamed('login');
+                  _showSignInDialog();
                 },
               ),
             ],
@@ -790,5 +796,115 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
   void _scrollToFeatures() {
     // Scroll to features section
     // This would need a ScrollController to work properly
+  }
+
+  void _checkForAuthRedirect() {
+    // Check if user is not logged in and there's a redirect location
+    if (!loggedIn) {
+      final appStateNotifier = GoRouter.of(context).appState;
+      if (appStateNotifier.hasRedirect()) {
+        // User was redirected from a protected page, show sign-in dialog
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            _showSignInDialog();
+          }
+        });
+      }
+    }
+  }
+
+  void _showSignInDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Sign In',
+                style: GoogleFonts.poppins(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFFD76B30),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: () => _signInWithGoogle(),
+                  icon: const Icon(Icons.login, color: Colors.white),
+                  label: Text(
+                    'Sign in with Google',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD76B30),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _signInWithGoogle() async {
+    try {
+      GoRouter.of(context).prepareAuthEvent();
+      final user = await authManager.signInWithGoogle(context);
+      
+      if (user != null && mounted) {
+        Navigator.of(context).pop(); // Close dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Successfully signed in!'),
+            backgroundColor: Color(0xFFD76B30),
+          ),
+        );
+        
+        // Check if there's a redirect location and navigate there
+        final appStateNotifier = GoRouter.of(context).appState;
+        if (appStateNotifier.hasRedirect()) {
+          final redirectLocation = appStateNotifier.getRedirectLocation();
+          appStateNotifier.clearRedirectLocation();
+          if (redirectLocation != null) {
+            context.go(redirectLocation);
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Sign in failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

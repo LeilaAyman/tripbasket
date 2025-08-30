@@ -11,5 +11,14 @@ service firebase.storage {
         && request.resource.contentType.matches('image/(jpeg|jpg|png)');
       allow read: if isOwner(uid) || (request.auth.token.admin == true);
     }
+
+    // Allow profile photo uploads for authenticated users
+    match /profile_photos/{fileName} {
+      allow write: if isSignedIn()
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|jpg|png)')
+        && fileName.matches('.*' + request.auth.uid + '.*');
+      allow read: if isSignedIn();
+    }
   }
 }
