@@ -15,6 +15,8 @@ import '/ui/responsive/breakpoints.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:math' as math;
+import '/components/live_chat_widget.dart';
+import '/utils/auth_navigation.dart';
 
 class HomeWebPage extends StatefulWidget {
   const HomeWebPage({super.key});
@@ -264,7 +266,7 @@ class _HomeWebPageState extends State<HomeWebPage>
       GoRouter.of(context).prepareAuthEvent();
       await authManager.signOut();
       GoRouter.of(context).clearRedirectLocation();
-      context.goNamedAuth('landing', context.mounted);
+      AuthNavigation.goNamedAuth(context, 'landing');
     }
   }
 
@@ -441,8 +443,8 @@ class _HomeWebPageState extends State<HomeWebPage>
                     }),
                     _buildNavButton('Travel Agencies', () => context.pushNamed('agenciesList')),
                     _buildNavButton('Reviews', () => context.pushNamed('reviews')),
-                    _buildNavButton('My Bookings', () => context.pushNamed('mybookings')),
-                    _buildNavButton('Profile', () => context.pushNamed('profile')),
+                    _buildNavButton('My Bookings', () => AuthNavigation.pushNamedAuth(context, 'mybookings')),
+                    _buildNavButton('Profile', () => AuthNavigation.pushNamedAuth(context, 'profile')),
                   ],
                 ),
                 
@@ -513,7 +515,7 @@ class _HomeWebPageState extends State<HomeWebPage>
                               
                               // Profile avatar
                               GestureDetector(
-                                onTap: () => context.pushNamed('profile'),
+                                onTap: () => AuthNavigation.pushNamedAuth(context, 'profile'),
                                 child: CircleAvatar(
                                   radius: 18,
                                   backgroundColor: const Color(0xFFD76B30),
@@ -2286,18 +2288,12 @@ class _HomeWebPageState extends State<HomeWebPage>
 
   // Contact Methods
   void _startLiveChat() {
-    // Implement live chat functionality
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Live Chat'),
-        content: Text('Live chat feature will be implemented here. This could integrate with services like Intercom, Zendesk Chat, or custom chat solution.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Close'),
-          ),
-        ],
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: const LiveChatWidget(),
       ),
     );
   }
@@ -2421,8 +2417,8 @@ class _HomeWebPageState extends State<HomeWebPage>
                           ),
                         ),
                         const SizedBox(height: 16),
-                        _buildFooterLink('Profile', () => context.pushNamed('profile')),
-                        _buildFooterLink('My Bookings', () => context.pushNamed('mybookings')),
+                        _buildFooterLink('Profile', () => AuthNavigation.pushNamedAuth(context, 'profile')),
+                        _buildFooterLink('My Bookings', () => AuthNavigation.pushNamedAuth(context, 'mybookings')),
                         _buildFooterLink('My Favorites', () => context.pushNamed('favorites')),
                         _buildFooterLink('Loyalty Points', () => context.pushNamed('loyaltyPage')),
                       ],
@@ -2790,14 +2786,62 @@ class _LoginDialogState extends State<_LoginDialog> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  icon: Image.asset(
-                    'assets/images/google_logo.png',
-                    height: 20,
+                  icon: Container(
                     width: 20,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.account_circle,
-                      color: Colors.red,
-                      size: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(2),
+                      color: Colors.white,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: Image.network(
+                        'https://developers.google.com/identity/images/g-logo.png',
+                        height: 18,
+                        width: 18,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF4285f4),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'G',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                            child: const Center(
+                              child: SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                   label: Text(
@@ -3209,14 +3253,62 @@ class _RegisterDialogState extends State<_RegisterDialog> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    icon: Image.asset(
-                      'assets/images/google_logo.png',
-                      height: 20,
+                    icon: Container(
                       width: 20,
-                      errorBuilder: (context, error, stackTrace) => const Icon(
-                        Icons.account_circle,
-                        color: Colors.red,
-                        size: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(2),
+                        color: Colors.white,
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(2),
+                        child: Image.network(
+                          'https://developers.google.com/identity/images/g-logo.png',
+                          height: 18,
+                          width: 18,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF4285f4),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  'G',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 12,
+                                  height: 12,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 1.5,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
                     label: Text(

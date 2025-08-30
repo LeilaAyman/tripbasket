@@ -14,6 +14,8 @@ import '/widgets/price_text.dart';
 import 'dart:math';
 import 'dart:ui';
 import '/index.dart';
+import '/components/floating_chat_button.dart';
+import '/utils/auth_navigation.dart';
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -364,7 +366,9 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
         FocusScope.of(context).unfocus();
         FocusManager.instance.primaryFocus?.unfocus();
       },
-      child: Scaffold(
+      child: Stack(
+        children: [
+          Scaffold(
         key: scaffoldKey,
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
         appBar: AppBar(
@@ -548,7 +552,7 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  context.pushNamed('profile');
+                  AuthNavigation.pushNamedAuth(context, 'profile');
                 },
               ),
               ListTile(
@@ -566,7 +570,7 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  context.pushNamed('mybookings');
+                  AuthNavigation.pushNamedAuth(context, 'mybookings');
                 },
               ),
               ListTile(
@@ -627,7 +631,7 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                   GoRouter.of(context).prepareAuthEvent();
                   await authManager.signOut();
                   GoRouter.of(context).clearRedirectLocation();
-                  context.goNamedAuth('landing', context.mounted);
+                  AuthNavigation.goNamedAuth(context, 'landing');
                 },
               ),
             ],
@@ -1163,6 +1167,9 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
             ),
           ],
         ),
+        ),
+        const FloatingChatButton(),
+        ],
       ),
     );
   }

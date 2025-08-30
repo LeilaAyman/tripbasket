@@ -342,7 +342,8 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                   GoRouter.of(context).clearRedirectLocation();
                   
                   if (context.mounted) {
-                    context.go('/');
+                    // Force navigation to home and clear navigation stack
+                    context.goNamedAuth('home', mounted);
                   }
                 }
               },

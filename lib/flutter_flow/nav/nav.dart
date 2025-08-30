@@ -120,6 +120,12 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         ),
 
         FFRoute(
+          name: LandingWidget.routeName,
+          path: LandingWidget.routePath,
+          builder: (context, params) => const LandingWidget(),
+        ),
+
+        FFRoute(
           name: BookingsWidget.routeName,
           path: BookingsWidget.routePath,
           builder: (context, params) => BookingsWidget(
@@ -525,6 +531,7 @@ class RootPageContext {
         child: child,
       );
 }
+
 
 extension GoRouterLocationExtension on GoRouter {
   String getCurrentLocation() {

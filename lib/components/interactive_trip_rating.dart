@@ -511,15 +511,7 @@ class TripReviewsDialog extends StatelessWidget {
                   }
                   
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'No reviews yet. Be the first to review!',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: FlutterFlowTheme.of(context).secondaryText,
-                        ),
-                      ),
-                    );
+                    return const SizedBox.shrink(); // Hide the no reviews text
                   }
                   
                   final reviews = snapshot.data!;

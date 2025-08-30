@@ -23,7 +23,11 @@
       "mcp__ide__getDiagnostics",
       "Bash(gsutil cors:*)",
       "Bash(firebase --version)",
-      "Bash(firebase use:*)"
+      "Bash(firebase use:*)",
+      "Bash(timeout 90s flutter build web --target lib/main.dart)",
+      "Bash(curl:*)",
+      "Bash(firebase auth:print-access-token:*)",
+      "Bash(firebase emulators:start:*)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\maria\\OneDrive\\Desktop"

@@ -8,6 +8,7 @@ import '/theme/app_theme.dart';
 import '/utils/formatting.dart';
 import '/widgets/sticky_cta_bar.dart';
 import '/widgets/price_text.dart';
+import '/services/pdf_service.dart';
 import '/index.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -445,23 +446,67 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Itinerary Overview',
-                              style: FlutterFlowTheme.of(context)
-                                  .titleLarge
-                                  .override(
-                                    font: GoogleFonts.interTight(
-                                      fontWeight: FontWeight.w600,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .titleLarge
-                                          .fontStyle,
-                                    ),
-                                    letterSpacing: 0.0,
-                                    fontWeight: FontWeight.w600,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .titleLarge
-                                        .fontStyle,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Itinerary Overview',
+                                  style: FlutterFlowTheme.of(context)
+                                      .titleLarge
+                                      .override(
+                                        font: GoogleFonts.interTight(
+                                          fontWeight: FontWeight.w600,
+                                          fontStyle: FlutterFlowTheme.of(context)
+                                              .titleLarge
+                                              .fontStyle,
+                                        ),
+                                        letterSpacing: 0.0,
+                                        fontWeight: FontWeight.w600,
+                                        fontStyle: FlutterFlowTheme.of(context)
+                                            .titleLarge
+                                            .fontStyle,
+                                      ),
+                                ),
+                                StreamBuilder<List<BookingsRecord>>(
+                                  stream: queryBookingsRecord(
+                                    queryBuilder: (q) => q
+                                        .where('user_reference', isEqualTo: currentUserReference)
+                                        .where('trip_reference', isEqualTo: widget.tripref),
                                   ),
+                                  builder: (context, bookingSnapshot) {
+                                    return StreamBuilder<TripsRecord>(
+                                      stream: TripsRecord.getDocument(widget.tripref!),
+                                      builder: (context, tripSnapshot) {
+                                        if (!bookingSnapshot.hasData || 
+                                            bookingSnapshot.data!.isEmpty || 
+                                            !tripSnapshot.hasData) {
+                                          return const SizedBox.shrink();
+                                        }
+                                        
+                                        final booking = bookingSnapshot.data!.first;
+                                        final trip = tripSnapshot.data!;
+                                        
+                                        return ElevatedButton.icon(
+                                          onPressed: () {
+                                            PdfService.downloadItineraryPdf(
+                                              trip: trip,
+                                              booking: booking,
+                                              context: context,
+                                            );
+                                          },
+                                          icon: const Icon(Icons.picture_as_pdf),
+                                          label: const Text('Download PDF'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFFD76B30),
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
                             StreamBuilder<TripsRecord>(
                               stream:

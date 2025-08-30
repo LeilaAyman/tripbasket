@@ -1,6 +1,7 @@
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
 
 class ImageUploadUtils {
   static const int maxFileSizeBytes = 5 * 1024 * 1024; // 5 MB
@@ -12,6 +13,10 @@ class ImageUploadUtils {
     ImageSource source = ImageSource.gallery,
   }) async {
     try {
+      if (kDebugMode) {
+        print('Starting single image upload - agencyId: $agencyId, tripId: $tripId, source: $source');
+      }
+      
       final picker = ImagePicker();
       final picked = await picker.pickImage(
         source: source,
@@ -19,6 +24,10 @@ class ImageUploadUtils {
         maxHeight: 1080,
         imageQuality: 85,
       );
+      
+      if (kDebugMode) {
+        print('Image picker result: ${picked?.name ?? 'null'}');
+      }
       
       if (picked == null) return null;
 
@@ -42,8 +51,23 @@ class ImageUploadUtils {
       final fileName = '${tripId}_${timestamp}.$ext';
       final ref = FirebaseStorage.instance.ref('trips/$agencyId/images/$fileName');
       
-      await ref.putData(fileBytes, SettableMetadata(contentType: contentType));
-      final url = await ref.getDownloadURL();
+      if (kDebugMode) {
+        print('Uploading to Firebase Storage: trips/$agencyId/images/$fileName');
+      }
+      
+      await ref.putData(fileBytes, SettableMetadata(contentType: contentType)).timeout(
+        const Duration(minutes: 2),
+        onTimeout: () => throw Exception('Upload timed out after 2 minutes'),
+      );
+      
+      if (kDebugMode) {
+        print('Upload completed, getting download URL...');
+      }
+      
+      final url = await ref.getDownloadURL().timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw Exception('Failed to get download URL after 30 seconds'),
+      );
 
       return url;
     } catch (e) {
@@ -109,6 +133,10 @@ class ImageUploadUtils {
     int maxImages = 5,
   }) async {
     try {
+      if (kDebugMode) {
+        print('Starting multiple image upload - agencyId: $agencyId, tripId: $tripId, maxImages: $maxImages');
+      }
+      
       final picker = ImagePicker();
       final picked = await picker.pickMultiImage(
         maxWidth: 1920,
@@ -116,14 +144,17 @@ class ImageUploadUtils {
         imageQuality: 85,
       );
       
+      if (kDebugMode) {
+        print('Image picker returned ${picked.length} images');
+      }
+      
       if (picked.isEmpty) return [];
 
       if (picked.length > maxImages) {
         throw Exception('Maximum $maxImages images allowed. Please select fewer images.');
       }
 
-      List<String> uploadedUrls = [];
-      
+      // Validate all files first before uploading
       for (int i = 0; i < picked.length; i++) {
         final file = picked[i];
         final fileBytes = await file.readAsBytes();
@@ -134,23 +165,52 @@ class ImageUploadUtils {
         }
 
         final ext = file.name?.split('.').last.toLowerCase() ?? 'jpg';
-        final contentType = _getContentType(ext);
 
         // Validate image format
         if (!_isValidImageFormat(ext)) {
           throw Exception('Image ${i + 1} has invalid format. Please use JPG, PNG, or WebP.');
         }
-
-        // Upload to Firebase Storage
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final fileName = '${tripId}_gallery_${i}_${timestamp}.$ext';
-        final ref = FirebaseStorage.instance.ref('trips/$agencyId/gallery/$fileName');
-        
-        await ref.putData(fileBytes, SettableMetadata(contentType: contentType));
-        final url = await ref.getDownloadURL();
-        uploadedUrls.add(url);
       }
 
+      // Upload all images in parallel for better performance
+      final uploadTasks = picked.asMap().entries.map((entry) async {
+        final index = entry.key;
+        final file = entry.value;
+        
+        final fileBytes = await file.readAsBytes();
+        final ext = file.name?.split('.').last.toLowerCase() ?? 'jpg';
+        final contentType = _getContentType(ext);
+        
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final fileName = '${tripId}_gallery_${index}_${timestamp}.$ext';
+        final ref = FirebaseStorage.instance.ref('trips/$agencyId/gallery/$fileName');
+        
+        if (kDebugMode) {
+          print('Uploading image ${index + 1} to Firebase Storage: trips/$agencyId/gallery/$fileName');
+        }
+        
+        await ref.putData(fileBytes, SettableMetadata(contentType: contentType)).timeout(
+          const Duration(minutes: 2),
+          onTimeout: () => throw Exception('Upload of image ${index + 1} timed out after 2 minutes'),
+        );
+        
+        return await ref.getDownloadURL().timeout(
+          const Duration(seconds: 30),
+          onTimeout: () => throw Exception('Failed to get download URL for image ${index + 1} after 30 seconds'),
+        );
+      });
+
+      // Wait for all uploads to complete
+      if (kDebugMode) {
+        print('Starting parallel upload of ${uploadTasks.length} images');
+      }
+      
+      final uploadedUrls = await Future.wait(uploadTasks);
+      
+      if (kDebugMode) {
+        print('Upload completed successfully. URLs: $uploadedUrls');
+      }
+      
       return uploadedUrls;
     } catch (e) {
       if (kDebugMode) {

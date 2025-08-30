@@ -153,7 +153,7 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
                 return _buildEmptyState(
                   icon: Icons.rate_review,
                   title: tripReference != null ? 'No Reviews for This Trip Yet' : 'No Trip Reviews Yet',
-                  subtitle: tripReference != null ? 'Be the first to review this trip!' : 'Be the first to review a trip!',
+                  subtitle: tripReference != null ? 'No reviews available for this trip.' : 'No trip reviews available.',
                   buttonText: 'Browse Trips',
                   onButtonPressed: () => context.pushNamed('home'),
                 );
@@ -381,7 +381,7 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
                   return _buildEmptyState(
                     icon: Icons.business,
                     title: 'No Agency Reviews Yet',
-                    subtitle: 'Be the first to review a travel agency!',
+                    subtitle: 'No agency reviews available.',
                     buttonText: 'Browse Agencies',
                     onButtonPressed: () => context.pushNamed('agenciesList'),
                   );
@@ -463,7 +463,7 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
                       return _buildEmptyState(
                         icon: Icons.business,
                         title: 'No Reviews for This Agency',
-                        subtitle: 'Be the first to review this travel agency!',
+                        subtitle: 'No reviews available for this agency.',
                         buttonText: 'Browse Agencies',
                         onButtonPressed: () => context.pushNamed('agenciesList'),
                       );

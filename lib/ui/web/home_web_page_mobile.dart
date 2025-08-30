@@ -5,6 +5,9 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/backend/backend.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/widgets/hero_background.dart';
+import '/components/live_chat_widget.dart';
+import '/utils/auth_navigation.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:math' as math;
 
 class HomeWebPageMobile extends StatefulWidget {
@@ -93,7 +96,9 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
           _buildMobileSearchSection(),
           _buildMobileFeaturesSection(),
           _buildMobileStatsSection(),
+          _buildMobilePremiumDestinationsSection(),
           _buildMobileTestimonialsSection(),
+          _buildMobileContactUsSection(),
           _buildMobileFooter(),
         ],
       ),
@@ -1156,10 +1161,10 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
   void _handleMenuSelection(String value) {
     switch (value) {
       case 'profile':
-        context.pushNamed('profile');
+        AuthNavigation.pushNamedAuth(context, 'profile');
         break;
       case 'bookings':
-        context.pushNamed('mybookings');
+        AuthNavigation.pushNamedAuth(context, 'mybookings');
         break;
       case 'favorites':
         context.pushNamed('favorites');
@@ -1196,7 +1201,7 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
       GoRouter.of(context).prepareAuthEvent();
       await authManager.signOut();
       GoRouter.of(context).clearRedirectLocation();
-      context.goNamedAuth('landing', context.mounted);
+      AuthNavigation.goNamedAuth(context, 'landing');
     }
   }
 
@@ -1312,5 +1317,388 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
         backgroundColor: Color(0xFFD76B30),
       ),
     );
+  }
+
+  Widget _buildMobilePremiumDestinationsSection() {
+    return SliverToBoxAdapter(
+      child: Container(
+        color: Colors.grey.shade50,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            Text(
+              'Premium Destinations',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Carefully curated experiences in extraordinary locations',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 32),
+            StreamBuilder<List<TripsRecord>>(
+              stream: queryTripsRecord(
+                queryBuilder: (q) => q.limit(6),
+              ),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32),
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFD76B30),
+                      ),
+                    ),
+                  );
+                }
+
+                final trips = snapshot.data!;
+                if (trips.isEmpty) {
+                  return Container(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.flight_takeoff,
+                          size: 64,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Amazing trips coming soon!',
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 1,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 1.2,
+                  ),
+                  itemCount: math.min(3, trips.length),
+                  itemBuilder: (context, index) {
+                    final trip = trips[index];
+                    return _buildMobileDestinationCard(trip);
+                  },
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () => context.pushNamed('searchResults'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD76B30),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                ),
+                child: Text(
+                  'View All Destinations',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileDestinationCard(TripsRecord trip) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            // Background Image
+            Container(
+              height: double.infinity,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                image: trip.imageUrl.isNotEmpty
+                    ? DecorationImage(
+                        image: NetworkImage(trip.imageUrl),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: trip.imageUrl.isEmpty
+                  ? Icon(
+                      Icons.image,
+                      size: 64,
+                      color: Colors.grey.shade400,
+                    )
+                  : null,
+            ),
+            // Gradient Overlay
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.7),
+                  ],
+                ),
+              ),
+            ),
+            // Content
+            Positioned(
+              bottom: 16,
+              left: 16,
+              right: 16,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    trip.title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    trip.location,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD76B30),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'From \$${trip.price.toInt()}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      if (trip.rating > 0) ...[
+                        Icon(
+                          Icons.star,
+                          size: 16,
+                          color: Colors.amber,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          trip.rating.toStringAsFixed(1),
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileContactUsSection() {
+    return SliverToBoxAdapter(
+      child: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            Text(
+              'Get in Touch',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Have questions? We\'re here to help 24/7',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 32),
+            Column(
+              children: [
+                _buildMobileContactMethod(
+                  Icons.chat_bubble_outline,
+                  'Live Chat',
+                  'Chat with our travel experts',
+                  () => _startLiveChat(),
+                ),
+                const SizedBox(height: 16),
+                _buildMobileContactMethod(
+                  Icons.phone_outlined,
+                  'Call Us',
+                  '+1 (555) 123-TRIP',
+                  () => _makePhoneCall(),
+                ),
+                const SizedBox(height: 16),
+                _buildMobileContactMethod(
+                  Icons.email_outlined,
+                  'Email Support',
+                  'support@tripsbasket.com',
+                  () => _sendEmail(),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileContactMethod(IconData icon, String title, String subtitle, VoidCallback onTap) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: ListTile(
+        onTap: onTap,
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: const Color(0xFFD76B30),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            color: Colors.white,
+            size: 24,
+          ),
+        ),
+        title: Text(
+          title,
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: Colors.grey.shade600,
+          ),
+        ),
+        trailing: const Icon(
+          Icons.arrow_forward_ios,
+          size: 16,
+          color: Color(0xFFD76B30),
+        ),
+      ),
+    );
+  }
+
+  void _startLiveChat() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        alignment: Alignment.center,
+        child: const LiveChatWidget(),
+      ),
+    );
+  }
+
+  void _makePhoneCall() async {
+    final url = Uri.parse('tel:+15551234TRIP');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not make phone call'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _sendEmail() async {
+    final url = Uri.parse('mailto:support@tripsbasket.com');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open email app'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

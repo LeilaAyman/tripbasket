@@ -6,6 +6,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/utils/agency_utils.dart';
 import '/components/image_upload_widget.dart';
+import '/components/multiple_image_upload_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -27,11 +28,14 @@ class _CreateTripWidgetState extends State<CreateTripWidget> {
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
   String? _uploadedImageUrl;
+  List<String> _galleryImages = [];
+  late final String _tripId;
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => CreateTripModel());
+    _tripId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
 
     _model.titleController ??= TextEditingController();
     _model.titleFocusNode ??= FocusNode();
@@ -118,6 +122,7 @@ class _CreateTripWidgetState extends State<CreateTripWidget> {
         location: _model.locationController!.text.trim(),
         description: _model.descriptionController!.text.trim(),
         image: _uploadedImageUrl ?? '',
+        gallery: _galleryImages,
         itenarary: _model.itineraryControllers.map((controller) => controller.text.trim()).where((text) => text.isNotEmpty).toList(),
         startDate: startDate,
         endDate: endDate,
@@ -330,7 +335,7 @@ class _CreateTripWidgetState extends State<CreateTripWidget> {
               SizedBox(height: 16),
               ImageUploadWidget(
                 agencyId: AgencyUtils.getCurrentAgencyRef()?.id ?? 'unknown',
-                tripId: DateTime.now().millisecondsSinceEpoch.toString(),
+                tripId: _tripId,
                 onImageUploaded: (url) {
                   setState(() {
                     _uploadedImageUrl = url;
@@ -338,6 +343,18 @@ class _CreateTripWidgetState extends State<CreateTripWidget> {
                 },
                 label: 'Trip Image',
                 isRequired: true,
+              ),
+              SizedBox(height: 16),
+              MultipleImageUploadWidget(
+                agencyId: AgencyUtils.getCurrentAgencyRef()?.id ?? 'unknown',
+                tripId: _tripId,
+                onImagesUploaded: (urls) {
+                  setState(() {
+                    _galleryImages = urls;
+                  });
+                },
+                label: 'Additional Photos (Optional)',
+                initialImageUrls: _galleryImages,
               ),
               SizedBox(height: 16),
               _buildItinerarySection(),

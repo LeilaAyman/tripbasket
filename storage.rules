@@ -20,5 +20,29 @@ service firebase.storage {
         && fileName.matches('.*' + request.auth.uid + '.*');
       allow read: if isSignedIn();
     }
+
+    // Allow trip images for authenticated users (agencies and admins)
+    match /trips/{agencyId}/images/{fileName} {
+      allow write: if isSignedIn()
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|jpg|png|webp)');
+      allow read: if true; // Public read access for trip images
+    }
+
+    // Allow trip gallery images for authenticated users (agencies and admins)
+    match /trips/{agencyId}/gallery/{fileName} {
+      allow write: if isSignedIn()
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|jpg|png|webp)');
+      allow read: if true; // Public read access for trip gallery images
+    }
+
+    // Allow user profile images
+    match /users/{uid}/profile/{fileName} {
+      allow write: if isSignedIn() && isOwner(uid)
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|jpg|png|webp)');
+      allow read: if true; // Public read access for profile images
+    }
   }
 }

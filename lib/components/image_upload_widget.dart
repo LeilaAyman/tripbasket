@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -51,6 +52,9 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
       );
 
       if (uploadedUrl != null && mounted) {
+        if (kDebugMode) {
+          print('Image upload successful! URL: $uploadedUrl');
+        }
         setState(() {
           _currentImageUrl = uploadedUrl;
         });
@@ -60,6 +64,17 @@ class _ImageUploadWidgetState extends State<ImageUploadWidget> {
           SnackBar(
             content: Text('${widget.label} uploaded successfully!'),
             backgroundColor: const Color(0xFFD76B30),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else if (mounted && uploadedUrl == null) {
+        if (kDebugMode) {
+          print('Upload completed but URL is null');
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Upload failed - no URL returned'),
+            backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),
         );

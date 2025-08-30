@@ -17,6 +17,7 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '/pages/home/home_model.dart';
+import '/utils/auth_navigation.dart';
 
 class HomeMobilePage extends StatefulWidget {
   const HomeMobilePage({super.key});
@@ -440,7 +441,7 @@ class _HomeMobilePageState extends State<HomeMobilePage> with TickerProviderStat
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  context.pushNamed('profile');
+                  AuthNavigation.pushNamedAuth(context, 'profile');
                 },
               ),
               ListTile(
@@ -458,7 +459,7 @@ class _HomeMobilePageState extends State<HomeMobilePage> with TickerProviderStat
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  context.pushNamed('mybookings');
+                  AuthNavigation.pushNamedAuth(context, 'mybookings');
                 },
               ),
               ListTile(

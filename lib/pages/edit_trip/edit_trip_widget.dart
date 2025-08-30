@@ -6,6 +6,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/utils/agency_utils.dart';
 import '/components/image_upload_widget.dart';
+import '/components/multiple_image_upload_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -32,13 +33,18 @@ class _EditTripWidgetState extends State<EditTripWidget> {
   TripsRecord? _trip;
   bool _isLoading = true;
   String? _uploadedImageUrl;
+  List<String> _galleryImages = [];
+  late final String _fallbackTripId;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+
+  String get _tripId => _trip?.reference.id ?? _fallbackTripId;
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => EditTripModel());
+    _fallbackTripId = 'edit_${DateTime.now().millisecondsSinceEpoch}';
     _loadTrip();
   }
 
@@ -91,6 +97,9 @@ class _EditTripWidgetState extends State<EditTripWidget> {
 
     // Initialize uploaded image URL with existing image
     _uploadedImageUrl = _trip!.image.isNotEmpty ? _trip!.image : null;
+    
+    // Initialize gallery images with existing gallery
+    _galleryImages = List.from(_trip!.gallery);
 
     // Initialize itinerary controllers for each day
     _initializeItineraryControllers(_trip!.itenarary);
@@ -218,6 +227,7 @@ class _EditTripWidgetState extends State<EditTripWidget> {
         'location': _model.locationController!.text.trim(),
         'description': _model.descriptionController!.text.trim(),
         'image': _uploadedImageUrl ?? '',
+        'gallery': _galleryImages,
         'itenarary': days,
         'start_date': startDate,
         'end_date': endDate,
@@ -470,7 +480,7 @@ class _EditTripWidgetState extends State<EditTripWidget> {
               SizedBox(height: 16),
               ImageUploadWidget(
                 agencyId: _trip?.agencyReference?.id ?? 'unknown',
-                tripId: _trip?.reference.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                tripId: _tripId,
                 initialImageUrl: _uploadedImageUrl,
                 onImageUploaded: (url) {
                   setState(() {
@@ -479,6 +489,18 @@ class _EditTripWidgetState extends State<EditTripWidget> {
                 },
                 label: 'Trip Image',
                 isRequired: true,
+              ),
+              SizedBox(height: 16),
+              MultipleImageUploadWidget(
+                agencyId: _trip?.agencyReference?.id ?? 'unknown',
+                tripId: _tripId,
+                onImagesUploaded: (urls) {
+                  setState(() {
+                    _galleryImages = urls;
+                  });
+                },
+                label: 'Additional Photos (Optional)',
+                initialImageUrls: _galleryImages,
               ),
               SizedBox(height: 16),
               _buildItinerarySection(),

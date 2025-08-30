@@ -71,6 +71,11 @@ class TripsRecord extends FirestoreRecord {
   
   // "imageUrl" field.
   String get imageUrl => _image ?? '';
+  
+  // "gallery" field.
+  List<String>? _gallery;
+  List<String> get gallery => _gallery ?? const [];
+  bool hasGallery() => _gallery != null;
 
   // "description" field.
   String? _description;
@@ -118,6 +123,7 @@ class TripsRecord extends FirestoreRecord {
     _endDate = snapshotData['end_date'] as DateTime?;
     _availableSeats = castToType<int>(snapshotData['available_seats']);
     _image = snapshotData['image'] as String?;
+    _gallery = getDataList(snapshotData['gallery']);
     _description = snapshotData['description'] as String?;
     _title = snapshotData['title'] as String?;
     _location = snapshotData['location'] as String?;
@@ -174,6 +180,7 @@ Map<String, dynamic> createTripsRecordData({
   DateTime? endDate,
   int? availableSeats,
   String? image,
+  List<String>? gallery,
   String? description,
   String? title,
   String? location,
@@ -197,6 +204,7 @@ Map<String, dynamic> createTripsRecordData({
       'end_date': endDate,
       'available_seats': availableSeats,
       'image': image,
+      'gallery': gallery,
       'description': description,
       'title': title,
       'location': location,
@@ -226,6 +234,7 @@ class TripsRecordDocumentEquality implements Equality<TripsRecord> {
         e1?.endDate == e2?.endDate &&
         e1?.availableSeats == e2?.availableSeats &&
         e1?.image == e2?.image &&
+        listEquality.equals(e1?.gallery, e2?.gallery) &&
         e1?.description == e2?.description &&
         e1?.title == e2?.title &&
         e1?.location == e2?.location &&
@@ -247,6 +256,7 @@ class TripsRecordDocumentEquality implements Equality<TripsRecord> {
         e?.endDate,
         e?.availableSeats,
         e?.image,
+        e?.gallery,
         e?.description,
         e?.title,
         e?.location,
