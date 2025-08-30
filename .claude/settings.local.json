@@ -27,7 +27,8 @@
       "Bash(timeout 90s flutter build web --target lib/main.dart)",
       "Bash(curl:*)",
       "Bash(firebase auth:print-access-token:*)",
-      "Bash(firebase emulators:start:*)"
+      "Bash(firebase emulators:start:*)",
+      "Bash(firebase firestore:query:*)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\maria\\OneDrive\\Desktop"

@@ -1351,6 +1351,22 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
                 queryBuilder: (q) => q.limit(6),
               ),
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  print('Mobile: Error loading trips: ${snapshot.error}');
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.error, size: 48, color: Colors.red),
+                          const SizedBox(height: 16),
+                          Text('Error loading trips: ${snapshot.error}'),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
                 if (!snapshot.hasData) {
                   return const Center(
                     child: Padding(
@@ -1363,6 +1379,8 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
                 }
 
                 final trips = snapshot.data!;
+                print('Mobile: Trips loaded: ${trips.length} trips found');
+                
                 if (trips.isEmpty) {
                   return Container(
                     padding: const EdgeInsets.all(32),

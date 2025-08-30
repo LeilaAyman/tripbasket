@@ -622,53 +622,23 @@ class _LoginDialogState extends State<_LoginDialog> {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(2),
-                          child: Image.network(
-                            'https://developers.google.com/identity/images/g-logo.png',
+                          child: Container(
                             height: 18,
                             width: 18,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) {
-                              // Fallback to a simple 'G' text if the image fails to load
-                              return Container(
-                                width: 20,
-                                height: 20,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF4285f4),
-                                  borderRadius: BorderRadius.circular(2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF4285f4),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'G',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                child: const Center(
-                                  child: Text(
-                                    'G',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Container(
-                                width: 20,
-                                height: 20,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade200,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                                child: const Center(
-                                  child: SizedBox(
-                                    width: 12,
-                                    height: 12,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 1.5,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
+                              ),
+                            ),
                           ),
                         ),
                       ),
