@@ -27,6 +27,13 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
   late Animation<Offset> _heroSlideAnimation;
   late Animation<double> _buttonsFadeAnimation;
 
+  // Search controllers
+  final TextEditingController _destinationController = TextEditingController();
+  final TextEditingController _checkinController = TextEditingController();
+  final TextEditingController _travelersController = TextEditingController();
+  DateTime? _selectedCheckinDate;
+  int _travelers = 1;
+
   @override
   void initState() {
     super.initState();
@@ -81,6 +88,9 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
   void dispose() {
     _heroController.dispose();
     _fadeController.dispose();
+    _destinationController.dispose();
+    _checkinController.dispose();
+    _travelersController.dispose();
     super.dispose();
   }
 
@@ -509,17 +519,37 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
               ),
               child: Column(
                 children: [
-                  _buildMobileSearchField('Destination', Icons.location_on),
+                  _buildMobileSearchField(
+                    controller: _destinationController,
+                    label: 'Destination',
+                    icon: Icons.location_on,
+                    hintText: 'Where do you want to go?',
+                    onTap: null,
+                  ),
                   const SizedBox(height: 16),
-                  _buildMobileSearchField('Check-in', Icons.calendar_today),
+                  _buildMobileSearchField(
+                    controller: _checkinController,
+                    label: 'Check-in',
+                    icon: Icons.calendar_today,
+                    hintText: 'Select date',
+                    readOnly: true,
+                    onTap: () => _selectCheckinDate(),
+                  ),
                   const SizedBox(height: 16),
-                  _buildMobileSearchField('Travelers', Icons.people),
+                  _buildMobileSearchField(
+                    controller: _travelersController,
+                    label: 'Travelers',
+                    icon: Icons.people,
+                    hintText: 'Number of travelers',
+                    readOnly: true,
+                    onTap: () => _selectTravelers(),
+                  ),
                   const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: () => context.pushNamed('searchResults'),
+                      onPressed: _performSearch,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFD76B30),
                         shape: RoundedRectangleBorder(
@@ -532,7 +562,7 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
                           const Icon(Icons.search, color: Colors.white),
                           const SizedBox(width: 8),
                           Text(
-                            'Search Premium Trips',
+                            'Search Trips',
                             style: GoogleFonts.poppins(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -552,7 +582,14 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
     );
   }
 
-  Widget _buildMobileSearchField(String label, IconData icon) {
+  Widget _buildMobileSearchField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required String hintText,
+    bool readOnly = false,
+    VoidCallback? onTap,
+  }) {
     return Container(
       height: 56,
       decoration: BoxDecoration(
@@ -580,11 +617,21 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                label,
+              child: TextFormField(
+                controller: controller,
+                readOnly: readOnly,
+                onTap: onTap,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: hintText,
+                  hintStyle: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
                 style: GoogleFonts.poppins(
                   fontSize: 14,
-                  color: Colors.grey.shade600,
+                  color: Colors.black87,
                 ),
               ),
             ),
@@ -970,6 +1017,160 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
     return name.isNotEmpty ? name[0].toUpperCase() : 'U';
   }
 
+  // Search functionality methods
+  Future<void> _selectCheckinDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedCheckinDate ?? DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: const Color(0xFFD76B30),
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    
+    if (picked != null && picked != _selectedCheckinDate) {
+      setState(() {
+        _selectedCheckinDate = picked;
+        _checkinController.text = "${picked.day}/${picked.month}/${picked.year}";
+      });
+    }
+  }
+
+  Future<void> _selectTravelers() async {
+    final int? selected = await showDialog<int>(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Select Number of Travelers',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    onPressed: _travelers > 1 ? () {
+                      setState(() {
+                        _travelers--;
+                      });
+                    } : null,
+                    icon: const Icon(Icons.remove),
+                    style: IconButton.styleFrom(
+                      backgroundColor: const Color(0xFFD76B30).withOpacity(0.1),
+                    ),
+                  ),
+                  Container(
+                    width: 80,
+                    height: 40,
+                    alignment: Alignment.center,
+                    child: Text(
+                      '$_travelers',
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _travelers < 10 ? () {
+                      setState(() {
+                        _travelers++;
+                      });
+                    } : null,
+                    icon: const Icon(Icons.add),
+                    style: IconButton.styleFrom(
+                      backgroundColor: const Color(0xFFD76B30).withOpacity(0.1),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(
+                        'Cancel',
+                        style: GoogleFonts.poppins(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(_travelers),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD76B30),
+                      ),
+                      child: Text(
+                        'Done',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (selected != null) {
+      setState(() {
+        _travelers = selected;
+        _travelersController.text = '$_travelers traveler${_travelers > 1 ? 's' : ''}';
+      });
+    }
+  }
+
+  void _performSearch() {
+    // Validate search criteria
+    if (_destinationController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please enter a destination', style: GoogleFonts.poppins()),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Navigate to search results with search parameters
+    final searchParams = {
+      'destination': _destinationController.text.trim(),
+      'checkinDate': _selectedCheckinDate?.toIso8601String(),
+      'travelers': _travelers.toString(),
+    };
+
+    context.pushNamed('searchResults', queryParameters: searchParams);
+  }
+
 
   void _scrollToFeatures() {
     // Scroll to features section
@@ -994,97 +1195,10 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
   void _showSignInDialog() {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Sign In',
-                style: GoogleFonts.poppins(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFFD76B30),
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton.icon(
-                  onPressed: () => _signInWithGoogle(),
-                  icon: const Icon(Icons.login, color: Colors.white),
-                  label: Text(
-                    'Sign in with Google',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD76B30),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  'Cancel',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      builder: (context) => _SignInDialog(),
     );
   }
 
-  Future<void> _signInWithGoogle() async {
-    try {
-      GoRouter.of(context).prepareAuthEvent();
-      final user = await authManager.signInWithGoogle(context);
-      
-      if (user != null && mounted) {
-        Navigator.of(context).pop(); // Close dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Successfully signed in!'),
-            backgroundColor: Color(0xFFD76B30),
-          ),
-        );
-        
-        // Check if there's a redirect location and navigate there
-        final appStateNotifier = GoRouter.of(context).appState;
-        if (appStateNotifier.hasRedirect()) {
-          final redirectLocation = appStateNotifier.getRedirectLocation();
-          appStateNotifier.clearRedirectLocation();
-          if (redirectLocation != null) {
-            context.go(redirectLocation);
-          }
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Sign in failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
 
   Widget _buildCartIcon() {
     return StreamBuilder<User?>(
@@ -1208,96 +1322,10 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
   void _showRegisterDialog() {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Get Started',
-                style: GoogleFonts.poppins(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFFD76B30),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Create your account to start booking amazing trips!',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton.icon(
-                  onPressed: () => _registerWithGoogle(),
-                  icon: const Icon(Icons.account_circle, color: Colors.white),
-                  label: Text(
-                    'Sign up with Google',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD76B30),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  'Cancel',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      builder: (context) => _RegisterDialog(),
     );
   }
 
-  Future<void> _registerWithGoogle() async {
-    try {
-      GoRouter.of(context).prepareAuthEvent();
-      final user = await authManager.signInWithGoogle(context);
-      
-      if (user != null && mounted) {
-        Navigator.of(context).pop(); // Close dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Welcome to TripsBasket!'),
-            backgroundColor: Color(0xFFD76B30),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Registration failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
 
   void _scrollToSearch() {
     // For now, just show a snackbar since we'd need a scroll controller to implement this
@@ -1451,21 +1479,29 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
   }
 
   Widget _buildMobileDestinationCard(TripsRecord trip) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Stack(
-          children: [
+    return InkWell(
+      onTap: () {
+        // Navigate to trip details page
+        context.pushNamed('bookTrip', pathParameters: {
+          'tripId': trip.reference.id,
+        });
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            children: [
             // Background Image
             Container(
               height: double.infinity,
@@ -1568,7 +1604,8 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
                 ],
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1718,5 +1755,733 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
         );
       }
     }
+  }
+}
+
+// Sign In Dialog for Mobile
+class _SignInDialog extends StatefulWidget {
+  @override
+  State<_SignInDialog> createState() => _SignInDialogState();
+}
+
+class _SignInDialogState extends State<_SignInDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isPasswordVisible = false;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSignIn() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      GoRouter.of(context).prepareAuthEvent();
+      final user = await authManager.signInWithEmail(
+        context,
+        _emailController.text.trim(),
+        _passwordController.text,
+      );
+
+      if (user != null && mounted) {
+        Navigator.of(context).pop(); // Close dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Successfully signed in!'),
+            backgroundColor: Color(0xFFD76B30),
+          ),
+        );
+        
+        // Check if there's a redirect location and navigate there
+        final appStateNotifier = GoRouter.of(context).appState;
+        if (appStateNotifier.hasRedirect()) {
+          final redirectLocation = appStateNotifier.getRedirectLocation();
+          appStateNotifier.clearRedirectLocation();
+          if (redirectLocation != null) {
+            context.go(redirectLocation);
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Sign in failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isLoading = true);
+
+    try {
+      GoRouter.of(context).prepareAuthEvent();
+      final user = await authManager.signInWithGoogle(context);
+
+      if (user != null && mounted) {
+        Navigator.of(context).pop(); // Close dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Successfully signed in!'),
+            backgroundColor: Color(0xFFD76B30),
+          ),
+        );
+        
+        // Check if there's a redirect location and navigate there
+        final appStateNotifier = GoRouter.of(context).appState;
+        if (appStateNotifier.hasRedirect()) {
+          final redirectLocation = appStateNotifier.getRedirectLocation();
+          appStateNotifier.clearRedirectLocation();
+          if (redirectLocation != null) {
+            context.go(redirectLocation);
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Sign in failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        width: 400,
+        constraints: const BoxConstraints(maxHeight: 500),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Sign In',
+                      style: GoogleFonts.poppins(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFFD76B30),
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.grey.shade100,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Welcome back! Please sign in to your account.',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                // Email field
+                TextFormField(
+                  controller: _emailController,
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    hintText: 'Enter your email',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.email_outlined),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your email';
+                    }
+                    if (!value.contains('@')) {
+                      return 'Please enter a valid email';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Password field
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: !_isPasswordVisible,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    hintText: 'Enter your password',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                      icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your password';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+                
+                // Sign In button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _handleSignIn,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD76B30),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            'Sign In',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Divider
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'OR',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                // Google Sign In button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: _isLoading ? null : _handleGoogleSignIn,
+                    icon: const Icon(Icons.login, color: Color(0xFFD76B30)),
+                    label: Text(
+                      'Sign in with Google',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFFD76B30),
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFD76B30)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Sign up link
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    // Show register dialog instead
+                    Future.delayed(const Duration(milliseconds: 100), () {
+                      if (context.mounted) {
+                        showDialog(
+                          context: context,
+                          builder: (context) => _RegisterDialog(),
+                        );
+                      }
+                    });
+                  },
+                  child: RichText(
+                    text: TextSpan(
+                      text: "Don't have an account? ",
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: 'Sign up',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: const Color(0xFFD76B30),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Register Dialog for Mobile
+class _RegisterDialog extends StatefulWidget {
+  @override
+  State<_RegisterDialog> createState() => _RegisterDialogState();
+}
+
+class _RegisterDialogState extends State<_RegisterDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
+  bool _isLoading = false;
+  String _selectedRole = 'user';
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleRegister() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final user = await authManager.createAccountWithEmail(
+        context,
+        _emailController.text.trim(),
+        _passwordController.text,
+      );
+
+      if (user != null && mounted) {
+        // Update user profile with additional info
+        await currentUserDocument?.reference.update({
+          'display_name': _nameController.text.trim(),
+          'name': _nameController.text.trim(),
+          'phone_number': _phoneController.text.trim(),
+          'role': [_selectedRole],
+          'loyaltyPoints': 0,
+        });
+
+        Navigator.of(context).pop(); // Close dialog
+        
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Account created successfully! Welcome to TripsBasket!', style: GoogleFonts.poppins()),
+            backgroundColor: const Color(0xFFD76B30),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Registration failed. Please try again.', style: GoogleFonts.poppins()),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleGoogleRegister() async {
+    setState(() => _isLoading = true);
+
+    try {
+      GoRouter.of(context).prepareAuthEvent();
+      final user = await authManager.signInWithGoogle(context);
+
+      if (user != null && mounted) {
+        // Update user profile for new Google users (default to user role)
+        await currentUserDocument?.reference.update({
+          'role': currentUserDocument?.role.isEmpty ?? true ? ['user'] : currentUserDocument!.role,
+          'loyaltyPoints': currentUserDocument?.loyaltyPoints ?? 0,
+          'display_name': currentUserDocument?.displayName.isEmpty ?? true 
+              ? user.displayName ?? '' 
+              : currentUserDocument!.displayName,
+          'name': currentUserDocument?.name.isEmpty ?? true 
+              ? user.displayName ?? '' 
+              : currentUserDocument!.name,
+        });
+        
+        Navigator.of(context).pop(); // Close dialog
+        
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Account created successfully! Welcome to TripsBasket!', style: GoogleFonts.poppins()),
+            backgroundColor: const Color(0xFFD76B30),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Google sign-up failed. Please try again.', style: GoogleFonts.poppins()),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        width: 400,
+        constraints: const BoxConstraints(maxHeight: 650),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Create Account',
+                      style: GoogleFonts.poppins(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFFD76B30),
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.grey.shade100,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Join us today and start planning your dream travels!',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                // Name field
+                TextFormField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Full Name',
+                    hintText: 'Enter your full name',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.person_outline),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter your full name';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Email field
+                TextFormField(
+                  controller: _emailController,
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    hintText: 'Enter your email',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.email_outlined),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your email';
+                    }
+                    if (!value.contains('@')) {
+                      return 'Please enter a valid email';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Phone field
+                TextFormField(
+                  controller: _phoneController,
+                  decoration: InputDecoration(
+                    labelText: 'Phone Number',
+                    hintText: 'Enter your phone number',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.phone_outlined),
+                  ),
+                  keyboardType: TextInputType.phone,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter your phone number';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Account type dropdown
+                DropdownButtonFormField<String>(
+                  value: _selectedRole,
+                  decoration: InputDecoration(
+                    labelText: 'Account Type',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.account_circle_outlined),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'user', child: Text('Traveler')),
+                    DropdownMenuItem(value: 'agency', child: Text('Travel Agency')),
+                  ],
+                  onChanged: (value) => setState(() => _selectedRole = value ?? 'user'),
+                ),
+                const SizedBox(height: 16),
+                
+                // Password field
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: !_isPasswordVisible,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    hintText: 'Enter your password',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                      icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a password';
+                    }
+                    if (value.length < 6) {
+                      return 'Password must be at least 6 characters';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Confirm password field
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: !_isConfirmPasswordVisible,
+                  decoration: InputDecoration(
+                    labelText: 'Confirm Password',
+                    hintText: 'Re-enter your password',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      onPressed: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+                      icon: Icon(_isConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please confirm your password';
+                    }
+                    if (value != _passwordController.text) {
+                      return 'Passwords do not match';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+                
+                // Register button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _handleRegister,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD76B30),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            'Create Account',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Divider
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'OR',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                // Google Register button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: _isLoading ? null : _handleGoogleRegister,
+                    icon: const Icon(Icons.account_circle, color: Color(0xFFD76B30)),
+                    label: Text(
+                      'Sign up with Google',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFFD76B30),
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFD76B30)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Sign in link
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    // Show sign in dialog instead
+                    Future.delayed(const Duration(milliseconds: 100), () {
+                      if (context.mounted) {
+                        showDialog(
+                          context: context,
+                          builder: (context) => _SignInDialog(),
+                        );
+                      }
+                    });
+                  },
+                  child: RichText(
+                    text: TextSpan(
+                      text: "Already have an account? ",
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: 'Sign in',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: const Color(0xFFD76B30),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
