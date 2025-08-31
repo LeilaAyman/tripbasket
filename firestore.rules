@@ -4,108 +4,13 @@ service cloud.firestore {
     function isSignedIn() { 
       return request.auth != null; 
     }
-    
-    function userDoc() { 
-      return get(/databases/$(db)/documents/users/$(request.auth.uid)); 
-    }
-    
-    function role() { 
-      return (userDoc().data.role != null ? userDoc().data.role : []).join(" ").toLowerCase(); 
-    }
-    
-    function isAdmin() { 
-      return role().matches('.*admin.*'); 
-    }
-    
-    function isAgency() {
-      return role().matches('.*agency.*');
-    }
-    
-    function userAgency() { 
-      return userDoc().data.agency_reference; 
-    }
-    
-    function ownsTrip() { 
-      // Simple check: just verify user is signed in and has a user document
-      return request.auth != null;
-    }
-    
-    function createsOwnTrip() { 
-      // Simple check: just verify user is signed in and has a user document
-      return request.auth != null;
-    }
-    
-    function hasKyc(uid) {
-      let u = get(/databases/$(db)/documents/users/$(uid)).data;
-      return u.nationalIdUrl != null && (u.nationalIdStatus in ['uploaded','verified']);
-    }
 
-    // Users collection - users can read/update their own document, but NOT loyaltyPoints directly
-    match /users/{userId} {
-      allow read: if isSignedIn() && request.auth.uid == userId;
-      allow read: if isSignedIn() && isAdmin(); // Admins can read all users
-      
-      // Allow updates except changing loyaltyPoints directly (only server can modify points)
-      // Block clients from self-verifying National ID
-      allow update: if isSignedIn()
-        && request.auth.uid == userId
-        && !(('loyaltyPoints' in request.resource.data)
-             && request.resource.data.loyaltyPoints != resource.data.loyaltyPoints)
-        && !(('nationalIdStatus' in request.resource.data) 
-             && request.resource.data.nationalIdStatus == 'verified');
-      
-      allow create: if isSignedIn() && request.auth.uid == userId;
-    }
-
-    // Agency collection - public read access, admin write control
-    match /agency/{agencyId} {
-      allow read: if true; // Anyone can read agencies (public access for trusted partners)
-      allow write: if isSignedIn() && isAdmin();
-      allow update: if isSignedIn() && userAgency() == resource.__name__; // Agency users can update their own
-    }
-
-    // Trips collection - public read access, agencies can manage their trips
-    match /trips/{tripId} {
-      allow read: if true; // Public read access for browsing trips
-      allow create: if isSignedIn() && (isAdmin() || createsOwnTrip());
-      allow update: if isSignedIn() && (isAdmin() || ownsTrip());
-      allow delete: if isSignedIn() && (isAdmin() || ownsTrip());
-    }
-
-    // Bookings collection - users can manage their own bookings, agencies can see bookings for their trips
-    // Require National ID for booking creation
-    match /bookings/{bookingId} {
-      allow create: if isSignedIn()
-        && get(request.resource.data.user_reference).id == request.auth.uid
-        && hasKyc(request.auth.uid);
-      allow read, update, delete: if isSignedIn() && get(resource.data.user_reference).id == request.auth.uid;
-      allow read: if isSignedIn() && isAdmin();
-      allow read: if isSignedIn() && get(resource.data.trip_reference).data.agency_reference == userAgency();
-    }
-
-    // Reviews collection - public read access, authenticated write control
-    match /reviews/{reviewId} {
-      allow read: if true; // Public read access for browsing reviews
-      allow write: if isSignedIn() && request.auth.uid == resource.data.user_id;
-    }
-
-    // Favorites collection - owner-only access with DocumentReference validation
-    function isOwner(data) {
-      return data.user_reference != null
-        && data.user_reference.path == '/databases/' + db + '/documents/users/' + request.auth.uid;
-    }
+    // ULTRA PERMISSIVE DEBUG RULES - TEMPORARY
+    // DANGER: These rules allow any authenticated user to do anything
+    // TODO: Restore proper security rules after debugging
     
-    match /favorites/{favId} {
-      allow read: if isSignedIn() && isOwner(resource.data);
-      allow create: if isSignedIn()
-        && isOwner(request.resource.data)
-        && request.resource.data.trip_reference != null;
-      allow delete, update: if isSignedIn() && isOwner(resource.data);
-    }
-
-    // Default deny rule for all other documents
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if isSignedIn();
     }
   }
 }

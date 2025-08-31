@@ -26,6 +26,11 @@ class BookingsRecord extends FirestoreRecord {
   DocumentReference? get tripReference => _tripReference;
   bool hasTripReference() => _tripReference != null;
 
+  // "agency_reference" field.
+  DocumentReference? _agencyReference;
+  DocumentReference? get agencyReference => _agencyReference;
+  bool hasAgencyReference() => _agencyReference != null;
+
   // "trip_title" field.
   String? _tripTitle;
   String get tripTitle => _tripTitle ?? '';
@@ -103,6 +108,7 @@ class BookingsRecord extends FirestoreRecord {
   void _initializeFields() {
     _userReference = snapshotData['user_reference'] as DocumentReference?;
     _tripReference = snapshotData['trip_reference'] as DocumentReference?;
+    _agencyReference = snapshotData['agency_reference'] as DocumentReference?;
     _tripTitle = snapshotData['trip_title'] as String?;
     _tripPrice = castToType<double>(snapshotData['trip_price']);
     _totalAmount = castToType<double>(snapshotData['total_amount']);
@@ -157,6 +163,7 @@ class BookingsRecord extends FirestoreRecord {
 Map<String, dynamic> createBookingsRecordData({
   DocumentReference? userReference,
   DocumentReference? tripReference,
+  DocumentReference? agencyReference,
   String? tripTitle,
   double? tripPrice,
   double? totalAmount,
@@ -176,6 +183,7 @@ Map<String, dynamic> createBookingsRecordData({
     <String, dynamic>{
       'user_reference': userReference,
       'trip_reference': tripReference,
+      'agency_reference': agencyReference,
       'trip_title': tripTitle,
       'trip_price': tripPrice,
       'total_amount': totalAmount,
@@ -204,6 +212,7 @@ class BookingsRecordDocumentEquality implements Equality<BookingsRecord> {
     const listEquality = ListEquality();
     return e1?.userReference == e2?.userReference &&
         e1?.tripReference == e2?.tripReference &&
+        e1?.agencyReference == e2?.agencyReference &&
         e1?.tripTitle == e2?.tripTitle &&
         e1?.tripPrice == e2?.tripPrice &&
         e1?.totalAmount == e2?.totalAmount &&
@@ -223,6 +232,7 @@ class BookingsRecordDocumentEquality implements Equality<BookingsRecord> {
   int hash(BookingsRecord? e) => const ListEquality().hash([
         e?.userReference,
         e?.tripReference,
+        e?.agencyReference,
         e?.tripTitle,
         e?.tripPrice,
         e?.totalAmount,

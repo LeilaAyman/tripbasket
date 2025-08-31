@@ -1,11 +1,13 @@
 import 'dart:async';
 import '/auth/firebase_auth/auth_util.dart';
 import '/backend/backend.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/utils/agency_utils.dart';
+import '/utils/migration_helper.dart';
 import '/components/review_import_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -223,6 +225,34 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
             borderWidth: 1,
             buttonSize: 48,
             icon: const Icon(
+              Icons.sync,
+              color: Colors.white,
+              size: 24,
+            ),
+            onPressed: () async {
+              // Temporary migration button
+              try {
+                await MigrationHelper.checkMigrationStatus();
+                await MigrationHelper.migrateBookingAgencyReferences();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Migration completed! Check console for details.')),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Migration failed: $e')),
+                );
+              }
+            },
+          ),
+        ),
+        Container(
+          margin: const EdgeInsets.only(right: 8),
+          child: FlutterFlowIconButton(
+            borderColor: Colors.white.withOpacity(0.2),
+            borderRadius: 12,
+            borderWidth: 1,
+            buttonSize: 48,
+            icon: const Icon(
               Icons.add,
               color: Colors.white,
               size: 24,
@@ -246,6 +276,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
             _buildSearchAndFilter(),
             _buildDashboardStats(),
             _buildQuickActions(),
+            _buildBookingsSection(),
             _buildAnalyticsSection(),
             _buildReviewsSection(),
             _buildTripsSection(),
@@ -873,7 +904,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                   'View Bookings',
                   Icons.book_online,
                   const [Color(0xFFE8A657), Color(0xFFD76B30)],
-                  () => context.pushNamed('bookings'),
+                  () => _showAllBookingsDialog(),
                 ),
               ),
             ],
@@ -1034,6 +1065,707 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
         ),
       ),
     );
+  }
+
+  Widget _buildBookingsSection() {
+    final isAdmin = _isCurrentUserAdmin();
+    final agencyRef = isAdmin ? null : AgencyUtils.getCurrentAgencyRef();
+    
+    print('Agency Dashboard - isAdmin: $isAdmin, agencyRef: $agencyRef');
+    print('Current User: ${currentUser?.uid}');
+    print('Current User Email: ${currentUser?.email}');
+    print('User Document: ${currentUserDocument?.reference.path}');
+    
+    // Test basic Firestore connectivity
+    _testFirestoreConnection();
+    
+    // If no agency reference and not admin, show setup message
+    if (!isAdmin && agencyRef == null) {
+      return _buildNoAgencyReferenceState();
+    }
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Bookings header
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.book_online,
+                  color: const Color(0xFFD76B30),
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Recent Bookings',
+                  style: FlutterFlowTheme.of(context).headlineSmall.override(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: FlutterFlowTheme.of(context).primaryText,
+                  ),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => _showAllBookingsDialog(),
+                  child: Text(
+                    'View All',
+                    style: TextStyle(
+                      color: const Color(0xFFD76B30),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Bookings stream
+          StreamBuilder<List<BookingsRecord>>(
+            stream: isAdmin 
+              ? queryBookingsRecord(
+                  queryBuilder: (q) => q.orderBy('created_at', descending: true).limit(5),
+                )
+              : agencyRef != null
+                ? queryBookingsRecord(
+                    queryBuilder: (q) {
+                      print('DEBUG: Querying bookings for agency: ${agencyRef!.path}');
+                      // TEMPORARY: Query all bookings and filter in memory
+                      // TODO: Restore agency_reference filter after migration
+                      // ULTRA SIMPLE TEST - just get any bookings
+                      print('DEBUG: Making ultra simple bookings query...');
+                      return q.limit(5);
+                    },
+                  )
+                : Stream.value(<BookingsRecord>[]),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                print('Main booking query error: ${snapshot.error}');
+                final errorString = snapshot.error.toString();
+                return Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: FlutterFlowTheme.of(context).secondaryBackground,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading bookings',
+                        style: FlutterFlowTheme.of(context).headlineSmall.override(
+                          color: Colors.red,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        errorString.contains('permission-denied') 
+                          ? 'Permission denied. Please ensure:\n• Firestore rules are deployed\n• Existing bookings have agency_reference field'
+                          : 'Please check your permissions or try refreshing',
+                        style: FlutterFlowTheme.of(context).bodyMedium.override(
+                          color: FlutterFlowTheme.of(context).secondaryText,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          // Show debugging info dialog
+                          _showDebuggingInfo();
+                        },
+                        child: Text('Debug Info'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              
+              if (!snapshot.hasData) {
+                return Container(
+                  margin: const EdgeInsets.all(16),
+                  height: 200,
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD76B30)),
+                    ),
+                  ),
+                );
+              }
+              
+              if (snapshot.data!.isEmpty) {
+                return Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: FlutterFlowTheme.of(context).secondaryBackground,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: FlutterFlowTheme.of(context).alternate,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.book_online_outlined,
+                        size: 48,
+                        color: FlutterFlowTheme.of(context).secondaryText,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No bookings yet',
+                        style: FlutterFlowTheme.of(context).headlineSmall.override(
+                          color: FlutterFlowTheme.of(context).secondaryText,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Bookings for your trips will appear here',
+                        style: FlutterFlowTheme.of(context).bodyMedium.override(
+                          color: FlutterFlowTheme.of(context).secondaryText,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              }
+              
+              // TEMPORARY: Filter bookings client-side until migration is complete
+              final allBookings = snapshot.data!;
+              print('DEBUG: Got ${allBookings.length} bookings from query');
+              for (var booking in allBookings) {
+                print('DEBUG: Booking ${booking.reference.id} - agency_ref: ${booking.agencyReference?.path} - has_ref: ${booking.hasAgencyReference()}');
+              }
+              print('DEBUG: Looking for agency path: ${agencyRef?.path}');
+              
+              final relevantBookings = isAdmin ? allBookings : allBookings.where((booking) {
+                // If booking has agency_reference, check if it matches
+                if (booking.hasAgencyReference()) {
+                  final matches = booking.agencyReference?.path == agencyRef?.path;
+                  print('DEBUG: Booking ${booking.reference.id} matches agency: $matches');
+                  return matches;
+                }
+                // If no agency_reference, skip for now (will be migrated)
+                print('DEBUG: Booking ${booking.reference.id} has no agency_reference');
+                return false;
+              }).toList();
+              
+              print('DEBUG: Found ${relevantBookings.length} relevant bookings after filtering');
+              
+              if (relevantBookings.isEmpty) {
+                return Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: FlutterFlowTheme.of(context).secondaryBackground,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: FlutterFlowTheme.of(context).alternate,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.book_online_outlined,
+                        size: 48,
+                        color: FlutterFlowTheme.of(context).secondaryText,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No bookings yet',
+                        style: FlutterFlowTheme.of(context).headlineSmall.override(
+                          color: FlutterFlowTheme.of(context).secondaryText,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        isAdmin 
+                          ? 'No bookings in the system yet'
+                          : 'No bookings for your agency yet.\nExisting bookings may need migration.',
+                        style: FlutterFlowTheme.of(context).bodyMedium.override(
+                          color: FlutterFlowTheme.of(context).secondaryText,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              }
+              
+              return Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: FlutterFlowTheme.of(context).secondaryBackground,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      blurRadius: 4,
+                      color: const Color(0x1A000000),
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: relevantBookings.take(5).map((booking) {
+                    return _buildBookingCard(booking);
+                  }).toList(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBookingCard(BookingsRecord booking) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: FlutterFlowTheme.of(context).alternate,
+            width: 1,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  booking.tripTitle,
+                  style: FlutterFlowTheme.of(context).titleMedium.override(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 12),
+              _buildBookingStatusChip(booking.bookingStatus),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                Icons.person,
+                size: 16,
+                color: FlutterFlowTheme.of(context).secondaryText,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${booking.travelerCount} traveler${booking.travelerCount > 1 ? 's' : ''}',
+                style: FlutterFlowTheme.of(context).bodySmall.override(
+                  color: FlutterFlowTheme.of(context).secondaryText,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Icon(
+                Icons.attach_money,
+                size: 16,
+                color: FlutterFlowTheme.of(context).secondaryText,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                _currency.format(booking.totalAmount),
+                style: FlutterFlowTheme.of(context).bodySmall.override(
+                  color: FlutterFlowTheme.of(context).secondaryText,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                Icons.calendar_today,
+                size: 16,
+                color: FlutterFlowTheme.of(context).secondaryText,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                DateFormat('MMM dd, yyyy').format(booking.createdAt ?? DateTime.now()),
+                style: FlutterFlowTheme.of(context).bodySmall.override(
+                  color: FlutterFlowTheme.of(context).secondaryText,
+                ),
+              ),
+              const Spacer(),
+              if (booking.bookingStatus == 'pending_agency_approval') ...[
+                TextButton(
+                  onPressed: () => _approveBooking(booking),
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.green.shade50,
+                    foregroundColor: Colors.green.shade700,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text('Approve', style: TextStyle(fontSize: 12)),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () => _denyBooking(booking),
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.red.shade50,
+                    foregroundColor: Colors.red.shade700,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text('Deny', style: TextStyle(fontSize: 12)),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBookingStatusChip(String status) {
+    Color backgroundColor;
+    Color textColor;
+    String displayText;
+    
+    switch (status) {
+      case 'pending_agency_approval':
+        backgroundColor = Colors.orange.shade100;
+        textColor = Colors.orange.shade800;
+        displayText = 'Pending';
+        break;
+      case 'confirmed':
+        backgroundColor = Colors.green.shade100;
+        textColor = Colors.green.shade800;
+        displayText = 'Confirmed';
+        break;
+      case 'denied':
+        backgroundColor = Colors.red.shade100;
+        textColor = Colors.red.shade800;
+        displayText = 'Denied';
+        break;
+      case 'cancelled':
+        backgroundColor = Colors.grey.shade100;
+        textColor = Colors.grey.shade800;
+        displayText = 'Cancelled';
+        break;
+      default:
+        backgroundColor = Colors.blue.shade100;
+        textColor = Colors.blue.shade800;
+        displayText = status;
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        displayText,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _approveBooking(BookingsRecord booking) async {
+    try {
+      await booking.reference.update({
+        'booking_status': 'confirmed',
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Booking approved successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error approving booking: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _denyBooking(BookingsRecord booking) async {
+    try {
+      await booking.reference.update({
+        'booking_status': 'denied',
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Booking denied.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error denying booking: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _showAllBookingsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          height: MediaQuery.of(context).size.height * 0.8,
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text(
+                'All Bookings',
+                style: TextStyle(color: const Color(0xFFD76B30)),
+              ),
+              backgroundColor: Colors.white,
+              elevation: 1,
+              leading: IconButton(
+                icon: Icon(Icons.close, color: const Color(0xFFD76B30)),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+            body: _buildAllBookingsContent(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAllBookingsContent() {
+    final isAdmin = _isCurrentUserAdmin();
+    final agencyRef = isAdmin ? null : AgencyUtils.getCurrentAgencyRef();
+    
+    return StreamBuilder<List<BookingsRecord>>(
+      stream: isAdmin 
+        ? queryBookingsRecord(
+            queryBuilder: (q) => q.orderBy('created_at', descending: true),
+          )
+        : agencyRef != null
+          ? queryBookingsRecord(
+              queryBuilder: (q) {
+                print('DEBUG: Querying ALL bookings for agency: ${agencyRef!.path}');
+                // TEMPORARY: Query all bookings and filter client-side
+                return q.orderBy('created_at', descending: true);
+              },
+            )
+          : Stream.value(<BookingsRecord>[]),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          print('Booking query error: ${snapshot.error}');
+          return Container(
+            margin: const EdgeInsets.all(16),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.red,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error loading bookings',
+                    style: FlutterFlowTheme.of(context).headlineSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Please check your permissions',
+                    style: FlutterFlowTheme.of(context).bodyMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        
+        if (!snapshot.hasData) {
+          return const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD76B30)),
+            ),
+          );
+        }
+        
+        // TEMPORARY: Filter bookings client-side BEFORE checking if empty
+        final allBookings = snapshot.data!;
+        print('DEBUG [View All]: Got ${allBookings.length} bookings from query');
+        for (var booking in allBookings) {
+          print('DEBUG [View All]: Booking ${booking.reference.id} - agency_ref: ${booking.agencyReference?.path} - has_ref: ${booking.hasAgencyReference()}');
+        }
+        print('DEBUG [View All]: Looking for agency path: ${agencyRef?.path}');
+        
+        final relevantBookings = isAdmin ? allBookings : allBookings.where((booking) {
+          if (booking.hasAgencyReference()) {
+            final matches = booking.agencyReference?.path == agencyRef?.path;
+            print('DEBUG [View All]: Booking ${booking.reference.id} matches agency: $matches');
+            return matches;
+          }
+          print('DEBUG [View All]: Booking ${booking.reference.id} has no agency_reference');
+          return false;
+        }).toList();
+        
+        print('DEBUG [View All]: Found ${relevantBookings.length} relevant bookings after filtering');
+        
+        if (relevantBookings.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.book_online_outlined,
+                  size: 64,
+                  color: FlutterFlowTheme.of(context).secondaryText,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No bookings found',
+                  style: FlutterFlowTheme.of(context).headlineSmall.override(
+                    color: FlutterFlowTheme.of(context).secondaryText,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  isAdmin 
+                    ? 'No bookings in the system yet'
+                    : 'No bookings for your agency yet.\nBookings may need migration.',
+                  style: FlutterFlowTheme.of(context).bodyMedium.override(
+                    color: FlutterFlowTheme.of(context).secondaryText,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+        
+        return ListView.builder(
+          itemCount: relevantBookings.length,
+          itemBuilder: (context, index) {
+            final booking = relevantBookings[index];
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: FlutterFlowTheme.of(context).secondaryBackground,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    blurRadius: 4,
+                    color: const Color(0x1A000000),
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: _buildBookingCard(booking),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showDebuggingInfo() {
+    final isAdmin = _isCurrentUserAdmin();
+    final agencyRef = AgencyUtils.getCurrentAgencyRef();
+    final userDoc = currentUserDocument;
+    
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Debug Information',
+                style: FlutterFlowTheme.of(context).headlineSmall.override(
+                  color: const Color(0xFFD76B30),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text('User ID: ${currentUser?.uid ?? 'None'}'),
+              Text('Is Admin: $isAdmin'),
+              Text('Agency Reference: ${agencyRef?.path ?? 'None'}'),
+              Text('User Roles: ${userDoc?.role ?? []}'),
+              const SizedBox(height: 16),
+              Text(
+                'Next Steps:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text('1. Deploy Firestore rules: firebase deploy --only firestore:rules'),
+              Text('2. Check if bookings have agency_reference field'),
+              Text('3. Run migration script if needed'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Close'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _testFirestoreConnection() async {
+    try {
+      print('🧪 Testing Firestore connection...');
+      
+      // Test 1: Can we access users collection (should work for auth user)
+      final userTest = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser!.uid)
+          .get();
+      print('✅ Users collection access: ${userTest.exists}');
+      
+      // Test 2: Can we read trips collection (should be public)
+      final tripsTest = await FirebaseFirestore.instance
+          .collection('trips')
+          .limit(1)
+          .get();
+      print('✅ Trips collection access: ${tripsTest.docs.length} trips');
+      
+      // Test 3: Can we read bookings collection (should work with new rules)
+      final bookingsTest = await FirebaseFirestore.instance
+          .collection('bookings')
+          .limit(1)
+          .get();
+      print('✅ Bookings collection access: ${bookingsTest.docs.length} bookings');
+      
+    } catch (e) {
+      print('❌ Firestore connection test failed: $e');
+    }
   }
 
   Widget _buildTripsSection() {

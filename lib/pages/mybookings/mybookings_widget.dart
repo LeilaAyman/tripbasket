@@ -499,26 +499,59 @@ class _MybookingsWidgetState extends State<MybookingsWidget> {
     String statusText;
     IconData statusIcon;
 
-    switch (paymentStatus.toLowerCase()) {
-      case 'completed':
-        statusColor = Colors.green;
-        statusText = 'Confirmed';
-        statusIcon = Icons.check_circle;
-        break;
-      case 'pending':
-        statusColor = Colors.orange;
-        statusText = 'Pending Payment';
-        statusIcon = Icons.pending;
-        break;
-      case 'failed':
-        statusColor = Colors.red;
-        statusText = 'Payment Failed';
-        statusIcon = Icons.error;
-        break;
-      default:
-        statusColor = Colors.grey;
-        statusText = 'Unknown';
-        statusIcon = Icons.help;
+    // Check booking status first (new workflow)
+    if (bookingStatus != null && bookingStatus.isNotEmpty) {
+      switch (bookingStatus.toLowerCase()) {
+        case 'pending_agency_approval':
+          statusColor = Colors.orange;
+          statusText = 'Pending Agency Approval';
+          statusIcon = Icons.hourglass_empty;
+          break;
+        case 'confirmed':
+          statusColor = Colors.green;
+          statusText = 'Confirmed';
+          statusIcon = Icons.check_circle;
+          break;
+        case 'denied':
+          statusColor = Colors.red;
+          statusText = 'Denied by Agency';
+          statusIcon = Icons.cancel;
+          break;
+        case 'cancelled':
+          statusColor = Colors.grey;
+          statusText = 'Cancelled';
+          statusIcon = Icons.cancel_outlined;
+          break;
+        default:
+          // Fall back to payment status for unknown booking statuses
+          statusColor = Colors.grey;
+          statusText = bookingStatus;
+          statusIcon = Icons.help;
+          break;
+      }
+    } else {
+      // Fall back to legacy payment status logic
+      switch (paymentStatus.toLowerCase()) {
+        case 'completed':
+          statusColor = Colors.green;
+          statusText = 'Confirmed';
+          statusIcon = Icons.check_circle;
+          break;
+        case 'pending':
+          statusColor = Colors.orange;
+          statusText = 'Pending Payment';
+          statusIcon = Icons.pending;
+          break;
+        case 'failed':
+          statusColor = Colors.red;
+          statusText = 'Payment Failed';
+          statusIcon = Icons.error;
+          break;
+        default:
+          statusColor = Colors.grey;
+          statusText = 'Unknown';
+          statusIcon = Icons.help;
+      }
     }
 
     return Container(

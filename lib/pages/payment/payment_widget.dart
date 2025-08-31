@@ -209,6 +209,7 @@ class _PaymentWidgetState extends State<PaymentWidget> {
       await BookingsRecord.collection.add({
         'user_reference': currentUserReference,
         'trip_reference': widget.tripRecord.reference,
+        'agency_reference': widget.tripRecord.agencyReference,
         'trip_title': widget.tripRecord.title,
         'trip_price': widget.tripRecord.price,
         'total_amount': widget.totalAmount,
@@ -217,8 +218,11 @@ class _PaymentWidgetState extends State<PaymentWidget> {
         'booking_date': getCurrentTimestamp,
         'payment_status': 'completed',
         'payment_method': 'paymob',
-        'booking_status': 'confirmed',
+        'booking_status': 'pending_agency_approval',
         'created_at': getCurrentTimestamp,
+        'traveler_count': 1,
+        'traveler_names': [],
+        'special_requests': '',
       });
 
       print('Booking record created successfully!');
@@ -229,8 +233,8 @@ class _PaymentWidgetState extends State<PaymentWidget> {
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Payment successful! Your trip has been booked and cart cleared.'),
-          backgroundColor: Colors.green,
+          content: Text('Payment successful! Your booking is pending agency approval.'),
+          backgroundColor: Colors.orange,
           duration: Duration(seconds: 3),
         ),
       );

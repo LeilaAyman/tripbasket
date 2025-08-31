@@ -28,7 +28,9 @@
       "Bash(curl:*)",
       "Bash(firebase auth:print-access-token:*)",
       "Bash(firebase emulators:start:*)",
-      "Bash(firebase firestore:query:*)"
+      "Bash(firebase firestore:query:*)",
+      "Bash(dart run:*)",
+      "Bash(firebase:*)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\maria\\OneDrive\\Desktop"
