@@ -406,47 +406,57 @@ class _HomeWebPageState extends State<HomeWebPage>
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Row(
-          children: [
-            // Logo
-            Text(
-              'TripsBasket',
-              style: GoogleFonts.poppins(
-                    fontSize: 28,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFFD76B30),
-              ),
-            ),
-                
-                // Spacer to push navigation to center
-                const Spacer(),
-                
-                // Navigation Menu - centered
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = constraints.maxWidth >= 1200;
+            final isTablet = constraints.maxWidth >= 768 && constraints.maxWidth < 1200;
+            final isMobile = constraints.maxWidth < 768;
+            
+            return Row(
               children: [
-                    _buildNavButton('Home', () {
-                      // Scroll to top or refresh page
-                      _scrollController.animateTo(
-                        0,
-                        duration: Duration(milliseconds: 800),
-                        curve: Curves.easeInOut,
-                      );
-                    }),
-                    _buildNavButton('Destinations', () {
-                      // Scroll to destinations section
-                      _scrollController.animateTo(
-                        1400,
-                        duration: Duration(milliseconds: 800),
-                        curve: Curves.easeInOut,
-                      );
-                    }),
-                    _buildNavButton('Travel Agencies', () => context.pushNamed('agenciesList')),
-                    _buildNavButton('Reviews', () => context.pushNamed('reviews')),
-                    _buildNavButton('My Bookings', () => AuthNavigation.pushNamedAuth(context, 'mybookings')),
-                    _buildNavButton('Profile', () => AuthNavigation.pushNamedAuth(context, 'profile')),
-                  ],
+                // Logo
+                Text(
+                  'TripsBasket',
+                  style: GoogleFonts.poppins(
+                        fontSize: isMobile ? 20 : 28,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFD76B30),
+                  ),
                 ),
+                    
+                if (!isMobile) ...[
+                  // Spacer to push navigation to center
+                  const Spacer(),
+                  
+                  // Navigation Menu - centered (only on tablet/desktop)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildNavButton('Home', () {
+                        // Scroll to top or refresh page
+                        _scrollController.animateTo(
+                          0,
+                          duration: Duration(milliseconds: 800),
+                          curve: Curves.easeInOut,
+                        );
+                      }),
+                      if (isDesktop) ...[
+                        _buildNavButton('Destinations', () {
+                          // Scroll to destinations section
+                          _scrollController.animateTo(
+                            1400,
+                            duration: Duration(milliseconds: 800),
+                            curve: Curves.easeInOut,
+                          );
+                        }),
+                        _buildNavButton('Travel Agencies', () => context.pushNamed('agenciesList')),
+                        _buildNavButton('Reviews', () => context.pushNamed('reviews')),
+                      ],
+                      _buildNavButton('My Bookings', () => AuthNavigation.pushNamedAuth(context, 'mybookings')),
+                      _buildNavButton('Profile', () => AuthNavigation.pushNamedAuth(context, 'profile')),
+                    ],
+                  ),
+                ],
                 
                 // Spacer to push points/buttons to right
                 const Spacer(),
@@ -455,9 +465,21 @@ class _HomeWebPageState extends State<HomeWebPage>
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Mobile menu button (only on mobile)
+                    if (isMobile) ...[
+                      IconButton(
+                        icon: const Icon(Icons.menu, color: Color(0xFFD76B30)),
+                        onPressed: () {
+                          // TODO: Implement mobile menu
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Mobile menu - TODO: Implement')),
+                          );
+                        },
+                      ),
+                    ],
                     // Cart icon
                     _buildCartIcon(),
-                    const SizedBox(width: 12),
+                    if (!isMobile) const SizedBox(width: 12),
                     
                     // Auth-responsive section
                     StreamBuilder<User?>(
@@ -584,6 +606,8 @@ class _HomeWebPageState extends State<HomeWebPage>
               ],
             ),
           ],
+            );
+          },
             ),
           ),
         ),
@@ -836,117 +860,214 @@ class _HomeWebPageState extends State<HomeWebPage>
     return SliverToBoxAdapter(
       child: Container(
         color: Colors.grey.shade50,
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 1200),
-        margin: const EdgeInsets.symmetric(horizontal: 24),
-          padding: const EdgeInsets.symmetric(vertical: 80),
-        child: Column(
-            children: [
-              Text(
-                'Find Your Perfect Trip',
-                style: GoogleFonts.poppins(
-                  fontSize: 48,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black87,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 48),
-              Container(
-                padding: const EdgeInsets.all(32),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, 4),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = constraints.maxWidth >= 1200;
+            final isTablet = constraints.maxWidth >= 768 && constraints.maxWidth < 1200;
+            final isMobile = constraints.maxWidth < 768;
+            
+            return Container(
+              constraints: BoxConstraints(maxWidth: isDesktop ? 1200 : double.infinity),
+              margin: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
+              padding: EdgeInsets.symmetric(vertical: isMobile ? 40 : 80),
+              child: Column(
+                children: [
+                  Text(
+                    'Find Your Perfect Trip',
+                    style: GoogleFonts.poppins(
+                      fontSize: isMobile ? 28 : (isTablet ? 36 : 48),
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
                     ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildSearchField(
-                        'Destination',
-                        'Where do you want to go',
-                        _destinationController,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildDateField(
-                        'Check-in',
-                        'mm / dd / yyyy',
-                        _checkInController,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildDateField(
-                        'Check-out',
-                        'mm / dd / yyyy',
-                        _checkOutController,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildDropdownField(
-                        'Travelers',
-                        _selectedTravelers,
-                        ['1 Traveler', '2 Travelers', '3 Travelers', '4+ Travelers'],
-                        (value) => setState(() => _selectedTravelers = value!),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildDropdownField(
-                        'Max Budget',
-                        _selectedBudget,
-                        ['Any Budget', '\$500-\$1000', '\$1000-\$2000', '\$2000+'],
-                        (value) => setState(() => _selectedBudget = value!),
-                      ),
-                    ),
-                    const SizedBox(width: 24),
-                    Container(
-                      width: 200,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD76B30),
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                      child: InkWell(
-                        onTap: _handleSearch,
-                        borderRadius: BorderRadius.circular(28),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.search,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Search Premium Trips',
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: isMobile ? 24 : 48),
+                  Container(
+                    padding: EdgeInsets.all(isMobile ? 16 : 32),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: const Offset(0, 4),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                    child: isMobile ? _buildMobileSearchForm() : _buildDesktopSearchForm(),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
+    );
+  }
+
+  Widget _buildDesktopSearchForm() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildSearchField(
+            'Destination',
+            'Where do you want to go',
+            _destinationController,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildDateField(
+            'Check-in',
+            'mm / dd / yyyy',
+            _checkInController,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildDateField(
+            'Check-out',
+            'mm / dd / yyyy',
+            _checkOutController,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildDropdownField(
+            'Travelers',
+            _selectedTravelers,
+            ['1 Traveler', '2 Travelers', '3 Travelers', '4+ Travelers'],
+            (value) => setState(() => _selectedTravelers = value!),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildDropdownField(
+            'Max Budget',
+            _selectedBudget,
+            ['Any Budget', '\$500-\$1000', '\$1000-\$2000', '\$2000+'],
+            (value) => setState(() => _selectedBudget = value!),
+          ),
+        ),
+        const SizedBox(width: 24),
+        Container(
+          width: 160,
+          height: 56,
+          decoration: BoxDecoration(
+            color: const Color(0xFFD76B30),
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: InkWell(
+            onTap: _handleSearch,
+            borderRadius: BorderRadius.circular(28),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.search,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'Search Trips',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileSearchForm() {
+    return Column(
+      children: [
+        _buildSearchField(
+          'Destination',
+          'Where do you want to go',
+          _destinationController,
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildDateField(
+                'Check-in',
+                'mm / dd / yyyy',
+                _checkInController,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildDateField(
+                'Check-out',
+                'mm / dd / yyyy',
+                _checkOutController,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildDropdownField(
+                'Travelers',
+                _selectedTravelers,
+                ['1 Traveler', '2 Travelers', '3 Travelers', '4+ Travelers'],
+                (value) => setState(() => _selectedTravelers = value!),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildDropdownField(
+                'Max Budget',
+                _selectedBudget,
+                ['Any Budget', '\$500-\$1000', '\$1000-\$2000', '\$2000+'],
+                (value) => setState(() => _selectedBudget = value!),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton(
+            onPressed: _handleSearch,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD76B30),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.search, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Search Trips',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1093,48 +1214,75 @@ class _HomeWebPageState extends State<HomeWebPage>
 
   Widget _buildWhyChooseTripsBasketSection() {
     return SliverToBoxAdapter(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 1200),
-        margin: const EdgeInsets.symmetric(horizontal: 24),
-        padding: const EdgeInsets.symmetric(vertical: 80),
-        child: Column(
-          children: [
-            Text(
-              'Why Choose TripsBasket',
-              style: GoogleFonts.poppins(
-                fontSize: 48,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
-              textAlign: TextAlign.center,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth >= 1200;
+          final isTablet = constraints.maxWidth >= 768 && constraints.maxWidth < 1200;
+          final isMobile = constraints.maxWidth < 768;
+          
+          return Container(
+            constraints: BoxConstraints(maxWidth: isDesktop ? 1200 : double.infinity),
+            margin: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
+            padding: EdgeInsets.symmetric(vertical: isMobile ? 40 : 80),
+            child: Column(
+              children: [
+                Text(
+                  'Why Choose TripsBasket',
+                  style: GoogleFonts.poppins(
+                    fontSize: isMobile ? 28 : (isTablet ? 36 : 48),
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Experience travel like never before with our premium services\nand exclusive benefits',
+                  style: GoogleFonts.poppins(
+                    fontSize: isMobile ? 16 : 18,
+                    color: Colors.grey.shade600,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: isMobile ? 32 : 64),
+                _buildFeatureGrid(isDesktop, isTablet, isMobile),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Experience travel like never before with our premium services\nand exclusive benefits',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                color: Colors.grey.shade600,
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 64),
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(child: _buildFeatureCard(Icons.price_check, 'Best Price Guarantee', 'Book with confidence knowing you get the lowest rates, with no hidden fees.')),
-                  const SizedBox(width: 32),
-                  Expanded(child: _buildFeatureCard(Icons.verified, 'Verified Agencies & Trusted Partners', 'Every travel agency on our platform is verified for quality and reliability, so your trip is always in safe hands.')),
-                  const SizedBox(width: 32),
-                  Expanded(child: _buildFeatureCard(Icons.credit_card, 'Easy Refund Policies', '💳 Hassle-free cancellation and refund options to give you peace of mind when plans change.')),
-                ],
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
+  }
+
+  Widget _buildFeatureGrid(bool isDesktop, bool isTablet, bool isMobile) {
+    final features = [
+      {'icon': Icons.price_check, 'title': 'Best Price Guarantee', 'description': 'Book with confidence knowing you get the lowest rates, with no hidden fees.'},
+      {'icon': Icons.verified, 'title': 'Verified Agencies & Trusted Partners', 'description': 'Every travel agency on our platform is verified for quality and reliability, so your trip is always in safe hands.'},
+      {'icon': Icons.credit_card, 'title': 'Easy Refund Policies', 'description': '💳 Hassle-free cancellation and refund options to give you peace of mind when plans change.'},
+    ];
+
+    if (isMobile) {
+      return Column(
+        children: features.map((feature) => Padding(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: _buildFeatureCard(feature['icon'] as IconData, feature['title'] as String, feature['description'] as String),
+        )).toList(),
+      );
+    } else {
+      return IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(child: _buildFeatureCard(features[0]['icon'] as IconData, features[0]['title'] as String, features[0]['description'] as String)),
+            SizedBox(width: isTablet ? 16 : 32),
+            Expanded(child: _buildFeatureCard(features[1]['icon'] as IconData, features[1]['title'] as String, features[1]['description'] as String)),
+            SizedBox(width: isTablet ? 16 : 32),
+            Expanded(child: _buildFeatureCard(features[2]['icon'] as IconData, features[2]['title'] as String, features[2]['description'] as String)),
+          ],
+        ),
+      );
+    }
   }
 
   Widget _buildFeatureCard(IconData icon, String title, String description) {
@@ -1196,11 +1344,17 @@ class _HomeWebPageState extends State<HomeWebPage>
     return SliverToBoxAdapter(
       child: Container(
         color: Colors.white,
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 1200),
-          margin: const EdgeInsets.symmetric(horizontal: 24),
-          padding: const EdgeInsets.symmetric(vertical: 80),
-          child: Column(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = constraints.maxWidth >= 1200;
+            final isTablet = constraints.maxWidth >= 768 && constraints.maxWidth < 1200;
+            final isMobile = constraints.maxWidth < 768;
+            
+            return Container(
+              constraints: BoxConstraints(maxWidth: isDesktop ? 1200 : double.infinity),
+              margin: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
+              padding: EdgeInsets.symmetric(vertical: isMobile ? 40 : 80),
+              child: Column(
             children: [
               // Section Header
               Column(
@@ -1208,7 +1362,7 @@ class _HomeWebPageState extends State<HomeWebPage>
                   Text(
                     'Trusted Partners',
                     style: GoogleFonts.poppins(
-                      fontSize: 42,
+                      fontSize: isMobile ? 28 : (isTablet ? 36 : 42),
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF2D3142),
                       letterSpacing: -0.5,
@@ -1219,7 +1373,7 @@ class _HomeWebPageState extends State<HomeWebPage>
                   Text(
                     'Partner with the best travel agencies worldwide, trusted by thousands of travelers',
                     style: GoogleFonts.poppins(
-                      fontSize: 18,
+                      fontSize: isMobile ? 16 : 18,
                       color: Colors.grey.shade600,
                       height: 1.5,
                     ),
@@ -1345,6 +1499,8 @@ class _HomeWebPageState extends State<HomeWebPage>
               ),
             ],
           ),
+            );
+          },
         ),
       ),
     );

@@ -1,16 +1,12 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{db}/documents {
-    function isSignedIn() { 
-      return request.auth != null; 
-    }
-
-    // ULTRA PERMISSIVE DEBUG RULES - TEMPORARY
-    // DANGER: These rules allow any authenticated user to do anything
+    // MAXIMUM PERMISSIVE RULES FOR DEBUGGING - TEMPORARY
+    // WARNING: These rules allow ANYONE to do ANYTHING
     // TODO: Restore proper security rules after debugging
     
     match /{document=**} {
-      allow read, write: if isSignedIn();
+      allow read, write: if true;
     }
   }
 }

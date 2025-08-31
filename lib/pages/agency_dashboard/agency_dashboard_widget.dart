@@ -270,25 +270,43 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
   Widget _buildBody() {
     return SafeArea(
       top: true,
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildSearchAndFilter(),
-            _buildDashboardStats(),
-            _buildQuickActions(),
-            _buildBookingsSection(),
-            _buildAnalyticsSection(),
-            _buildReviewsSection(),
-            _buildTripsSection(),
-          ],
-        ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth >= 1200;
+          final isTablet = constraints.maxWidth >= 768 && constraints.maxWidth < 1200;
+          final isMobile = constraints.maxWidth < 768;
+          
+          return SingleChildScrollView(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: isDesktop ? 32 : (isTablet ? 24 : 16),
+              ),
+              child: Column(
+                children: [
+                  _buildSearchAndFilter(constraints),
+                  _buildDashboardStats(constraints),
+                  _buildQuickActions(constraints),
+                  _buildBookingsSection(),
+                  _buildAnalyticsSection(),
+                  _buildReviewsSection(),
+                  _buildTripsSection(),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildSearchAndFilter() {
+  Widget _buildSearchAndFilter(BoxConstraints constraints) {
+    final isMobile = constraints.maxWidth < 768;
+    
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+      margin: EdgeInsets.symmetric(
+        horizontal: isMobile ? 0 : 8, 
+        vertical: isMobile ? 12 : 16
+      ),
       child: Column(
         children: [
           // Enhanced Search Bar with better styling
@@ -313,14 +331,14 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
               controller: _searchController,
               onChanged: _onSearchChanged,
               style: FlutterFlowTheme.of(context).bodyLarge.override(
-                fontSize: 16,
+                fontSize: isMobile ? 14 : 16,
                 fontWeight: FontWeight.w500,
               ),
               decoration: InputDecoration(
-                hintText: '🔍 Search trips by name, location, or category...',
+                hintText: isMobile ? '🔍 Search trips...' : '🔍 Search trips by name, location, or category...',
                 hintStyle: FlutterFlowTheme.of(context).bodyLarge.override(
                   color: FlutterFlowTheme.of(context).secondaryText.withOpacity(0.7),
-                  fontSize: 16,
+                  fontSize: isMobile ? 14 : 16,
                   fontWeight: FontWeight.w400,
                 ),
                 prefixIcon: Container(
@@ -356,9 +374,9 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                       )
                     : null,
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 18,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 20 : 24,
+                  vertical: isMobile ? 16 : 18,
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -489,7 +507,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
     );
   }
 
-  Widget _buildDashboardStats() {
+  Widget _buildDashboardStats(BoxConstraints constraints) {
     final isAdmin = _isCurrentUserAdmin();
     final agencyRef = isAdmin ? null : AgencyUtils.getCurrentAgencyRef();
     
@@ -501,54 +519,12 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
           children: [
             _buildAgencyInfoCard(),
             const SizedBox(height: 16),
-            Container(
-              constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height * 0.12, // 12% of screen height
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildEnhancedStatCard(
-                      'Total Trips',
-                      '0',
-                      Icons.flight_takeoff,
-                      const [Color(0xFFD76B30), Color(0xFFDBA237)],
-                      'trips',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildEnhancedStatCard(
-                      'Active',
-                      '0',
-                      Icons.check_circle,
-                      const [Color(0xFFD76B30), Color(0xFFE8A657)],
-                      'trips',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildEnhancedStatCard(
-                      'Revenue',
-                      _currency.format(0),
-                      Icons.attach_money,
-                      const [Color(0xFFDBA237), Color(0xFFD76B30)],
-                      'total',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildEnhancedStatCard(
-                      'Rating',
-                      '0.0',
-                      Icons.star,
-                      const [Color(0xFFE8A657), Color(0xFFDBA237)],
-                      'avg',
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildResponsiveStatsGrid(constraints, [
+              {'title': 'Total Trips', 'value': '0', 'icon': Icons.flight_takeoff, 'colors': [Color(0xFFD76B30), Color(0xFFDBA237)], 'subtitle': 'trips'},
+              {'title': 'Active', 'value': '0', 'icon': Icons.check_circle, 'colors': [Color(0xFFD76B30), Color(0xFFE8A657)], 'subtitle': 'trips'},
+              {'title': 'Revenue', 'value': _currency.format(0), 'icon': Icons.attach_money, 'colors': [Color(0xFFDBA237), Color(0xFFD76B30)], 'subtitle': 'total'},
+              {'title': 'Rating', 'value': '4.8', 'icon': Icons.star, 'colors': [Color(0xFFE8A657), Color(0xFFD76B30)], 'subtitle': 'rating'},
+            ])
           ],
         ),
       );
@@ -827,9 +803,14 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
     );
   }
 
-  Widget _buildQuickActions() {
+  Widget _buildQuickActions(BoxConstraints constraints) {
+    final isMobile = constraints.maxWidth < 768;
+    
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: EdgeInsets.symmetric(
+        horizontal: isMobile ? 0 : 16, 
+        vertical: 8
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -850,88 +831,47 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  'Quick Actions',
-                  style: FlutterFlowTheme.of(context).titleMedium.override(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: FlutterFlowTheme.of(context).primaryText,
-                    letterSpacing: 0.5,
+                Expanded(
+                  child: Text(
+                    'Quick Actions',
+                    style: FlutterFlowTheme.of(context).titleMedium.override(
+                      fontSize: isMobile ? 18 : 22,
+                      fontWeight: FontWeight.w700,
+                      color: FlutterFlowTheme.of(context).primaryText,
+                      letterSpacing: 0.5,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD76B30).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '5 ACTIONS',
-                    style: TextStyle(
-                      color: const Color(0xFFD76B30),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1,
+                if (!isMobile || constraints.maxWidth > 400) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD76B30).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '5 ACTIONS',
+                      style: TextStyle(
+                        color: const Color(0xFFD76B30),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1,
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
-          Row(
-            children: [
-              Expanded(
-                child: _buildQuickActionCard(
-                  'Create Trip',
-                  Icons.add_location,
-                  const [Color(0xFFD76B30), Color(0xFFDBA237)],
-                  () => context.pushNamed('create_trip'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildQuickActionCard(
-                  'CSV Upload',
-                  Icons.upload_file,
-                  const [Color(0xFFDBA237), Color(0xFFE8A657)],
-                  () => context.pushNamed('agencyCsvUpload'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildQuickActionCard(
-                  'View Bookings',
-                  Icons.book_online,
-                  const [Color(0xFFE8A657), Color(0xFFD76B30)],
-                  () => _showAllBookingsDialog(),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Second row with review import
-          Row(
-            children: [
-              Expanded(
-                child: _buildQuickActionCard(
-                  'Import Reviews',
-                  Icons.rate_review,
-                  const [Color(0xFF4CAF50), Color(0xFF66BB6A)],
-                  () => _showReviewImportDialog(),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildQuickActionCard(
-                  'Preview Mode',
-                  Icons.preview,
-                  const [Color(0xFF2196F3), Color(0xFF42A5F5)],
-                  () => _togglePreviewMode(),
-                ),
-              ),
-            ],
-          ),
+          _buildResponsiveActionGrid(constraints, [
+            {'title': 'Create Trip', 'icon': Icons.add_location, 'colors': [Color(0xFFD76B30), Color(0xFFDBA237)], 'onTap': () => context.pushNamed('create_trip')},
+            {'title': 'CSV Upload', 'icon': Icons.upload_file, 'colors': [Color(0xFFDBA237), Color(0xFFE8A657)], 'onTap': () => context.pushNamed('agencyCsvUpload')},
+            {'title': 'View Bookings', 'icon': Icons.book_online, 'colors': [Color(0xFFE8A657), Color(0xFFD76B30)], 'onTap': () => _showAllBookingsDialog()},
+            {'title': 'Import Reviews', 'icon': Icons.rate_review, 'colors': [Color(0xFF4CAF50), Color(0xFF66BB6A)], 'onTap': () => _showReviewImportDialog()},
+            {'title': 'Preview Mode', 'icon': Icons.preview, 'colors': [Color(0xFF2196F3), Color(0xFF42A5F5)], 'onTap': () => _togglePreviewMode()},
+          ]),
         ],
       ),
     );
@@ -1076,8 +1016,9 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
     print('Current User Email: ${currentUser?.email}');
     print('User Document: ${currentUserDocument?.reference.path}');
     
-    // Test basic Firestore connectivity
+    // Test basic Firestore connectivity and auth status
     _testFirestoreConnection();
+    _debugAuthStatus();
     
     // If no agency reference and not admin, show setup message
     if (!isAdmin && agencyRef == null) {
@@ -1860,29 +1801,28 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
     final isAdmin = _isCurrentUserAdmin();
     
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            Container(
-              width: 4,
-              height: 24,
-              decoration: BoxDecoration(
-                color: const Color(0xFFD76B30),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              isAdmin ? 'All Agency Trips' : 'Your Trips',
-              style: FlutterFlowTheme.of(context).titleLarge.override(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: FlutterFlowTheme.of(context).primaryText,
-              ),
-            ),
-          ],
+        Container(
+          width: 4,
+          height: 24,
+          decoration: BoxDecoration(
+            color: const Color(0xFFD76B30),
+            borderRadius: BorderRadius.circular(2),
+          ),
         ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            isAdmin ? 'All Agency Trips' : 'Your Trips',
+            style: FlutterFlowTheme.of(context).titleLarge.override(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: FlutterFlowTheme.of(context).primaryText,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 8),
         Text(
           countText,
           style: FlutterFlowTheme.of(context).labelMedium.override(
@@ -2738,12 +2678,15 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  'Analytics & Insights',
-                  style: FlutterFlowTheme.of(context).titleLarge.override(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: FlutterFlowTheme.of(context).primaryText,
+                Expanded(
+                  child: Text(
+                    'Analytics & Insights',
+                    style: FlutterFlowTheme.of(context).titleLarge.override(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: FlutterFlowTheme.of(context).primaryText,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -3507,5 +3450,74 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
   void _showAllReviews() {
     // Navigate to a dedicated reviews page or show in a dialog
     context.pushNamed('reviews');
+  }
+
+  void _debugAuthStatus() {
+    print('=== AUTH DEBUG INFO ===');
+    print('Current user: ${currentUser?.uid}');
+    print('Current user email: ${currentUser?.email}');
+    print('Is authenticated: ${currentUser != null}');
+    print('User is logged in: ${loggedIn}');
+    print('========================');
+  }
+
+  // Responsive helper methods
+  Widget _buildResponsiveStatsGrid(BoxConstraints constraints, List<Map<String, dynamic>> stats) {
+    final isMobile = constraints.maxWidth < 768;
+    final isTablet = constraints.maxWidth >= 768 && constraints.maxWidth < 1200;
+    
+    final crossAxisCount = isMobile ? 2 : (isTablet ? 4 : 4);
+    final childAspectRatio = isMobile ? 1.3 : 1.5;
+    
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: isMobile ? 8 : 12,
+        mainAxisSpacing: isMobile ? 8 : 12,
+        childAspectRatio: childAspectRatio,
+      ),
+      itemCount: stats.length,
+      itemBuilder: (context, index) {
+        final stat = stats[index];
+        return _buildEnhancedStatCard(
+          stat['title'],
+          stat['value'],
+          stat['icon'],
+          stat['colors'],
+          stat['subtitle'],
+        );
+      },
+    );
+  }
+
+  Widget _buildResponsiveActionGrid(BoxConstraints constraints, List<Map<String, dynamic>> actions) {
+    final isMobile = constraints.maxWidth < 768;
+    final isTablet = constraints.maxWidth >= 768 && constraints.maxWidth < 1200;
+    
+    final crossAxisCount = isMobile ? 1 : (isTablet ? 3 : 5);
+    final childAspectRatio = isMobile ? 2.5 : 1.8;
+    
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: isMobile ? 8 : 12,
+        mainAxisSpacing: isMobile ? 8 : 12,
+        childAspectRatio: childAspectRatio,
+      ),
+      itemCount: actions.length,
+      itemBuilder: (context, index) {
+        final action = actions[index];
+        return _buildQuickActionCard(
+          action['title'],
+          action['icon'],
+          action['colors'],
+          action['onTap'],
+        );
+      },
+    );
   }
 }
