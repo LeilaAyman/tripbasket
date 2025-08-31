@@ -38,16 +38,25 @@ class _PaymentWidgetState extends State<PaymentWidget> {
   late PaymentModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
   
-  bool _isLoading = true;
+  bool _isLoading = false;
   bool _isProcessingPayment = false;
+  bool _showPaymentOptions = true;
   String? _paymentUrl;
   String? _errorMessage;
+  String _selectedPaymentOption = 'full'; // 'full' or 'deposit'
+  double _depositAmount = 0.0;
+  double _remainingAmount = 0.0;
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => PaymentModel());
-    _initializePayment();
+    _calculateAmounts();
+  }
+
+  void _calculateAmounts() {
+    _depositAmount = widget.totalAmount * 0.5; // 50% deposit
+    _remainingAmount = widget.totalAmount - _depositAmount;
   }
 
   @override
@@ -93,8 +102,10 @@ class _PaymentWidgetState extends State<PaymentWidget> {
         'state': 'Cairo',
       };
 
+      final paymentAmount = _selectedPaymentOption == 'full' ? widget.totalAmount : _depositAmount;
+      
       final result = await paymobService.processPayment(
-        amount: widget.totalAmount,
+        amount: paymentAmount,
         currency: 'EGP',
         merchantOrderId: merchantOrderId,
         billingData: billingData,
@@ -353,6 +364,10 @@ class _PaymentWidgetState extends State<PaymentWidget> {
   }
 
   Widget _buildBody() {
+    if (_showPaymentOptions) {
+      return _buildPaymentOptionsScreen();
+    }
+    
     if (_isLoading) {
       return _buildLoadingState();
     }
@@ -366,6 +381,298 @@ class _PaymentWidgetState extends State<PaymentWidget> {
     }
     
     return _buildErrorState();
+  }
+
+  Widget _buildPaymentOptionsScreen() {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Trip Summary
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: FlutterFlowTheme.of(context).secondaryBackground,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Trip Summary',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: FlutterFlowTheme.of(context).primaryText,
+                  ),
+                ),
+                SizedBox(height: 16),
+                Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        widget.tripRecord.image.isNotEmpty 
+                            ? widget.tripRecord.image 
+                            : 'https://images.unsplash.com/photo-1519451241324-20b4ea2c4220',
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.tripRecord.title,
+                            style: GoogleFonts.poppins(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: FlutterFlowTheme.of(context).primaryText,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            widget.tripRecord.location,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: FlutterFlowTheme.of(context).secondaryText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16),
+                Divider(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Total Amount:',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: FlutterFlowTheme.of(context).primaryText,
+                      ),
+                    ),
+                    Text(
+                      'EGP ${widget.totalAmount.toStringAsFixed(2)}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFD76B30),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          SizedBox(height: 32),
+          
+          // Payment Options
+          Text(
+            'Choose Payment Option',
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: FlutterFlowTheme.of(context).primaryText,
+            ),
+          ),
+          SizedBox(height: 16),
+          
+          // Full Payment Option
+          _buildPaymentOptionCard(
+            'full',
+            'Pay Full Amount',
+            'EGP ${widget.totalAmount.toStringAsFixed(2)}',
+            'Complete payment now and secure your booking',
+            Icons.payment,
+          ),
+          
+          SizedBox(height: 16),
+          
+          // Deposit Payment Option  
+          _buildPaymentOptionCard(
+            'deposit',
+            'Pay 50% Deposit',
+            'EGP ${_depositAmount.toStringAsFixed(2)}',
+            'Pay half now, remainder before trip starts\nRemaining: EGP ${_remainingAmount.toStringAsFixed(2)}',
+            Icons.account_balance_wallet,
+          ),
+          
+          // Payment Instructions (if available and deposit is selected)
+          if (_selectedPaymentOption == 'deposit' && widget.tripRecord.paymentInstructions.isNotEmpty) ...[
+            SizedBox(height: 24),
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Color(0xFFD76B30).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Color(0xFFD76B30).withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Color(0xFFD76B30), size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Payment Instructions',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFD76B30),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    widget.tripRecord.paymentInstructions,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: FlutterFlowTheme.of(context).primaryText,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          
+          SizedBox(height: 32),
+          
+          // Proceed Button
+          FFButtonWidget(
+            onPressed: _proceedToPayment,
+            text: _selectedPaymentOption == 'full' 
+                ? 'Pay EGP ${widget.totalAmount.toStringAsFixed(2)}'
+                : 'Pay Deposit EGP ${_depositAmount.toStringAsFixed(2)}',
+            options: FFButtonOptions(
+              width: double.infinity,
+              height: 52,
+              padding: EdgeInsets.symmetric(horizontal: 24),
+              iconPadding: EdgeInsets.zero,
+              color: Color(0xFFD76B30),
+              textStyle: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              elevation: 2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentOptionCard(String value, String title, String amount, String description, IconData icon) {
+    final isSelected = _selectedPaymentOption == value;
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedPaymentOption = value;
+        });
+      },
+      child: Container(
+        padding: EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isSelected ? Color(0xFFD76B30).withOpacity(0.1) : FlutterFlowTheme.of(context).secondaryBackground,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? Color(0xFFD76B30) : FlutterFlowTheme.of(context).alternate,
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isSelected ? Color(0xFFD76B30) : FlutterFlowTheme.of(context).alternate,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? Colors.white : FlutterFlowTheme.of(context).secondaryText,
+                size: 24,
+              ),
+            ),
+            SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: FlutterFlowTheme.of(context).primaryText,
+                        ),
+                      ),
+                      Text(
+                        amount,
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFD76B30),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: FlutterFlowTheme.of(context).secondaryText,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _proceedToPayment() {
+    setState(() {
+      _showPaymentOptions = false;
+      _isLoading = true;
+    });
+    _initializePayment();
   }
 
   Widget _buildLoadingState() {

@@ -8,3 +8,4 @@ export 'agencies_record.dart';
 export 'reviews_record.dart';
 export 'agency_reviews_record.dart';
 export 'bookings_record.dart';
+export 'messages_record.dart';

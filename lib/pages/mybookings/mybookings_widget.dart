@@ -331,8 +331,12 @@ class _MybookingsWidgetState extends State<MybookingsWidget> {
           ? StreamBuilder<TripsRecord>(
               stream: TripsRecord.getDocument(booking.tripReference!),
               builder: (context, tripSnapshot) {
-                if (!tripSnapshot.hasData) {
+                if (tripSnapshot.connectionState == ConnectionState.waiting) {
                   return _buildLoadingBookingCard();
+                }
+                
+                if (!tripSnapshot.hasData) {
+                  return _buildInvalidBookingCard(booking);
                 }
                 
                 final trip = tripSnapshot.data!;

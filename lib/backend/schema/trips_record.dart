@@ -112,6 +112,11 @@ class TripsRecord extends FirestoreRecord {
   int get ratingCount => _ratingCount ?? 0;
   bool hasRatingCount() => _ratingCount != null;
 
+  // "payment_instructions" field.
+  String? _paymentInstructions;
+  String get paymentInstructions => _paymentInstructions ?? '';
+  bool hasPaymentInstructions() => _paymentInstructions != null;
+
   void _initializeFields() {
     _specifications = snapshotData['specifications'] as String?;
     _itenarary = getDataList(snapshotData['itenarary']);
@@ -131,6 +136,7 @@ class TripsRecord extends FirestoreRecord {
     _rating = castToType<double>(snapshotData['rating']);
     _ratingAvg = castToType<double>(snapshotData['rating_avg']);
     _ratingCount = castToType<int>(snapshotData['rating_count']);
+    _paymentInstructions = snapshotData['payment_instructions'] as String?;
   }
 
   static CollectionReference get collection =>
@@ -188,6 +194,7 @@ Map<String, dynamic> createTripsRecordData({
   double? rating,
   double? ratingAvg,
   int? ratingCount,
+  String? paymentInstructions,
 }) {
   final firestoreData = mapToFirestore(
     <String, dynamic>{
@@ -212,6 +219,7 @@ Map<String, dynamic> createTripsRecordData({
       'rating': rating,
       'rating_avg': ratingAvg,
       'rating_count': ratingCount,
+      'payment_instructions': paymentInstructions,
     }.withoutNulls,
   );
 
@@ -241,7 +249,8 @@ class TripsRecordDocumentEquality implements Equality<TripsRecord> {
         e1?.agencyReference == e2?.agencyReference &&
         e1?.rating == e2?.rating &&
         e1?.ratingAvg == e2?.ratingAvg &&
-        e1?.ratingCount == e2?.ratingCount;
+        e1?.ratingCount == e2?.ratingCount &&
+        e1?.paymentInstructions == e2?.paymentInstructions;
   }
 
   @override
@@ -263,7 +272,8 @@ class TripsRecordDocumentEquality implements Equality<TripsRecord> {
         e?.agencyReference,
         e?.rating,
         e?.ratingAvg,
-        e?.ratingCount
+        e?.ratingCount,
+        e?.paymentInstructions
       ]);
 
   @override

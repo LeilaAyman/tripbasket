@@ -105,6 +105,21 @@ class BookingsRecord extends FirestoreRecord {
   String get specialRequests => _specialRequests ?? '';
   bool hasSpecialRequests() => _specialRequests != null;
 
+  // "payment_option" field.
+  String? _paymentOption;
+  String get paymentOption => _paymentOption ?? '';
+  bool hasPaymentOption() => _paymentOption != null;
+
+  // "deposit_amount" field.
+  double? _depositAmount;
+  double get depositAmount => _depositAmount ?? 0.0;
+  bool hasDepositAmount() => _depositAmount != null;
+
+  // "remaining_amount" field.
+  double? _remainingAmount;
+  double get remainingAmount => _remainingAmount ?? 0.0;
+  bool hasRemainingAmount() => _remainingAmount != null;
+
   void _initializeFields() {
     _userReference = snapshotData['user_reference'] as DocumentReference?;
     _tripReference = snapshotData['trip_reference'] as DocumentReference?;
@@ -122,6 +137,9 @@ class BookingsRecord extends FirestoreRecord {
     _travelerCount = castToType<int>(snapshotData['traveler_count']);
     _travelerNames = getDataList(snapshotData['traveler_names']);
     _specialRequests = snapshotData['special_requests'] as String?;
+    _paymentOption = snapshotData['payment_option'] as String?;
+    _depositAmount = castToType<double>(snapshotData['deposit_amount']);
+    _remainingAmount = castToType<double>(snapshotData['remaining_amount']);
     _unitPriceEGP = castToType<double>(snapshotData['unitPriceEGP']);
     _lineTotalEGP = castToType<double>(snapshotData['lineTotalEGP']);
   }
@@ -176,6 +194,9 @@ Map<String, dynamic> createBookingsRecordData({
   String? merchantOrderId,
   int? travelerCount,
   String? specialRequests,
+  String? paymentOption,
+  double? depositAmount,
+  double? remainingAmount,
   double? unitPriceEGP,
   double? lineTotalEGP,
 }) {
@@ -196,6 +217,9 @@ Map<String, dynamic> createBookingsRecordData({
       'merchant_order_id': merchantOrderId,
       'traveler_count': travelerCount,
       'special_requests': specialRequests,
+      'payment_option': paymentOption,
+      'deposit_amount': depositAmount,
+      'remaining_amount': remainingAmount,
       'unitPriceEGP': unitPriceEGP,
       'lineTotalEGP': lineTotalEGP,
     }.withoutNulls,
@@ -225,7 +249,10 @@ class BookingsRecordDocumentEquality implements Equality<BookingsRecord> {
         e1?.merchantOrderId == e2?.merchantOrderId &&
         e1?.travelerCount == e2?.travelerCount &&
         listEquality.equals(e1?.travelerNames, e2?.travelerNames) &&
-        e1?.specialRequests == e2?.specialRequests;
+        e1?.specialRequests == e2?.specialRequests &&
+        e1?.paymentOption == e2?.paymentOption &&
+        e1?.depositAmount == e2?.depositAmount &&
+        e1?.remainingAmount == e2?.remainingAmount;
   }
 
   @override
@@ -245,7 +272,10 @@ class BookingsRecordDocumentEquality implements Equality<BookingsRecord> {
         e?.merchantOrderId,
         e?.travelerCount,
         e?.travelerNames,
-        e?.specialRequests
+        e?.specialRequests,
+        e?.paymentOption,
+        e?.depositAmount,
+        e?.remainingAmount
       ]);
 
   @override

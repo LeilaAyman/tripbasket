@@ -1,4 +1,5 @@
 import '/backend/backend.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '/flutter_flow/flutter_flow_animations.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -431,6 +432,45 @@ class _AgenciesListWidgetState extends State<AgenciesListWidget>
                                             ),
                                           ),
                                           Spacer(),
+                                          // Chat button
+                                          InkWell(
+                                            onTap: () => _showChatDialog(agency),
+                                            child: Container(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 12.0,
+                                                vertical: 6.0,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.blue.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(8.0),
+                                                border: Border.all(
+                                                  color: Colors.blue,
+                                                  width: 1.0,
+                                                ),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    Icons.chat,
+                                                    color: Colors.blue,
+                                                    size: 16.0,
+                                                  ),
+                                                  SizedBox(width: 4.0),
+                                                  Text(
+                                                    'Chat',
+                                                    style: GoogleFonts.poppins(
+                                                      fontSize: 12.0,
+                                                      color: Colors.blue,
+                                                      fontWeight: FontWeight.w600,
+                                                      letterSpacing: 0.0,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(width: 8.0),
                                           // Review button
                                           InkWell(
                                             onTap: () => _showReviewDialog(agency),
@@ -527,5 +567,134 @@ class _AgenciesListWidgetState extends State<AgenciesListWidget>
         ),
       );
     }
+  }
+
+  void _showChatDialog(AgenciesRecord agency) {
+    print('Chat button clicked for agency: ${agency.name}'); // Debug log
+    
+    if (!loggedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in to chat with agencies'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final TextEditingController messageController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.chat, color: Colors.blue, size: 24),
+            const SizedBox(width: 8),
+            Text('Chat with ${agency.name}'),
+          ],
+        ),
+        content: SizedBox(
+          width: 300,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: messageController,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  hintText: 'Type your message to the agency...',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Your message will be sent directly to the agency. They\'ll see your contact information to respond.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue[700],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FFButtonWidget(
+            onPressed: () async {
+              if (messageController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter a message'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
+              
+              try {
+                // Create message in MessagesRecord collection
+                await MessagesRecord.collection.add({
+                  'from': currentUserReference,
+                  'to': null, // Agency will see this in their dashboard
+                  'trip_reference': null, // General inquiry, not trip-specific
+                  'content': messageController.text.trim(),
+                  'timestamp': FieldValue.serverTimestamp(),
+                  'message_type': 'customer_to_agency',
+                  'read_status': false,
+                  'agency_reference': agency.reference,
+                });
+                
+                if (mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Message sent successfully! The agency will respond soon.'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error sending message: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            text: 'Send Message',
+            options: FFButtonOptions(
+              color: Colors.blue,
+              textStyle: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -287,6 +287,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                   _buildDashboardStats(constraints),
                   _buildQuickActions(constraints),
                   _buildBookingsSection(),
+                  _buildMessagingInbox(),
                   _buildAnalyticsSection(),
                   _buildReviewsSection(),
                   _buildTripsSection(),
@@ -3518,6 +3519,340 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
           action['onTap'],
         );
       },
+    );
+  }
+
+  Widget _buildMessagingInbox() {
+    final currentAgencyRef = AgencyUtils.getCurrentAgencyRef();
+    final isAdmin = _isCurrentUserAdmin();
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: FlutterFlowTheme.of(context).secondaryBackground,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Customer Messages',
+                style: FlutterFlowTheme.of(context).headlineSmall.override(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFFD76B30),
+                ),
+              ),
+              Icon(
+                Icons.message,
+                color: const Color(0xFFD76B30),
+                size: 24,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          StreamBuilder<List<MessagesRecord>>(
+            stream: isAdmin
+                ? MessagesRecord.collection
+                    .where('message_type', whereIn: ['customer_to_admin', 'customer_to_agency'])
+                    .orderBy('timestamp', descending: true)
+                    .limit(5)
+                    .snapshots()
+                    .map((snapshot) => snapshot.docs
+                        .map((doc) => MessagesRecord.fromSnapshot(doc))
+                        .toList())
+                : MessagesRecord.collection
+                    .where('agency_reference', isEqualTo: currentAgencyRef)
+                    .where('message_type', isEqualTo: 'customer_to_agency')
+                    .orderBy('timestamp', descending: true)
+                    .limit(5)
+                    .snapshots()
+                    .map((snapshot) => snapshot.docs
+                        .map((doc) => MessagesRecord.fromSnapshot(doc))
+                        .toList()),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFFD76B30),
+                  ),
+                );
+              }
+              
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return Container(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.chat_bubble_outline,
+                        size: 48,
+                        color: FlutterFlowTheme.of(context).secondaryText,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No messages yet',
+                        style: FlutterFlowTheme.of(context).titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Customer messages will appear here',
+                        textAlign: TextAlign.center,
+                        style: FlutterFlowTheme.of(context).bodyMedium.override(
+                          color: FlutterFlowTheme.of(context).secondaryText,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              
+              final messages = snapshot.data!;
+              return Column(
+                children: [
+                  ...messages.map((message) => _buildMessageCard(message)).toList(),
+                  const SizedBox(height: 16),
+                  FFButtonWidget(
+                    onPressed: () {
+                      // TODO: Navigate to full messaging interface
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Full messaging interface coming soon!'),
+                        ),
+                      );
+                    },
+                    text: 'View All Messages',
+                    options: FFButtonOptions(
+                      width: double.infinity,
+                      height: 44,
+                      color: const Color(0xFFD76B30),
+                      textStyle: FlutterFlowTheme.of(context).titleSmall.override(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessageCard(MessagesRecord message) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: message.readStatus 
+            ? FlutterFlowTheme.of(context).primaryBackground
+            : const Color(0xFFD76B30).withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: message.readStatus 
+              ? FlutterFlowTheme.of(context).alternate
+              : const Color(0xFFD76B30).withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (!message.readStatus)
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFD76B30),
+                    shape: BoxShape.circle,
+                  ),
+                  margin: const EdgeInsets.only(right: 8),
+                ),
+              StreamBuilder<UsersRecord>(
+                stream: message.from != null
+                    ? UsersRecord.getDocument(message.from!)
+                    : null,
+                builder: (context, userSnapshot) {
+                  if (!userSnapshot.hasData) {
+                    return Text(
+                      'Customer',
+                      style: FlutterFlowTheme.of(context).titleSmall.override(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    );
+                  }
+                  final user = userSnapshot.data!;
+                  return Expanded(
+                    child: Text(
+                      user.displayName.isNotEmpty ? user.displayName : user.email,
+                      style: FlutterFlowTheme.of(context).titleSmall.override(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              Text(
+                message.timestamp != null
+                    ? DateFormat('MMM dd, HH:mm').format(message.timestamp!)
+                    : '',
+                style: FlutterFlowTheme.of(context).bodySmall.override(
+                  color: FlutterFlowTheme.of(context).secondaryText,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message.content,
+            style: FlutterFlowTheme.of(context).bodyMedium,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (message.tripReference != null) ...[
+            const SizedBox(height: 8),
+            StreamBuilder<TripsRecord>(
+              stream: TripsRecord.getDocument(message.tripReference!),
+              builder: (context, tripSnapshot) {
+                if (!tripSnapshot.hasData) return const SizedBox();
+                final trip = tripSnapshot.data!;
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: FlutterFlowTheme.of(context).alternate,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Re: ${trip.title}',
+                    style: FlutterFlowTheme.of(context).bodySmall.override(
+                      color: FlutterFlowTheme.of(context).secondaryText,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              FFButtonWidget(
+                onPressed: () {
+                  _showReplyDialog(message);
+                },
+                text: 'Reply',
+                options: FFButtonOptions(
+                  height: 32,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  color: const Color(0xFFD76B30),
+                  textStyle: FlutterFlowTheme.of(context).bodySmall.override(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showReplyDialog(MessagesRecord originalMessage) {
+    final TextEditingController replyController = TextEditingController();
+    final currentAgencyRef = AgencyUtils.getCurrentAgencyRef();
+    final isAdmin = _isCurrentUserAdmin();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reply to Customer'),
+        content: SizedBox(
+          width: 300,
+          child: TextField(
+            controller: replyController,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              hintText: 'Type your reply...',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FFButtonWidget(
+            onPressed: () async {
+              if (replyController.text.trim().isEmpty) return;
+              
+              try {
+                // Create reply message
+                await MessagesRecord.collection.add({
+                  'from': currentUserReference,
+                  'to': originalMessage.from,
+                  'trip_reference': originalMessage.tripReference,
+                  'content': replyController.text.trim(),
+                  'timestamp': FieldValue.serverTimestamp(),
+                  'message_type': isAdmin ? 'admin_to_customer' : 'agency_to_customer',
+                  'read_status': false,
+                  'agency_reference': isAdmin ? originalMessage.agencyReference : currentAgencyRef,
+                });
+                
+                // Mark original message as read
+                await originalMessage.reference.update({'read_status': true});
+                
+                if (mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Reply sent successfully!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error sending reply: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            text: 'Send Reply',
+            options: FFButtonOptions(
+              color: const Color(0xFFD76B30),
+              textStyle: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

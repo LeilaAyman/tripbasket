@@ -8,6 +8,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/pages/national_id_upload/national_id_upload_page.dart';
 import '/pages/admin_upload/admin_upload_widget.dart';
 import '/pages/agency_dashboard/agency_dashboard_widget.dart';
+import '/pages/admin_dashboard/admin_dashboard_widget.dart';
 import '/pages/agency_csv_upload/agency_csv_upload_widget.dart';
 import '/state/currency_provider.dart';
 import '/utils/kyc_utils.dart';
@@ -48,6 +49,11 @@ class _ProfileWidgetState extends State<ProfileWidget> {
   bool get isAdmin {
     if (currentUserDocument == null) return false;
     return currentUserDocument!.role.isNotEmpty && currentUserDocument!.role.contains('admin');
+  }
+  
+  bool _isAgency() {
+    if (currentUserDocument == null) return false;
+    return currentUserDocument!.role.isNotEmpty && currentUserDocument!.role.contains('agency');
   }
 
   bool get isAgency {
@@ -283,6 +289,42 @@ class _ProfileWidgetState extends State<ProfileWidget> {
             ),
             
             const Divider(height: 24),
+            
+            // Admin Dashboard (only for admins)
+            if (isAdmin) ...[
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  Icons.admin_panel_settings,
+                  color: const Color(0xFF1A237E), // Deep blue for admin
+                ),
+                title: const Text('Admin Dashboard'),
+                subtitle: const Text('System-wide management'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
+                  context.pushNamed('admin_dashboard');
+                },
+              ),
+              const Divider(height: 24),
+            ],
+            
+            // Agency Dashboard (for agencies and admins)
+            if (isAdmin || _isAgency()) ...[
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  Icons.dashboard,
+                  color: const Color(0xFFD76B30), // Orange for agency
+                ),
+                title: const Text('Agency Dashboard'),
+                subtitle: const Text('Manage trips and bookings'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
+                  context.pushNamed('agency_dashboard');
+                },
+              ),
+              const Divider(height: 24),
+            ],
             
             // Change Password
             ListTile(
