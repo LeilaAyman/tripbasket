@@ -1257,9 +1257,9 @@ class _HomeWebPageState extends State<HomeWebPage>
 
   Widget _buildFeatureGrid(bool isDesktop, bool isTablet, bool isMobile) {
     final features = [
-      {'icon': Icons.price_check, 'title': 'Best Price Guarantee', 'description': 'Book with confidence knowing you get the lowest rates, with no hidden fees.'},
+      {'icon': Icons.emoji_events, 'title': 'Best Agencies for Group & Customizable Trips', 'description': 'Travel with confidence — our agencies are known for creating memorable journeys, perfect for solo travelers looking to make new friends and unforgettable experiences.'},
       {'icon': Icons.verified, 'title': 'Verified Agencies & Trusted Partners', 'description': 'Every travel agency on our platform is verified for quality and reliability, so your trip is always in safe hands.'},
-      {'icon': Icons.credit_card, 'title': 'Easy Refund Policies', 'description': '💳 Hassle-free cancellation and refund options to give you peace of mind when plans change.'},
+      {'icon': Icons.credit_card, 'title': 'Clear Refund Policies', 'description': 'Transparent and hassle-free cancellation with clear refund options — giving you peace of mind when plans change.'},
     ];
 
     if (isMobile) {
@@ -1714,7 +1714,7 @@ class _HomeWebPageState extends State<HomeWebPage>
           child: Column(
             children: [
               Text(
-                'Premium Destinations',
+                'Top Destinations',
                 style: GoogleFonts.poppins(
                   fontSize: 48,
                   fontWeight: FontWeight.w700,

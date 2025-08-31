@@ -1,24 +1,21 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:async';
 import 'dart:math' as math;
 
-const kHeroAsset = 'assets/images/Cairo Egypt_GettyImages-1370918272.webp';
-const kHeroUrl =
-    'https://media.cntraveler.com/photos/655cdf1d2d09a7e0b27741b5/16:9/w_1920,c_limit/Cairo%20Egypt_GettyImages-1370918272.jpg';
+const List<String> kHeroAssets = [
+  'assets/images/200611101955-01-egypt-dahab.jpg',
+];
 
 class HeroBackground extends StatefulWidget {
   final double height;
   final Widget child;
-  final String assetPath;
-  final String? networkUrl; // optional
   
   const HeroBackground({
     super.key,
     required this.height,
     required this.child,
-    this.assetPath = kHeroAsset,
-    this.networkUrl,
   });
 
   @override
@@ -28,7 +25,9 @@ class HeroBackground extends StatefulWidget {
 class _HeroBackgroundState extends State<HeroBackground> 
     with TickerProviderStateMixin {
   late AnimationController _controller;
+  late Timer _imageTimer;
   late List<FloatingDot> _dots;
+  int _currentImageIndex = 0;
 
   @override
   void initState() {
@@ -37,6 +36,16 @@ class _HeroBackgroundState extends State<HeroBackground>
       duration: const Duration(seconds: 20),
       vsync: this,
     )..repeat();
+
+    // Use Timer for image switching every 3 seconds
+    _imageTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (mounted) {
+        setState(() {
+          _currentImageIndex = (_currentImageIndex + 1) % kHeroAssets.length;
+          print('Switching to image ${_currentImageIndex}: ${kHeroAssets[_currentImageIndex]}');
+        });
+      }
+    });
 
     // Generate random floating dots
     _dots = List.generate(15, (index) => FloatingDot(
@@ -51,6 +60,7 @@ class _HeroBackgroundState extends State<HeroBackground>
   @override
   void dispose() {
     _controller.dispose();
+    _imageTimer.cancel();
     super.dispose();
   }
 
@@ -63,15 +73,23 @@ class _HeroBackgroundState extends State<HeroBackground>
         fit: StackFit.expand,
         children: [
           // Background Image
-          if (kIsWeb || widget.networkUrl == null)
-            Image.asset(widget.assetPath, fit: BoxFit.cover)
-          else
-            CachedNetworkImage(
-              imageUrl: widget.networkUrl!,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => _fallback(),
-              errorWidget: (_, __, ___) => Image.asset(widget.assetPath, fit: BoxFit.cover),
+          Positioned.fill(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 800),
+              child: Image.asset(
+                kHeroAssets[_currentImageIndex],
+                key: ValueKey(_currentImageIndex),
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                errorBuilder: (context, error, stackTrace) {
+                  print('Error loading image: ${kHeroAssets[_currentImageIndex]}');
+                  print('Error details: $error');
+                  return _fallback();
+                },
+              ),
             ),
+          ),
 
           // Gradient overlay
           Container(

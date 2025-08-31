@@ -7,6 +7,7 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/utils/agency_utils.dart';
+import '/utils/chat_cleanup_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -31,17 +32,20 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
   String _searchQuery = '';
   String _selectedTab = 'overview'; // overview, agencies, trips, bookings, messages
   Timer? _debounce;
+  Timer? _cleanupTimer;
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => AdminDashboardModel());
+    _startCleanupTimer();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     _debounce?.cancel();
+    _cleanupTimer?.cancel();
     _model.dispose();
     super.dispose();
   }
@@ -63,6 +67,24 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
         setState(() {
           _searchQuery = value;
         });
+      }
+    });
+  }
+
+  /// Start automatic cleanup timer (checks every hour)
+  void _startCleanupTimer() {
+    _cleanupTimer = Timer.periodic(const Duration(hours: 1), (timer) async {
+      final now = DateTime.now();
+      
+      // Run cleanup at midnight (00:00)
+      if (now.hour == 0 && now.minute < 5) {
+        try {
+          print('Running automatic end-of-day chat cleanup...');
+          await ChatCleanupUtils.deleteAllChatsAtEndOfDay();
+          print('Automatic chat cleanup completed successfully');
+        } catch (e) {
+          print('Error in automatic chat cleanup: $e');
+        }
       }
     });
   }
@@ -677,9 +699,599 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
   }
 
   Widget _buildAgenciesTab() {
-    return Container(
-      child: Text('Agencies tab - TODO: Implement agencies list'),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Pending Approvals Section
+        _buildPendingAgencyApprovalsSection(),
+        const SizedBox(height: 32),
+        
+        // Approved Agencies Section
+        _buildApprovedAgenciesSection(),
+      ],
     );
+  }
+
+  Widget _buildPendingAgencyApprovalsSection() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: FlutterFlowTheme.of(context).secondaryBackground,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.pending_actions,
+                  color: Colors.orange.shade700,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pending Agency Approvals',
+                      style: FlutterFlowTheme.of(context).titleLarge.override(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: FlutterFlowTheme.of(context).primaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Review and approve new agency applications',
+                      style: FlutterFlowTheme.of(context).bodyMedium.override(
+                        color: FlutterFlowTheme.of(context).secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          StreamBuilder<List<AgenciesRecord>>(
+            stream: queryAgenciesRecord(
+              queryBuilder: (q) => q.where('status', isEqualTo: 'pending'),
+            ),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Text('Error loading pending agencies: ${snapshot.error}'),
+                );
+              }
+              
+              if (!snapshot.hasData) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+              
+              final pendingAgencies = snapshot.data!;
+              
+              if (pendingAgencies.isEmpty) {
+                return Container(
+                  padding: const EdgeInsets.all(40),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 48,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No pending agency applications',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: pendingAgencies.length,
+                itemBuilder: (context, index) {
+                  final agency = pendingAgencies[index];
+                  return _buildPendingAgencyCard(agency);
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPendingAgencyCard(AgenciesRecord agency) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.orange.shade200,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // Agency Logo or Icon
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                  image: agency.logo.isNotEmpty
+                      ? DecorationImage(
+                          image: NetworkImage(agency.logo),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: agency.logo.isEmpty
+                    ? Icon(
+                        Icons.business,
+                        color: Colors.orange.shade700,
+                        size: 30,
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 16),
+              
+              // Agency Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      agency.name,
+                      style: FlutterFlowTheme.of(context).titleMedium.override(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    if (agency.description.isNotEmpty) ...[
+                      Text(
+                        agency.description,
+                        style: FlutterFlowTheme.of(context).bodyMedium.override(
+                          color: FlutterFlowTheme.of(context).secondaryText,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    Row(
+                      children: [
+                        if (agency.contactEmail.isNotEmpty) ...[
+                          Icon(
+                            Icons.email,
+                            size: 16,
+                            color: FlutterFlowTheme.of(context).secondaryText,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            agency.contactEmail,
+                            style: FlutterFlowTheme.of(context).bodySmall.override(
+                              color: FlutterFlowTheme.of(context).secondaryText,
+                            ),
+                          ),
+                        ],
+                        if (agency.contactEmail.isNotEmpty && agency.location.isNotEmpty) 
+                          const Text(' • ', style: TextStyle(color: Colors.grey)),
+                        if (agency.location.isNotEmpty) ...[
+                          Icon(
+                            Icons.location_on,
+                            size: 16,
+                            color: FlutterFlowTheme.of(context).secondaryText,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            agency.location,
+                            style: FlutterFlowTheme.of(context).bodySmall.override(
+                              color: FlutterFlowTheme.of(context).secondaryText,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (agency.website.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.language,
+                            size: 16,
+                            color: FlutterFlowTheme.of(context).secondaryText,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            agency.website,
+                            style: FlutterFlowTheme.of(context).bodySmall.override(
+                              color: Colors.blue,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: FFButtonWidget(
+                  onPressed: () => _approveAgency(agency),
+                  text: 'Approve',
+                  icon: const Icon(Icons.check, size: 18),
+                  options: FFButtonOptions(
+                    height: 40,
+                    color: Colors.green,
+                    textStyle: FlutterFlowTheme.of(context).titleSmall.override(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FFButtonWidget(
+                  onPressed: () => _rejectAgency(agency),
+                  text: 'Reject',
+                  icon: const Icon(Icons.close, size: 18),
+                  options: FFButtonOptions(
+                    height: 40,
+                    color: Colors.red,
+                    textStyle: FlutterFlowTheme.of(context).titleSmall.override(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildApprovedAgenciesSection() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: FlutterFlowTheme.of(context).secondaryBackground,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.verified_user,
+                  color: Colors.green.shade700,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Approved Agencies',
+                      style: FlutterFlowTheme.of(context).titleLarge.override(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: FlutterFlowTheme.of(context).primaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'All verified and active agencies',
+                      style: FlutterFlowTheme.of(context).bodyMedium.override(
+                        color: FlutterFlowTheme.of(context).secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          StreamBuilder<List<AgenciesRecord>>(
+            stream: queryAgenciesRecord(
+              queryBuilder: (q) => q.where('status', isEqualTo: 'approved'),
+            ),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Text('Error loading approved agencies: ${snapshot.error}'),
+                );
+              }
+              
+              if (!snapshot.hasData) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+              
+              final approvedAgencies = snapshot.data!;
+              
+              if (approvedAgencies.isEmpty) {
+                return Container(
+                  padding: const EdgeInsets.all(40),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.business_outlined,
+                          size: 48,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No approved agencies yet',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: approvedAgencies.length,
+                itemBuilder: (context, index) {
+                  final agency = approvedAgencies[index];
+                  return _buildApprovedAgencyCard(agency);
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildApprovedAgencyCard(AgenciesRecord agency) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.green.shade200,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Agency Logo
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.green.shade100,
+              borderRadius: BorderRadius.circular(6),
+              image: agency.logo.isNotEmpty
+                  ? DecorationImage(
+                      image: NetworkImage(agency.logo),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+            ),
+            child: agency.logo.isEmpty
+                ? Icon(
+                    Icons.business,
+                    color: Colors.green.shade700,
+                    size: 24,
+                  )
+                : null,
+          ),
+          const SizedBox(width: 16),
+          
+          // Agency Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  agency.name,
+                  style: FlutterFlowTheme.of(context).titleSmall.override(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (agency.contactEmail.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    agency.contactEmail,
+                    style: FlutterFlowTheme.of(context).bodySmall.override(
+                      color: FlutterFlowTheme.of(context).secondaryText,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          
+          // Status badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.green.shade100,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.check_circle,
+                  size: 16,
+                  color: Colors.green.shade700,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Active',
+                  style: TextStyle(
+                    color: Colors.green.shade700,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Agency Approval Methods
+  Future<void> _approveAgency(AgenciesRecord agency) async {
+    try {
+      // Update agency status to approved
+      await agency.reference.update({
+        'status': 'approved',
+      });
+      
+      // Find users who applied as this agency and give them agency reference
+      final userQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('pending_agency_application', isEqualTo: agency.reference.id)
+          .get();
+      
+      for (final userDoc in userQuery.docs) {
+        await userDoc.reference.update({
+          'agency_reference': agency.reference,
+          'role': FieldValue.arrayUnion(['agency']),
+          'pending_agency_application': FieldValue.delete(),
+        });
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✅ Agency "${agency.name}" has been approved successfully!'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      print('Error approving agency: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error approving agency: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Future<void> _rejectAgency(AgenciesRecord agency) async {
+    try {
+      // Update agency status to rejected
+      await agency.reference.update({
+        'status': 'rejected',
+      });
+      
+      // Clean up any pending applications
+      final userQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('pending_agency_application', isEqualTo: agency.reference.id)
+          .get();
+      
+      for (final userDoc in userQuery.docs) {
+        await userDoc.reference.update({
+          'pending_agency_application': FieldValue.delete(),
+        });
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Agency "${agency.name}" application has been rejected.'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      print('Error rejecting agency: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error rejecting agency: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   Widget _buildTripsTab() {
@@ -695,8 +1307,613 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
   }
 
   Widget _buildMessagesTab() {
-    return Container(
-      child: Text('Messages tab - TODO: Implement messages list'),
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('chat_rooms')
+          .orderBy('lastMessageTime', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final chatRooms = snapshot.data?.docs ?? [];
+        
+        if (chatRooms.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
+                SizedBox(height: 16),
+                Text('No active chats', style: TextStyle(fontSize: 18, color: Colors.grey)),
+              ],
+            ),
+          );
+        }
+
+        return Row(
+          children: [
+            // Chat List
+            Expanded(
+              flex: 1,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border(right: BorderSide(color: Colors.grey.shade300)),
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.chat, color: Color(0xFFD76B30)),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Live Chats (${chatRooms.length})',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          const Spacer(),
+                          PopupMenuButton<String>(
+                            onSelected: (value) {
+                              switch (value) {
+                                case 'cleanup_old':
+                                  _showCleanupDialog();
+                                  break;
+                                case 'cleanup_all':
+                                  _showCleanupAllDialog();
+                                  break;
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(
+                                value: 'cleanup_old',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.cleaning_services, color: Colors.orange),
+                                    SizedBox(width: 8),
+                                    Text('Cleanup Old Chats'),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'cleanup_all',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.delete_sweep, color: Colors.red),
+                                    SizedBox(width: 8),
+                                    Text('Delete All Chats'),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            child: const Icon(Icons.more_vert, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: chatRooms.length,
+                        itemBuilder: (context, index) {
+                          final chatRoom = chatRooms[index].data() as Map<String, dynamic>;
+                          final chatRoomId = chatRooms[index].id;
+                          
+                          return _buildChatListItem(chatRoom, chatRoomId);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Chat Messages
+            Expanded(
+              flex: 2,
+              child: _selectedChatRoomId != null 
+                ? _buildChatMessages(_selectedChatRoomId!)
+                : const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.chat_outlined, size: 64, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text('Select a chat to view messages', style: TextStyle(fontSize: 18, color: Colors.grey)),
+                      ],
+                    ),
+                  ),
+            ),
+          ],
+        );
+      },
     );
+  }
+
+  String? _selectedChatRoomId;
+  final TextEditingController _adminMessageController = TextEditingController();
+
+  Widget _buildChatListItem(Map<String, dynamic> chatRoom, String chatRoomId) {
+    final lastMessage = chatRoom['lastMessage'] ?? '';
+    final userEmail = chatRoom['userEmail'] ?? 'Unknown';
+    final lastMessageTime = chatRoom['lastMessageTime'] as Timestamp?;
+    final isSelected = _selectedChatRoomId == chatRoomId;
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: isSelected ? const Color(0xFFD76B30).withOpacity(0.1) : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: const Color(0xFFD76B30),
+          child: Text(
+            userEmail.isNotEmpty ? userEmail[0].toUpperCase() : 'U',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ),
+        title: Text(
+          userEmail,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          lastMessage.isNotEmpty ? lastMessage : 'No messages yet',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: Colors.grey.shade600),
+        ),
+        trailing: lastMessageTime != null 
+          ? Text(
+              _formatTime(lastMessageTime.toDate()),
+              style: TextStyle(
+                color: Colors.grey.shade500,
+                fontSize: 12,
+              ),
+            )
+          : null,
+        onTap: () {
+          setState(() {
+            _selectedChatRoomId = chatRoomId;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildChatMessages(String chatRoomId) {
+    return Column(
+      children: [
+        // Chat Header
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.person, color: Color(0xFFD76B30)),
+              const SizedBox(width: 8),
+              const Text(
+                'Customer Support Chat',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const Spacer(),
+              IconButton(
+                onPressed: () => _showDeleteChatDialog(chatRoomId),
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                tooltip: 'Delete Chat',
+              ),
+            ],
+          ),
+        ),
+        // Messages
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('chat_rooms')
+                .doc(chatRoomId)
+                .collection('messages')
+                .orderBy('timestamp', descending: false)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final messages = snapshot.data?.docs ?? [];
+              
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: messages.length,
+                itemBuilder: (context, index) {
+                  final message = messages[index].data() as Map<String, dynamic>;
+                  final isAdmin = message['isAdmin'] ?? false;
+                  
+                  return _buildAdminMessageBubble(
+                    message['message'] ?? '',
+                    isAdmin,
+                    message['senderName'] ?? '',
+                    message['timestamp'] as Timestamp?,
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        // Message Input
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            border: Border(top: BorderSide(color: Colors.grey.shade300)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _adminMessageController,
+                  decoration: InputDecoration(
+                    hintText: 'Type your reply...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(25),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  onSubmitted: (value) => _sendAdminMessage(chatRoomId, value),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FloatingActionButton.small(
+                onPressed: () => _sendAdminMessage(chatRoomId, _adminMessageController.text),
+                backgroundColor: const Color(0xFFD76B30),
+                child: const Icon(Icons.send, color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAdminMessageBubble(String message, bool isAdmin, String senderName, Timestamp? timestamp) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment: isAdmin ? MainAxisAlignment.end : MainAxisAlignment.start,
+        children: [
+          if (!isAdmin) ...[
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: Colors.grey.shade300,
+              child: const Icon(Icons.person, color: Colors.grey, size: 16),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isAdmin ? const Color(0xFFD76B30) : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    message,
+                    style: TextStyle(
+                      color: isAdmin ? Colors.white : Colors.black87,
+                      fontSize: 14,
+                    ),
+                  ),
+                  if (timestamp != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatTime(timestamp.toDate()),
+                      style: TextStyle(
+                        color: isAdmin ? Colors.white70 : Colors.grey.shade500,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          if (isAdmin) ...[
+            const SizedBox(width: 8),
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: const Color(0xFFD76B30),
+              child: const Icon(Icons.support_agent, color: Colors.white, size: 16),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _sendAdminMessage(String chatRoomId, String message) async {
+    if (message.trim().isEmpty) return;
+
+    await FirebaseFirestore.instance
+        .collection('chat_rooms')
+        .doc(chatRoomId)
+        .collection('messages')
+        .add({
+      'message': message,
+      'senderId': 'admin',
+      'senderName': 'Support Team',
+      'isAdmin': true,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    // Update last message in chat room
+    await FirebaseFirestore.instance
+        .collection('chat_rooms')
+        .doc(chatRoomId)
+        .update({
+      'lastMessage': message,
+      'lastMessageTime': FieldValue.serverTimestamp(),
+    });
+
+    _adminMessageController.clear();
+  }
+
+  void _showDeleteChatDialog(String chatRoomId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Chat'),
+        content: const Text('Are you sure you want to delete this chat conversation?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteChatRoom(chatRoomId);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteChatRoom(String chatRoomId) async {
+    // Delete all messages first
+    final messagesQuery = await FirebaseFirestore.instance
+        .collection('chat_rooms')
+        .doc(chatRoomId)
+        .collection('messages')
+        .get();
+    
+    for (final doc in messagesQuery.docs) {
+      await doc.reference.delete();
+    }
+    
+    // Delete chat room
+    await FirebaseFirestore.instance
+        .collection('chat_rooms')
+        .doc(chatRoomId)
+        .delete();
+    
+    if (_selectedChatRoomId == chatRoomId) {
+      setState(() {
+        _selectedChatRoomId = null;
+      });
+    }
+  }
+
+  String _formatTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+    
+    if (difference.inMinutes < 1) {
+      return 'now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else {
+      return DateFormat('MMM d, HH:mm').format(dateTime);
+    }
+  }
+
+  void _showCleanupDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.cleaning_services, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Cleanup Old Chats'),
+          ],
+        ),
+        content: const Text(
+          'This will delete all chat conversations that are older than 1 day. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _performCleanup();
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+            child: const Text('Cleanup'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCleanupAllDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.delete_sweep, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Delete All Chats'),
+          ],
+        ),
+        content: const Text(
+          'This will delete ALL chat conversations immediately. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _performCleanupAll();
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete All'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _performCleanup() async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Cleaning up old chats...'),
+            ],
+          ),
+        ),
+      );
+
+      await ChatCleanupUtils.manualCleanupOldChats(daysOld: 1);
+      
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        
+        // Reset selected chat room if it was deleted
+        setState(() {
+          _selectedChatRoomId = null;
+        });
+        
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Old chats cleaned up successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error cleaning up chats: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _performCleanupAll() async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Deleting all chats...'),
+            ],
+          ),
+        ),
+      );
+
+      // Get all chat rooms and delete them
+      final allChats = await FirebaseFirestore.instance
+          .collection('chat_rooms')
+          .get();
+      
+      for (final chatDoc in allChats.docs) {
+        await ChatCleanupUtils.deleteChatRoomWithMessages(chatDoc.id);
+      }
+      
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        
+        // Reset selected chat room
+        setState(() {
+          _selectedChatRoomId = null;
+        });
+        
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('All ${allChats.docs.length} chats deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting chats: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

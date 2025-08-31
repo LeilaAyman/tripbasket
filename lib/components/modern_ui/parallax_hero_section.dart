@@ -18,7 +18,7 @@ class ParallaxHeroSection extends StatefulWidget {
     this.scrollController,
     this.title = 'Discover Amazing\nDestinations',
     this.subtitle = 'Explore unique trips and experiences around the world with premium travel experiences that create memories for a lifetime.',
-    this.backgroundImage = 'assets/images/hero_bg.jpg',
+    this.backgroundImage = 'https://img.youm7.com/ArticleImgs/2023/8/1/1192588-%D9%86%D9%88%D9%8A%D8%A8%D8%B9-(2).jpg',
     this.quickSearchTags = const ['Adventure', 'Beach', 'Mountain', 'City', 'Cultural'],
     this.onExplorePressed,
   });
@@ -172,7 +172,7 @@ class _ParallaxHeroSectionState extends State<ParallaxHeroSection>
         child: Container(
           decoration: BoxDecoration(
             image: DecorationImage(
-              image: AssetImage(widget.backgroundImage),
+              image: NetworkImage(widget.backgroundImage),
               fit: BoxFit.cover,
               colorFilter: ColorFilter.mode(
                 AppDesignSystem.primaryBlue.withOpacity(0.3),

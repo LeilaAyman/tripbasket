@@ -140,22 +140,22 @@ class _PremiumHomePageState extends State<PremiumHomePage>
   Widget _buildFeatureCards() {
     final features = [
       {
+        'icon': Icons.emoji_events_rounded,
+        'title': 'Best Agencies for Group & Customizable Trips',
+        'description': 'Travel with confidence — our agencies are known for creating memorable journeys, perfect for solo travelers looking to make new friends and unforgettable experiences.',
+        'color': AppDesignSystem.primaryGold,
+      },
+      {
         'icon': Icons.verified_user_rounded,
-        'title': 'Trusted & Verified',
-        'description': 'All our partners are carefully vetted and verified for your safety and peace of mind.',
+        'title': 'Verified Agencies & Trusted Partners',
+        'description': 'Every travel agency on our platform is verified for quality and reliability, so your trip is always in safe hands.',
         'color': AppDesignSystem.accentTeal,
       },
       {
-        'icon': Icons.support_agent_rounded,
-        'title': '24/7 Support',
-        'description': 'Round-the-clock customer support to assist you before, during, and after your trip.',
+        'icon': Icons.credit_card_rounded,
+        'title': 'Clear Refund Policies',
+        'description': 'Transparent and hassle-free cancellation with clear refund options — giving you peace of mind when plans change.',
         'color': AppDesignSystem.accentCoral,
-      },
-      {
-        'icon': Icons.price_check_rounded,
-        'title': 'Best Price Guarantee',
-        'description': 'We guarantee the best prices. Found cheaper elsewhere? We\'ll match it.',
-        'color': AppDesignSystem.primaryGold,
       },
     ];
 

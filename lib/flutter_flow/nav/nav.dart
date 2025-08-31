@@ -19,6 +19,7 @@ import 'serialization_util.dart';
 
 import '/index.dart';
 import '/pages/agency_dashboard/agency_dashboard_widget.dart';
+import '/pages/admin_dashboard/admin_dashboard_widget.dart';
 import '/pages/edit_profile/edit_profile_widget.dart';
 import '/ui/responsive/home_responsive.dart';
 
@@ -100,10 +101,20 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
               final userDoc = currentUserDocument;
               if (userDoc != null && userDoc.role.isNotEmpty) {
                 final roles = userDoc.role.map((role) => role.toLowerCase()).toList();
-                // Check if user has agency role
-                if (roles.contains('agency') || roles.contains('admin')) {
-                  print('ROUTER DEBUG: Agency user detected, redirecting to agency dashboard');
+                // Check if user has admin role - always allow admin access
+                if (roles.contains('admin')) {
+                  print('ROUTER DEBUG: Admin user detected, redirecting to agency dashboard');
                   return AgencyDashboardWidget();
+                }
+                // Check if user has agency role AND is approved
+                if (roles.contains('agency') && userDoc.agencyReference != null) {
+                  print('ROUTER DEBUG: Approved agency user detected, redirecting to agency dashboard');
+                  return AgencyDashboardWidget();
+                }
+                // Check if user has pending agency application
+                if (userDoc.hasPendingAgencyApplication()) {
+                  print('ROUTER DEBUG: User has pending agency application, showing home with waiting message');
+                  return const HomeResponsive(); // They'll see a pending message in the UI
                 }
               }
               return const HomeResponsive();
@@ -223,6 +234,12 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: AgencyDashboardWidget.routeName,
           path: AgencyDashboardWidget.routePath,
           builder: (context, params) => AgencyDashboardWidget(),
+        ),
+        FFRoute(
+          name: AdminDashboardWidget.routeName,
+          path: AdminDashboardWidget.routePath,
+          requireAuth: true,
+          builder: (context, params) => AdminDashboardWidget(),
         ),
         FFRoute(
           name: EditProfileWidget.routeName,

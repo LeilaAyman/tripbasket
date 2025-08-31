@@ -1272,18 +1272,27 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
 
   Widget _buildBookingCard(BookingsRecord booking) {
     return Container(
+      margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: FlutterFlowTheme.of(context).alternate,
-            width: 1,
-          ),
+        color: FlutterFlowTheme.of(context).secondaryBackground,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: FlutterFlowTheme.of(context).alternate,
+          width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header with trip title and status
           Row(
             children: [
               Expanded(
@@ -1300,11 +1309,234 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
               _buildBookingStatusChip(booking.bookingStatus),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
+          
+          // Customer Information Section
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: FlutterFlowTheme.of(context).primaryBackground,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: FlutterFlowTheme.of(context).alternate.withOpacity(0.5),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.account_circle,
+                      size: 18,
+                      color: Color(0xFFD76B30),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Customer Information',
+                      style: FlutterFlowTheme.of(context).labelLarge.override(
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFD76B30),
+                      ),
+                    ),
+                    const Spacer(),
+                    FutureBuilder<UsersRecord?>(
+                      future: booking.hasUserReference() 
+                          ? UsersRecord.getDocumentOnce(booking.userReference!)
+                          : null,
+                      builder: (context, userSnapshot) {
+                        final userData = userSnapshot.data;
+                        final verificationStatus = booking.customerVerificationStatus.isNotEmpty 
+                            ? booking.customerVerificationStatus
+                            : (userData?.nationalIdStatus ?? 'unverified');
+                        
+                        return _buildVerificationBadge(verificationStatus);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                
+                // Customer profile row with avatar
+                Row(
+                  children: [
+                    // Customer avatar
+                    FutureBuilder<UsersRecord?>(
+                      future: booking.hasUserReference() 
+                          ? UsersRecord.getDocumentOnce(booking.userReference!)
+                          : null,
+                      builder: (context, userSnapshot) {
+                        final userData = userSnapshot.data;
+                        final profilePhoto = booking.customerProfilePhoto.isNotEmpty 
+                            ? booking.customerProfilePhoto
+                            : (userData?.profilePhotoUrl?.isNotEmpty == true 
+                                ? userData!.profilePhotoUrl
+                                : (userData?.photoUrl?.isNotEmpty == true 
+                                    ? userData!.photoUrl 
+                                    : ''));
+                        
+                        return Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: FlutterFlowTheme.of(context).alternate,
+                            image: profilePhoto.isNotEmpty
+                                ? DecorationImage(
+                                    image: NetworkImage(profilePhoto),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                          child: profilePhoto.isEmpty
+                              ? Icon(
+                                  Icons.person,
+                                  color: FlutterFlowTheme.of(context).secondaryText,
+                                  size: 30,
+                                )
+                              : null,
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                    
+                    // Customer details
+                    Expanded(
+                      child: FutureBuilder<UsersRecord?>(
+                        future: booking.hasUserReference() 
+                            ? UsersRecord.getDocumentOnce(booking.userReference!)
+                            : null,
+                        builder: (context, userSnapshot) {
+                          final userData = userSnapshot.data;
+                          
+                          // Use customer info from booking if available, otherwise fallback to user document
+                          final displayName = booking.customerName.isNotEmpty 
+                              ? booking.customerName 
+                              : (userData?.displayName?.isNotEmpty == true 
+                                  ? userData!.displayName 
+                                  : (userData?.name?.isNotEmpty == true 
+                                      ? userData!.name 
+                                      : (booking.customerEmail.isNotEmpty 
+                                          ? booking.customerEmail.split('@').first 
+                                          : (userData?.email?.isNotEmpty == true
+                                              ? userData!.email.split('@').first 
+                                              : 'Unknown Customer'))));
+                          
+                          final email = booking.customerEmail.isNotEmpty 
+                              ? booking.customerEmail
+                              : (userData?.email ?? 'Email not available');
+                          
+                          final phone = booking.customerPhone.isNotEmpty 
+                              ? booking.customerPhone
+                              : (userData?.phoneNumber ?? 'Phone not available');
+                          
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                displayName,
+                                style: FlutterFlowTheme.of(context).bodyLarge.override(
+                                  fontWeight: FontWeight.w600,
+                                  color: FlutterFlowTheme.of(context).primaryText,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.email,
+                                    size: 14,
+                                    color: FlutterFlowTheme.of(context).secondaryText,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      email,
+                                      style: FlutterFlowTheme.of(context).bodySmall.override(
+                                        color: FlutterFlowTheme.of(context).secondaryText,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.phone,
+                                    size: 14,
+                                    color: FlutterFlowTheme.of(context).secondaryText,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    phone,
+                                    style: FlutterFlowTheme.of(context).bodySmall.override(
+                                      color: FlutterFlowTheme.of(context).secondaryText,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                    
+                    // Loyalty points
+                    FutureBuilder<UsersRecord?>(
+                      future: booking.hasUserReference() 
+                          ? UsersRecord.getDocumentOnce(booking.userReference!)
+                          : null,
+                      builder: (context, userSnapshot) {
+                        final userData = userSnapshot.data;
+                        final loyaltyPoints = booking.customerLoyaltyPoints > 0 
+                            ? booking.customerLoyaltyPoints
+                            : (userData?.loyaltyPoints ?? 0);
+                        
+                        if (loyaltyPoints <= 0) return const SizedBox.shrink();
+                        
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.star,
+                                size: 14,
+                                color: Colors.amber.shade700,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '$loyaltyPoints',
+                                style: TextStyle(
+                                  color: Colors.amber.shade700,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Booking details
           Row(
             children: [
               Icon(
-                Icons.person,
+                Icons.people,
                 size: 16,
                 color: FlutterFlowTheme.of(context).secondaryText,
               ),
@@ -1325,15 +1557,11 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
               Text(
                 _currency.format(booking.totalAmount),
                 style: FlutterFlowTheme.of(context).bodySmall.override(
-                  color: FlutterFlowTheme.of(context).secondaryText,
+                  color: FlutterFlowTheme.of(context).primaryText,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
+              const Spacer(),
               Icon(
                 Icons.calendar_today,
                 size: 16,
@@ -1346,34 +1574,93 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                   color: FlutterFlowTheme.of(context).secondaryText,
                 ),
               ),
-              const Spacer(),
-              if (booking.bookingStatus == 'pending_agency_approval') ...[
-                TextButton(
-                  onPressed: () => _approveBooking(booking),
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.green.shade50,
-                    foregroundColor: Colors.green.shade700,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: const Text('Approve', style: TextStyle(fontSize: 12)),
-                ),
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: () => _denyBooking(booking),
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.red.shade50,
-                    foregroundColor: Colors.red.shade700,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: const Text('Deny', style: TextStyle(fontSize: 12)),
-                ),
-              ],
             ],
           ),
+          
+          // Special requests if any
+          if (booking.specialRequests.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.note_alt,
+                        size: 14,
+                        color: Colors.blue.shade700,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Special Requests:',
+                        style: TextStyle(
+                          color: Colors.blue.shade700,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    booking.specialRequests,
+                    style: TextStyle(
+                      color: Colors.blue.shade700,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          
+          // Action buttons
+          if (booking.bookingStatus == 'pending_agency_approval') ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _approveBooking(booking),
+                    icon: const Icon(Icons.check, size: 18),
+                    label: const Text('Approve'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _denyBooking(booking),
+                    icon: const Icon(Icons.close, size: 18),
+                    label: const Text('Decline'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -1423,6 +1710,55 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
           color: textColor,
           fontSize: 12,
           fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVerificationBadge(String verificationStatus) {
+    Color backgroundColor;
+    Color iconColor;
+    IconData iconData;
+    String tooltip;
+    
+    switch (verificationStatus) {
+      case 'verified':
+        backgroundColor = Colors.green.shade100;
+        iconColor = Colors.green.shade700;
+        iconData = Icons.verified_user;
+        tooltip = 'ID Verified Customer';
+        break;
+      case 'pending':
+        backgroundColor = Colors.orange.shade100;
+        iconColor = Colors.orange.shade700;
+        iconData = Icons.pending;
+        tooltip = 'ID Verification Pending';
+        break;
+      case 'rejected':
+        backgroundColor = Colors.red.shade100;
+        iconColor = Colors.red.shade700;
+        iconData = Icons.cancel;
+        tooltip = 'ID Verification Rejected';
+        break;
+      default: // unverified
+        backgroundColor = Colors.grey.shade100;
+        iconColor = Colors.grey.shade600;
+        iconData = Icons.shield;
+        tooltip = 'ID Not Verified';
+    }
+    
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          iconData,
+          size: 16,
+          color: iconColor,
         ),
       ),
     );
@@ -2709,8 +3045,18 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
               final bookingRate = AgencyUtils.calculateBookingRate(trips);
               final monthlyRevenue = AgencyUtils.getMonthlyRevenue(trips);
               final topDestinations = AgencyUtils.getTopDestinations(trips, limit: 3);
-              final customerStats = AgencyUtils.getCustomerActivityStats(trips);
               final trends = AgencyUtils.getPerformanceTrends(trips);
+              
+              // Get real booking statistics
+              return FutureBuilder<Map<String, dynamic>>(
+                future: AgencyUtils.getCustomerActivityStatsFromBookings(agencyRef, isAdmin),
+                builder: (context, bookingSnapshot) {
+                  final customerStats = bookingSnapshot.data ?? {
+                    'totalCustomers': 0,
+                    'totalBookings': 0,
+                    'averageBookingsPerCustomer': 0.0,
+                    'customerRetentionRate': 0.0,
+                  };
               
               return Column(
                 children: [
@@ -2860,6 +3206,8 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                       ),
                     ),
                 ],
+              );
+                },
               );
             },
           ),

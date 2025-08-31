@@ -210,6 +210,9 @@ class _PaymentWidgetState extends State<PaymentWidget> {
     });
 
     try {
+      // Get current user document for comprehensive user information
+      final userDoc = currentUserDocument;
+      
       // Create booking record
       print('Creating booking record...');
       print('User reference: $currentUserReference');
@@ -234,6 +237,15 @@ class _PaymentWidgetState extends State<PaymentWidget> {
         'traveler_count': 1,
         'traveler_names': [],
         'special_requests': '',
+        // Customer information for agency approval
+        'customer_name': userDoc?.displayName?.isNotEmpty == true 
+            ? userDoc!.displayName 
+            : (userDoc?.name?.isNotEmpty == true ? userDoc!.name : currentUserEmail.split('@').first),
+        'customer_email': currentUserEmail,
+        'customer_phone': userDoc?.phoneNumber ?? '',
+        'customer_profile_photo': userDoc?.profilePhotoUrl ?? userDoc?.photoUrl ?? '',
+        'customer_verification_status': userDoc?.nationalIdStatus ?? 'unverified',
+        'customer_loyalty_points': userDoc?.loyaltyPoints ?? 0,
       });
 
       print('Booking record created successfully!');

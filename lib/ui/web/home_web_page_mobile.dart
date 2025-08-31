@@ -661,9 +661,9 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
             ),
             const SizedBox(height: 32),
             _buildMobileFeatureCard(
-              Icons.price_check,
-              'Best Price Guarantee',
-              'Book with confidence knowing you get the lowest rates, with no hidden fees.',
+              Icons.emoji_events,
+              'Best Agencies for Group & Customizable Trips',
+              'Travel with confidence — our agencies are known for creating memorable journeys, perfect for solo travelers looking to make new friends and unforgettable experiences.',
             ),
             const SizedBox(height: 20),
             _buildMobileFeatureCard(
@@ -674,8 +674,8 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
             const SizedBox(height: 20),
             _buildMobileFeatureCard(
               Icons.credit_card,
-              'Easy Refund Policies',
-              '💳 Hassle-free cancellation and refund options to give you peace of mind when plans change.',
+              'Clear Refund Policies',
+              'Transparent and hassle-free cancellation with clear refund options — giving you peace of mind when plans change.',
             ),
           ],
         ),
@@ -1162,13 +1162,12 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
     }
 
     // Navigate to search results with search parameters
-    final searchParams = {
-      'destination': _destinationController.text.trim(),
-      'checkinDate': _selectedCheckinDate?.toIso8601String(),
-      'travelers': _travelers.toString(),
-    };
+    final searchQuery = _destinationController.text.trim();
+    print('Mobile: Performing search for: $searchQuery');
 
-    context.pushNamed('searchResults', queryParameters: searchParams);
+    context.pushNamed('searchResults', pathParameters: {
+      'searchQuery': searchQuery,
+    });
   }
 
 
@@ -1355,7 +1354,7 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
         child: Column(
           children: [
             Text(
-              'Premium Destinations',
+              'Top Destinations',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 24,
@@ -1482,9 +1481,8 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
     return InkWell(
       onTap: () {
         // Navigate to trip details page
-        context.pushNamed('bookTrip', pathParameters: {
-          'tripId': trip.reference.id,
-        });
+        print('Mobile: Tapping destination card for trip: ${trip.title}');
+        context.pushNamed('bookTrip', extra: trip);
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(

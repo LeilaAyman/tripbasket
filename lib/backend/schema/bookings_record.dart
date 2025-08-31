@@ -105,6 +105,37 @@ class BookingsRecord extends FirestoreRecord {
   String get specialRequests => _specialRequests ?? '';
   bool hasSpecialRequests() => _specialRequests != null;
 
+  // Customer information fields for agency approval
+  // "customer_name" field.
+  String? _customerName;
+  String get customerName => _customerName ?? '';
+  bool hasCustomerName() => _customerName != null;
+
+  // "customer_email" field.
+  String? _customerEmail;
+  String get customerEmail => _customerEmail ?? '';
+  bool hasCustomerEmail() => _customerEmail != null;
+
+  // "customer_phone" field.
+  String? _customerPhone;
+  String get customerPhone => _customerPhone ?? '';
+  bool hasCustomerPhone() => _customerPhone != null;
+
+  // "customer_profile_photo" field.
+  String? _customerProfilePhoto;
+  String get customerProfilePhoto => _customerProfilePhoto ?? '';
+  bool hasCustomerProfilePhoto() => _customerProfilePhoto != null;
+
+  // "customer_verification_status" field.
+  String? _customerVerificationStatus;
+  String get customerVerificationStatus => _customerVerificationStatus ?? 'unverified';
+  bool hasCustomerVerificationStatus() => _customerVerificationStatus != null;
+
+  // "customer_loyalty_points" field.
+  int? _customerLoyaltyPoints;
+  int get customerLoyaltyPoints => _customerLoyaltyPoints ?? 0;
+  bool hasCustomerLoyaltyPoints() => _customerLoyaltyPoints != null;
+
   // "payment_option" field.
   String? _paymentOption;
   String get paymentOption => _paymentOption ?? '';
@@ -137,6 +168,12 @@ class BookingsRecord extends FirestoreRecord {
     _travelerCount = castToType<int>(snapshotData['traveler_count']);
     _travelerNames = getDataList(snapshotData['traveler_names']);
     _specialRequests = snapshotData['special_requests'] as String?;
+    _customerName = snapshotData['customer_name'] as String?;
+    _customerEmail = snapshotData['customer_email'] as String?;
+    _customerPhone = snapshotData['customer_phone'] as String?;
+    _customerProfilePhoto = snapshotData['customer_profile_photo'] as String?;
+    _customerVerificationStatus = snapshotData['customer_verification_status'] as String?;
+    _customerLoyaltyPoints = castToType<int>(snapshotData['customer_loyalty_points']);
     _paymentOption = snapshotData['payment_option'] as String?;
     _depositAmount = castToType<double>(snapshotData['deposit_amount']);
     _remainingAmount = castToType<double>(snapshotData['remaining_amount']);
@@ -194,6 +231,12 @@ Map<String, dynamic> createBookingsRecordData({
   String? merchantOrderId,
   int? travelerCount,
   String? specialRequests,
+  String? customerName,
+  String? customerEmail,
+  String? customerPhone,
+  String? customerProfilePhoto,
+  String? customerVerificationStatus,
+  int? customerLoyaltyPoints,
   String? paymentOption,
   double? depositAmount,
   double? remainingAmount,
@@ -217,6 +260,12 @@ Map<String, dynamic> createBookingsRecordData({
       'merchant_order_id': merchantOrderId,
       'traveler_count': travelerCount,
       'special_requests': specialRequests,
+      'customer_name': customerName,
+      'customer_email': customerEmail,
+      'customer_phone': customerPhone,
+      'customer_profile_photo': customerProfilePhoto,
+      'customer_verification_status': customerVerificationStatus,
+      'customer_loyalty_points': customerLoyaltyPoints,
       'payment_option': paymentOption,
       'deposit_amount': depositAmount,
       'remaining_amount': remainingAmount,

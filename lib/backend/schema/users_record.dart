@@ -116,6 +116,11 @@ class UsersRecord extends FirestoreRecord {
   List<String> get hobbies => _hobbies ?? const [];
   bool hasHobbies() => _hobbies != null;
 
+  // "pending_agency_application" field.
+  String? _pendingAgencyApplication;
+  String get pendingAgencyApplication => _pendingAgencyApplication ?? '';
+  bool hasPendingAgencyApplication() => _pendingAgencyApplication != null;
+
   void _initializeFields() {
     _createdAt = snapshotData['created_at'] as DateTime?;
     _displayName = snapshotData['display_name'] as String?;
@@ -147,6 +152,7 @@ class UsersRecord extends FirestoreRecord {
     _tripType = snapshotData['tripType'] as String?;
     _foodPreferences = getDataList(snapshotData['foodPreferences']);
     _hobbies = getDataList(snapshotData['hobbies']);
+    _pendingAgencyApplication = snapshotData['pending_agency_application'] as String?;
   }
 
   static CollectionReference get collection =>
@@ -200,6 +206,7 @@ Map<String, dynamic> createUsersRecordData({
   String? instagramLink,
   String? favoriteDestination,
   String? tripType,
+  String? pendingAgencyApplication,
 }) {
   final firestoreData = mapToFirestore(
     <String, dynamic>{
@@ -220,6 +227,7 @@ Map<String, dynamic> createUsersRecordData({
       'instagramLink': instagramLink,
       'favoriteDestination': favoriteDestination,
       'tripType': tripType,
+      'pending_agency_application': pendingAgencyApplication,
     }.withoutNulls,
   );
 

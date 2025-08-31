@@ -31,7 +31,9 @@
       "Bash(firebase firestore:query:*)",
       "Bash(dart run:*)",
       "Bash(firebase:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(dir:*)",
+      "Bash(R)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\maria\\OneDrive\\Desktop"

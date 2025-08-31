@@ -220,7 +220,66 @@ class AgencyUtils {
     return sortedDestinations.take(limit).toList();
   }
 
-  /// Calculate customer activity metrics
+  /// Calculate customer activity metrics from actual bookings
+  static Future<Map<String, dynamic>> getCustomerActivityStatsFromBookings(DocumentReference? agencyRef, bool isAdmin) async {
+    try {
+      // Query actual bookings
+      Query query;
+      if (isAdmin) {
+        query = FirebaseFirestore.instance.collection('bookings');
+      } else if (agencyRef != null) {
+        query = FirebaseFirestore.instance.collection('bookings')
+            .where('agency_reference', isEqualTo: agencyRef);
+      } else {
+        return {
+          'totalCustomers': 0,
+          'totalBookings': 0,
+          'averageBookingsPerCustomer': 0.0,
+          'customerRetentionRate': 0.0,
+        };
+      }
+      
+      final snapshot = await query.get();
+      final bookings = snapshot.docs;
+      
+      Set<String> uniqueCustomers = {};
+      Map<String, int> customerBookingCount = {};
+      
+      for (final booking in bookings) {
+        final data = booking.data() as Map<String, dynamic>;
+        final customerEmail = data['customer_email'] ?? '';
+        final userRef = data['user_reference'] as DocumentReference?;
+        
+        // Use customer email as unique identifier, fallback to user reference
+        final customerId = customerEmail.isNotEmpty 
+            ? customerEmail 
+            : (userRef?.id ?? booking.id);
+        
+        uniqueCustomers.add(customerId);
+        customerBookingCount[customerId] = (customerBookingCount[customerId] ?? 0) + 1;
+      }
+      
+      final repeatCustomers = customerBookingCount.values.where((count) => count > 1).length;
+      final retentionRate = uniqueCustomers.isEmpty ? 0.0 : (repeatCustomers / uniqueCustomers.length) * 100;
+      
+      return {
+        'totalCustomers': uniqueCustomers.length,
+        'totalBookings': bookings.length,
+        'averageBookingsPerCustomer': uniqueCustomers.isEmpty ? 0.0 : bookings.length / uniqueCustomers.length,
+        'customerRetentionRate': retentionRate,
+      };
+    } catch (e) {
+      print('Error fetching booking stats: $e');
+      return {
+        'totalCustomers': 0,
+        'totalBookings': 0,
+        'averageBookingsPerCustomer': 0.0,
+        'customerRetentionRate': 0.0,
+      };
+    }
+  }
+
+  /// Calculate customer activity metrics (legacy method - now uses actual bookings)
   static Map<String, dynamic> getCustomerActivityStats(List<TripsRecord> trips) {
     Set<String> uniqueCustomers = {};
     int totalBookings = 0;
