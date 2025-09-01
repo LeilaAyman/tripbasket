@@ -80,7 +80,36 @@ class AgencyUtils {
     return trips.where((trip) => trip.availableSeats > 0).length;
   }
   
-  /// Calculate total revenue from trips with proper data validation
+  /// Calculate total revenue from actual bookings
+  static Future<double> calculateRealTotalRevenue(DocumentReference? agencyRef, bool isAdmin) async {
+    try {
+      Query query;
+      if (isAdmin) {
+        query = FirebaseFirestore.instance.collection('bookings');
+      } else if (agencyRef != null) {
+        query = FirebaseFirestore.instance.collection('bookings')
+            .where('agency_reference', isEqualTo: agencyRef);
+      } else {
+        return 0.0;
+      }
+      
+      final snapshot = await query.get();
+      final bookings = snapshot.docs;
+      
+      double totalRevenue = 0.0;
+      for (final booking in bookings) {
+        final data = booking.data() as Map<String, dynamic>;
+        final amount = data['total_amount'] ?? data['lineTotalEGP'] ?? 0.0;
+        totalRevenue += (amount is int) ? amount.toDouble() : (amount as double? ?? 0.0);
+      }
+      
+      return totalRevenue;
+    } catch (e) {
+      return 0.0;
+    }
+  }
+
+  /// Calculate total revenue from trips with proper data validation - legacy method
   static int calculateTotalRevenue(List<TripsRecord> trips) {
     return trips.fold<int>(0, (sum, trip) {
       final rawSold = (trip.quantity - trip.availableSeats);
@@ -154,8 +183,54 @@ class AgencyUtils {
     return trip.agencyReference == userAgencyRef;
   }
 
-  /// Calculate booking rate (sold seats vs total seats)
-  static double calculateBookingRate(List<TripsRecord> trips) {
+  /// Calculate booking rate from actual bookings data
+  static Future<double> calculateRealBookingRate(List<TripsRecord> trips, DocumentReference? agencyRef, bool isAdmin) async {
+    if (trips.isEmpty) return 0.0;
+    
+    try {
+      // Query actual bookings
+      Query query;
+      if (isAdmin) {
+        query = FirebaseFirestore.instance.collection('bookings');
+      } else if (agencyRef != null) {
+        query = FirebaseFirestore.instance.collection('bookings')
+            .where('agency_reference', isEqualTo: agencyRef);
+      } else {
+        return 0.0;
+      }
+      
+      final snapshot = await query.get();
+      final bookings = snapshot.docs;
+      
+      // Count total bookings per trip
+      Map<String, int> tripBookingCounts = {};
+      for (final booking in bookings) {
+        final data = booking.data() as Map<String, dynamic>;
+        final tripRef = data['trip_reference'] as DocumentReference?;
+        if (tripRef != null) {
+          final travelerCount = (data['traveler_count'] ?? 1) as int;
+          tripBookingCounts[tripRef.id] = (tripBookingCounts[tripRef.id] ?? 0) + travelerCount;
+        }
+      }
+      
+      int totalSeats = trips.fold<int>(0, (sum, trip) => sum + trip.quantity);
+      int bookedSeats = 0;
+      
+      for (final trip in trips) {
+        final bookedForTrip = tripBookingCounts[trip.reference.id] ?? 0;
+        bookedSeats += bookedForTrip;
+      }
+      
+      if (totalSeats == 0) return 0.0;
+      return (bookedSeats / totalSeats) * 100;
+    } catch (e) {
+      // Fallback to original calculation if booking query fails
+      return calculateBookingRateFromTrips(trips);
+    }
+  }
+
+  /// Calculate booking rate (sold seats vs total seats) - legacy method
+  static double calculateBookingRateFromTrips(List<TripsRecord> trips) {
     if (trips.isEmpty) return 0.0;
     
     int totalSeats = trips.fold<int>(0, (sum, trip) => sum + trip.quantity);
@@ -163,6 +238,11 @@ class AgencyUtils {
     
     if (totalSeats == 0) return 0.0;
     return (soldSeats / totalSeats) * 100;
+  }
+  
+  /// Calculate booking rate (sold seats vs total seats) - maintains compatibility
+  static double calculateBookingRate(List<TripsRecord> trips) {
+    return calculateBookingRateFromTrips(trips);
   }
 
   /// Get monthly revenue data for charts
@@ -244,11 +324,15 @@ class AgencyUtils {
       
       Set<String> uniqueCustomers = {};
       Map<String, int> customerBookingCount = {};
+      Map<String, double> customerRevenueTotal = {};
+      double totalRevenue = 0.0;
       
       for (final booking in bookings) {
         final data = booking.data() as Map<String, dynamic>;
         final customerEmail = data['customer_email'] ?? '';
         final userRef = data['user_reference'] as DocumentReference?;
+        final amount = data['total_amount'] ?? data['lineTotalEGP'] ?? 0.0;
+        final revenue = (amount is int) ? amount.toDouble() : (amount as double? ?? 0.0);
         
         // Use customer email as unique identifier, fallback to user reference
         final customerId = customerEmail.isNotEmpty 
@@ -257,6 +341,8 @@ class AgencyUtils {
         
         uniqueCustomers.add(customerId);
         customerBookingCount[customerId] = (customerBookingCount[customerId] ?? 0) + 1;
+        customerRevenueTotal[customerId] = (customerRevenueTotal[customerId] ?? 0.0) + revenue;
+        totalRevenue += revenue;
       }
       
       final repeatCustomers = customerBookingCount.values.where((count) => count > 1).length;
@@ -266,6 +352,7 @@ class AgencyUtils {
         'totalCustomers': uniqueCustomers.length,
         'totalBookings': bookings.length,
         'averageBookingsPerCustomer': uniqueCustomers.isEmpty ? 0.0 : bookings.length / uniqueCustomers.length,
+        'averageRevenuePerCustomer': uniqueCustomers.isEmpty ? 0.0 : totalRevenue / uniqueCustomers.length,
         'customerRetentionRate': retentionRate,
       };
     } catch (e) {
@@ -274,6 +361,7 @@ class AgencyUtils {
         'totalCustomers': 0,
         'totalBookings': 0,
         'averageBookingsPerCustomer': 0.0,
+        'averageRevenuePerCustomer': 0.0,
         'customerRetentionRate': 0.0,
       };
     }
@@ -302,7 +390,79 @@ class AgencyUtils {
     };
   }
 
-  /// Get performance trends (comparing current vs previous period)
+  /// Get performance trends from real booking data (comparing current vs previous period)
+  static Future<Map<String, dynamic>> getRealPerformanceTrends(DocumentReference? agencyRef, bool isAdmin) async {
+    try {
+      final now = DateTime.now();
+      final currentMonthStart = DateTime(now.year, now.month, 1);
+      final previousMonthStart = DateTime(now.year, now.month - 1, 1);
+      
+      // Query bookings for current and previous month
+      Query baseQuery;
+      if (isAdmin) {
+        baseQuery = FirebaseFirestore.instance.collection('bookings');
+      } else if (agencyRef != null) {
+        baseQuery = FirebaseFirestore.instance.collection('bookings')
+            .where('agency_reference', isEqualTo: agencyRef);
+      } else {
+        return _getDefaultTrends();
+      }
+      
+      final snapshot = await baseQuery.get();
+      final allBookings = snapshot.docs;
+      
+      double currentRevenue = 0.0;
+      double previousRevenue = 0.0;
+      int currentBookings = 0;
+      int previousBookings = 0;
+      
+      for (final booking in allBookings) {
+        final data = booking.data() as Map<String, dynamic>;
+        final bookingDate = (data['booking_date'] ?? data['created_at']) as Timestamp?;
+        
+        if (bookingDate != null) {
+          final date = bookingDate.toDate();
+          final amount = data['total_amount'] ?? data['lineTotalEGP'] ?? 0.0;
+          final revenue = (amount is int) ? amount.toDouble() : (amount as double? ?? 0.0);
+          
+          if (date.isAfter(currentMonthStart)) {
+            currentRevenue += revenue;
+            currentBookings++;
+          } else if (date.isAfter(previousMonthStart) && date.isBefore(currentMonthStart)) {
+            previousRevenue += revenue;
+            previousBookings++;
+          }
+        }
+      }
+      
+      final revenueGrowth = previousRevenue == 0 ? 0.0 : ((currentRevenue - previousRevenue) / previousRevenue) * 100;
+      final bookingGrowth = previousBookings == 0 ? 0.0 : ((currentBookings - previousBookings) / previousBookings) * 100;
+      
+      return {
+        'revenueGrowth': revenueGrowth,
+        'bookingGrowth': bookingGrowth,
+        'currentMonthRevenue': currentRevenue.toInt(),
+        'previousMonthRevenue': previousRevenue.toInt(),
+        'currentMonthBookings': currentBookings,
+        'previousMonthBookings': previousBookings,
+      };
+    } catch (e) {
+      return _getDefaultTrends();
+    }
+  }
+  
+  static Map<String, dynamic> _getDefaultTrends() {
+    return {
+      'revenueGrowth': 0.0,
+      'bookingGrowth': 0.0,
+      'currentMonthRevenue': 0,
+      'previousMonthRevenue': 0,
+      'currentMonthBookings': 0,
+      'previousMonthBookings': 0,
+    };
+  }
+
+  /// Get performance trends (comparing current vs previous period) - legacy method
   static Map<String, dynamic> getPerformanceTrends(List<TripsRecord> trips) {
     final now = DateTime.now();
     final currentMonthStart = DateTime(now.year, now.month, 1);

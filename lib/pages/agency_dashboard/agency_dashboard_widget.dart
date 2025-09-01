@@ -555,7 +555,6 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
           
           List<TripsRecord> trips = snapshot.data!;
           final activeTrips = AgencyUtils.getActiveTripsCount(trips);
-          final totalRevenue = AgencyUtils.calculateTotalRevenue(trips);
           final avgRating = AgencyUtils.calculateAverageRating(trips);
           
           return Column(
@@ -589,12 +588,21 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _buildEnhancedStatCard(
-                        'Revenue',
-                        _currency.format(totalRevenue),
-                        Icons.attach_money,
-                        const [Color(0xFFDBA237), Color(0xFFD76B30)],
-                        'total',
+                      child: FutureBuilder<double>(
+                        future: AgencyUtils.calculateRealTotalRevenue(
+                          _isCurrentUserAdmin() ? null : AgencyUtils.getCurrentAgencyRef(), 
+                          _isCurrentUserAdmin()
+                        ),
+                        builder: (context, revenueSnapshot) {
+                          final totalRevenue = revenueSnapshot.data ?? 0.0;
+                          return _buildEnhancedStatCard(
+                            'Revenue',
+                            _currency.format(totalRevenue.toInt()),
+                            Icons.attach_money,
+                            const [Color(0xFFDBA237), Color(0xFFD76B30)],
+                            'total',
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -3042,20 +3050,41 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
               }
               
               final trips = snapshot.data!;
-              final bookingRate = AgencyUtils.calculateBookingRate(trips);
               final monthlyRevenue = AgencyUtils.getMonthlyRevenue(trips);
               final topDestinations = AgencyUtils.getTopDestinations(trips, limit: 3);
-              final trends = AgencyUtils.getPerformanceTrends(trips);
               
-              // Get real booking statistics
+              // Get real booking statistics, booking rate, and performance trends
               return FutureBuilder<Map<String, dynamic>>(
-                future: AgencyUtils.getCustomerActivityStatsFromBookings(agencyRef, isAdmin),
-                builder: (context, bookingSnapshot) {
-                  final customerStats = bookingSnapshot.data ?? {
+                future: Future.wait([
+                  AgencyUtils.getCustomerActivityStatsFromBookings(agencyRef, isAdmin),
+                  AgencyUtils.calculateRealBookingRate(trips, agencyRef, isAdmin),
+                  AgencyUtils.getRealPerformanceTrends(agencyRef, isAdmin),
+                ]).then((results) => {
+                  'customerStats': results[0],
+                  'bookingRate': results[1],
+                  'trends': results[2],
+                }),
+                builder: (context, futureSnapshot) {
+                  if (!futureSnapshot.hasData) {
+                    return _buildAnalyticsLoading();
+                  }
+                  
+                  final data = futureSnapshot.data;
+                  final customerStats = data?['customerStats'] ?? {
                     'totalCustomers': 0,
                     'totalBookings': 0,
                     'averageBookingsPerCustomer': 0.0,
+                    'averageRevenuePerCustomer': 0.0,
                     'customerRetentionRate': 0.0,
+                  };
+                  final bookingRate = data?['bookingRate'] ?? 0.0;
+                  final trends = data?['trends'] ?? {
+                    'revenueGrowth': 0.0,
+                    'bookingGrowth': 0.0,
+                    'currentMonthRevenue': 0,
+                    'previousMonthRevenue': 0,
+                    'currentMonthBookings': 0,
+                    'previousMonthBookings': 0,
                   };
               
               return Column(
@@ -3140,7 +3169,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                             Expanded(
                               child: _buildCustomerStatItem(
                                 'Avg per Customer',
-                                customerStats['averageBookingsPerCustomer'].toStringAsFixed(1),
+                                _currency.format(customerStats['averageRevenuePerCustomer']?.toInt() ?? 0),
                                 Icons.person,
                               ),
                             ),
