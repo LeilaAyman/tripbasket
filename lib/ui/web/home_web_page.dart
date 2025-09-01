@@ -29,9 +29,11 @@ class _HomeWebPageState extends State<HomeWebPage>
     with TickerProviderStateMixin {
   // Search form controllers
   final TextEditingController _destinationController = TextEditingController();
-  final TextEditingController _checkInController = TextEditingController();
-  final TextEditingController _checkOutController = TextEditingController();
-  String _selectedTravelers = '1 Traveler';
+  final TextEditingController _monthController = TextEditingController(text: 'Any Month');
+  final TextEditingController _travelersController = TextEditingController(text: '1 Traveler');
+  final TextEditingController _budgetController = TextEditingController(text: 'Any Budget');
+  DateTime? _selectedDate;
+  int _travelers = 1;
   String _selectedBudget = 'Any Budget';
   
   final ScrollController _scrollController = ScrollController();
@@ -120,8 +122,9 @@ class _HomeWebPageState extends State<HomeWebPage>
   @override
   void dispose() {
     _destinationController.dispose();
-    _checkInController.dispose();
-    _checkOutController.dispose();
+    _monthController.dispose();
+    _travelersController.dispose();
+    _budgetController.dispose();
     _scrollController.dispose();
     _heroAnimationController.dispose();
     _floatingAnimationController.dispose();
@@ -910,44 +913,41 @@ class _HomeWebPageState extends State<HomeWebPage>
     return Row(
       children: [
         Expanded(
+          flex: 2,
           child: _buildSearchField(
             'Destination',
-            'Where do you want to go',
+            'Where do you want to go?',
             _destinationController,
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: _buildDateField(
-            'Check-in',
-            'mm / dd / yyyy',
-            _checkInController,
+            'Month you wish to travel',
+            'Select month',
+            _monthController,
+            readOnly: true,
+            onTap: () => _selectMonth(),
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: _buildDateField(
-            'Check-out',
-            'mm / dd / yyyy',
-            _checkOutController,
+            'Number of travelers',
+            'How many travelers?',
+            _travelersController,
+            readOnly: true,
+            onTap: () => _selectTravelers(),
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: _buildDropdownField(
-            'Travelers',
-            _selectedTravelers,
-            ['1 Traveler', '2 Travelers', '3 Travelers', '4+ Travelers'],
-            (value) => setState(() => _selectedTravelers = value!),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildDropdownField(
-            'Max Budget',
-            _selectedBudget,
-            ['Any Budget', '\$500-\$1000', '\$1000-\$2000', '\$2000+'],
-            (value) => setState(() => _selectedBudget = value!),
+          child: _buildDateField(
+            'Budget',
+            'Select your budget',
+            _budgetController,
+            readOnly: true,
+            onTap: () => _selectBudget(),
           ),
         ),
         const SizedBox(width: 24),
@@ -993,50 +993,32 @@ class _HomeWebPageState extends State<HomeWebPage>
       children: [
         _buildSearchField(
           'Destination',
-          'Where do you want to go',
+          'Where do you want to go?',
           _destinationController,
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildDateField(
-                'Check-in',
-                'mm / dd / yyyy',
-                _checkInController,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildDateField(
-                'Check-out',
-                'mm / dd / yyyy',
-                _checkOutController,
-              ),
-            ),
-          ],
+        _buildDateField(
+          'Month you wish to travel',
+          'Select month',
+          _monthController,
+          readOnly: true,
+          onTap: () => _selectMonth(),
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildDropdownField(
-                'Travelers',
-                _selectedTravelers,
-                ['1 Traveler', '2 Travelers', '3 Travelers', '4+ Travelers'],
-                (value) => setState(() => _selectedTravelers = value!),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildDropdownField(
-                'Max Budget',
-                _selectedBudget,
-                ['Any Budget', '\$500-\$1000', '\$1000-\$2000', '\$2000+'],
-                (value) => setState(() => _selectedBudget = value!),
-              ),
-            ),
-          ],
+        _buildDateField(
+          'Number of travelers',
+          'How many travelers?',
+          _travelersController,
+          readOnly: true,
+          onTap: () => _selectTravelers(),
+        ),
+        const SizedBox(height: 16),
+        _buildDateField(
+          'Budget',
+          'Select your budget',
+          _budgetController,
+          readOnly: true,
+          onTap: () => _selectBudget(),
         ),
         const SizedBox(height: 24),
         SizedBox(
@@ -1107,7 +1089,7 @@ class _HomeWebPageState extends State<HomeWebPage>
     );
   }
 
-  Widget _buildDateField(String label, String hint, TextEditingController controller) {
+  Widget _buildDateField(String label, String hint, TextEditingController controller, {bool readOnly = false, VoidCallback? onTap}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1128,25 +1110,32 @@ class _HomeWebPageState extends State<HomeWebPage>
           ),
           child: TextField(
             controller: controller,
+            readOnly: readOnly,
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: GoogleFonts.poppins(
                 color: Colors.grey.shade500,
                 fontSize: 14,
               ),
-              suffixIcon: const Icon(Icons.calendar_today, size: 20),
+              suffixIcon: Icon(
+                readOnly ? (label.toLowerCase().contains('travelers') ? Icons.people : Icons.calendar_today) : Icons.calendar_today, 
+                size: 20,
+                color: const Color(0xFFD76B30),
+              ),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
-            onTap: () async {
-              final date = await showDatePicker(
-                context: context,
-                initialDate: DateTime.now(),
-                firstDate: DateTime.now(),
-                lastDate: DateTime.now().add(const Duration(days: 365)),
-              );
-              if (date != null) {
-                controller.text = '${date.month.toString().padLeft(2, '0')} / ${date.day.toString().padLeft(2, '0')} / ${date.year}';
+            onTap: onTap ?? () async {
+              if (!readOnly) {
+                final date = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                );
+                if (date != null) {
+                  controller.text = '${date.month.toString().padLeft(2, '0')} / ${date.day.toString().padLeft(2, '0')} / ${date.year}';
+                }
               }
             },
           ),
@@ -1199,15 +1188,244 @@ class _HomeWebPageState extends State<HomeWebPage>
     );
   }
 
+  void _selectMonth() {
+    List<String> months = [
+      'Any Month',
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          height: 400,
+          child: Column(
+            children: [
+              Text(
+                'Select Month',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: months.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(
+                        months[index],
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          color: _monthController.text == months[index] 
+                            ? const Color(0xFFD76B30) 
+                            : Colors.black87,
+                          fontWeight: _monthController.text == months[index] 
+                            ? FontWeight.w600 
+                            : FontWeight.normal,
+                        ),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _monthController.text = months[index];
+                        });
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[month - 1];
+  }
+
+  void _selectTravelers() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        int tempTravelers = _travelers;
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              padding: const EdgeInsets.all(20),
+              height: 200,
+              child: Column(
+                children: [
+                  Text(
+                    'Number of Travelers',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        onPressed: tempTravelers > 1 
+                          ? () {
+                              setModalState(() {
+                                tempTravelers--;
+                              });
+                            }
+                          : null,
+                        icon: const Icon(Icons.remove_circle_outline),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey[300]!),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          tempTravelers.toString(),
+                          style: GoogleFonts.poppins(fontSize: 18),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: tempTravelers < 20 
+                          ? () {
+                              setModalState(() {
+                                tempTravelers++;
+                              });
+                            }
+                          : null,
+                        icon: const Icon(Icons.add_circle_outline),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _travelers = tempTravelers;
+                        _travelersController.text = 
+                          '$tempTravelers ${tempTravelers == 1 ? 'Traveler' : 'Travelers'}';
+                      });
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD76B30),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      'Done',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _selectBudget() {
+    List<String> budgets = [
+      'Any Budget',
+      'Under \$500',
+      '\$500 - \$1,000',
+      '\$1,000 - \$2,000',
+      '\$2,000 - \$5,000',
+      'Over \$5,000'
+    ];
+    
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          height: 350,
+          child: Column(
+            children: [
+              Text(
+                'Select Budget',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: budgets.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(
+                        budgets[index],
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          color: _budgetController.text == budgets[index] 
+                            ? const Color(0xFFD76B30) 
+                            : Colors.black87,
+                          fontWeight: _budgetController.text == budgets[index] 
+                            ? FontWeight.w600 
+                            : FontWeight.normal,
+                        ),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _budgetController.text = budgets[index];
+                          _selectedBudget = budgets[index];
+                        });
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _handleSearch() {
-    // Build search query based on form fields
-    String query = _destinationController.text.trim();
-    if (query.isNotEmpty) {
+    String destination = _destinationController.text.trim();
+    String month = _monthController.text.trim();
+    String budget = _budgetController.text.trim();
+    
+    if (destination.isNotEmpty) {
+      // Only use destination in the search query, other fields are filters
       context.pushNamed(
         'searchResults',
         queryParameters: {
-          'searchQuery': query,
+          'searchQuery': destination, // Only destination goes in search
+          'destination': destination,
+          'month': month != 'Any Month' ? month : '',
+          'travelers': _travelers.toString(),
+          'budget': budget != 'Any Budget' ? budget : '',
         },
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please enter a destination to search'),
+          backgroundColor: Colors.orange,
+        ),
       );
     }
   }

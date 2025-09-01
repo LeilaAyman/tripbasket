@@ -51,6 +51,15 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
 
     _model.textController ??= TextEditingController();
     _model.textFieldFocusNode ??= FocusNode();
+    
+    _model.destinationController ??= TextEditingController();
+    _model.destinationFocusNode ??= FocusNode();
+    _model.monthController ??= TextEditingController(text: 'Any Month');
+    _model.monthFocusNode ??= FocusNode();
+    _model.travelersController ??= TextEditingController(text: '1 Traveler');
+    _model.travelersFocusNode ??= FocusNode();
+    _model.budgetController ??= TextEditingController(text: 'Any Budget');
+    _model.budgetFocusNode ??= FocusNode();
 
 
     animationsMap.addAll({
@@ -291,6 +300,301 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
         );
       },
     );
+  }
+
+  Widget _buildSearchField({
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required String label,
+    required IconData icon,
+    required String hintText,
+    bool readOnly = false,
+    VoidCallback? onTap,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: TextFormField(
+            controller: controller,
+            focusNode: focusNode,
+            readOnly: readOnly,
+            onTap: onTap,
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: GoogleFonts.poppins(
+                color: Colors.grey[500],
+                fontSize: 14,
+              ),
+              prefixIcon: Icon(icon, color: const Color(0xFFD76B30), size: 20),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.black87,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _selectMonth() {
+    List<String> months = [
+      'Any Month',
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          height: 400,
+          child: Column(
+            children: [
+              Text(
+                'Select Month',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: months.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(
+                        months[index],
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          color: _model.monthController!.text == months[index] 
+                            ? const Color(0xFFD76B30) 
+                            : Colors.black87,
+                          fontWeight: _model.monthController!.text == months[index] 
+                            ? FontWeight.w600 
+                            : FontWeight.normal,
+                        ),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _model.monthController!.text = months[index];
+                        });
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[month - 1];
+  }
+
+  void _selectTravelers() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        int tempTravelers = _model.travelers;
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              padding: const EdgeInsets.all(20),
+              height: 200,
+              child: Column(
+                children: [
+                  Text(
+                    'Number of Travelers',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        onPressed: tempTravelers > 1 
+                          ? () {
+                              setModalState(() {
+                                tempTravelers--;
+                              });
+                            }
+                          : null,
+                        icon: const Icon(Icons.remove_circle_outline),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey[300]!),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          tempTravelers.toString(),
+                          style: GoogleFonts.poppins(fontSize: 18),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: tempTravelers < 20 
+                          ? () {
+                              setModalState(() {
+                                tempTravelers++;
+                              });
+                            }
+                          : null,
+                        icon: const Icon(Icons.add_circle_outline),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _model.travelers = tempTravelers;
+                        _model.travelersController!.text = 
+                          '$tempTravelers ${tempTravelers == 1 ? 'Traveler' : 'Travelers'}';
+                      });
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD76B30),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      'Done',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _selectBudget() {
+    List<String> budgets = [
+      'Any Budget',
+      'Under \$500',
+      '\$500 - \$1,000',
+      '\$1,000 - \$2,000',
+      '\$2,000 - \$5,000',
+      'Over \$5,000'
+    ];
+    
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          height: 350,
+          child: Column(
+            children: [
+              Text(
+                'Select Budget',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: budgets.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(
+                        budgets[index],
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          color: _model.budgetController!.text == budgets[index] 
+                            ? const Color(0xFFD76B30) 
+                            : Colors.black87,
+                          fontWeight: _model.budgetController!.text == budgets[index] 
+                            ? FontWeight.w600 
+                            : FontWeight.normal,
+                        ),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _model.budgetController!.text = budgets[index];
+                          _model.selectedBudget = budgets[index];
+                        });
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _performSearch() {
+    String destination = _model.destinationController!.text.trim();
+    String month = _model.monthController!.text.trim();
+    String budget = _model.budgetController!.text.trim();
+    
+    if (destination.isNotEmpty) {
+      // Only use destination in the search query, other fields are filters
+      context.pushNamed(
+        'searchResults',
+        queryParameters: {
+          'searchQuery': destination, // Only destination goes in search
+          'destination': destination,
+          'month': month != 'Any Month' ? month : '',
+          'travelers': _model.travelers.toString(),
+          'budget': budget != 'Any Budget' ? budget : '',
+        },
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please enter a destination to search'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
   }
 
   Widget _buildPreviewModeBanner() {
@@ -668,6 +972,96 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                             ),
                           ).animateOnPageLoad(animationsMap['textOnPageLoadAnimation1']!),
                         ),
+                        
+                        // Search Bar Section
+                        Padding(
+                          padding: EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 24.0),
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              children: [
+                                _buildSearchField(
+                                  controller: _model.destinationController!,
+                                  focusNode: _model.destinationFocusNode!,
+                                  label: 'Destination',
+                                  icon: Icons.location_on,
+                                  hintText: 'Where do you want to go?',
+                                ),
+                                const SizedBox(height: 16),
+                                _buildSearchField(
+                                  controller: _model.monthController!,
+                                  focusNode: _model.monthFocusNode!,
+                                  label: 'Month you wish to travel',
+                                  icon: Icons.calendar_today,
+                                  hintText: 'Select month',
+                                  readOnly: true,
+                                  onTap: () => _selectMonth(),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildSearchField(
+                                  controller: _model.travelersController!,
+                                  focusNode: _model.travelersFocusNode!,
+                                  label: 'Number of travelers',
+                                  icon: Icons.people,
+                                  hintText: 'How many travelers?',
+                                  readOnly: true,
+                                  onTap: () => _selectTravelers(),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildSearchField(
+                                  controller: _model.budgetController!,
+                                  focusNode: _model.budgetFocusNode!,
+                                  label: 'Budget',
+                                  icon: Icons.account_balance_wallet,
+                                  hintText: 'Select your budget',
+                                  readOnly: true,
+                                  onTap: () => _selectBudget(),
+                                ),
+                                const SizedBox(height: 24),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 56,
+                                  child: ElevatedButton(
+                                    onPressed: _performSearch,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFD76B30),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(28),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(Icons.search, color: Colors.white),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Search Trips',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        
                         Padding(
                           padding: EdgeInsetsDirectional.fromSTEB(0.0, 32.0, 0.0, 0.0),
                           child: Container(
@@ -734,7 +1128,18 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                                           children: [
                                             Padding(
                                               padding: EdgeInsetsDirectional.fromSTEB(16.0, 8.0, 0.0, 12.0),
-                                              child: Container(
+                                              child: InkWell(
+                                                onTap: () {
+                                                  context.pushNamed(
+                                                    'searchResults',
+                                                    queryParameters: {
+                                                      'searchQuery': 'Cinque Terre Italy',
+                                                      'destination': 'Cinque Terre Italy',
+                                                    },
+                                                  );
+                                                },
+                                                borderRadius: BorderRadius.circular(12.0),
+                                                child: Container(
                                                 width: 270.0,
                                                 height: 100.0,
                                                 decoration: BoxDecoration(
@@ -841,11 +1246,23 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                                                     ),
                                                   ],
                                                 ),
+                                                ),
                                               ).animateOnPageLoad(animationsMap['containerOnPageLoadAnimation1']!),
                                             ),
                                             Padding(
                                               padding: EdgeInsetsDirectional.fromSTEB(16.0, 8.0, 16.0, 12.0),
-                                              child: Container(
+                                              child: InkWell(
+                                                onTap: () {
+                                                  context.pushNamed(
+                                                    'searchResults',
+                                                    queryParameters: {
+                                                      'searchQuery': 'Bellagio Italy',
+                                                      'destination': 'Bellagio Italy',
+                                                    },
+                                                  );
+                                                },
+                                                borderRadius: BorderRadius.circular(12.0),
+                                                child: Container(
                                                 width: 270.0,
                                                 height: 100.0,
                                                 decoration: BoxDecoration(
@@ -952,6 +1369,7 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                                                     ),
                                                   ],
                                                 ),
+                                                ),
                                               ).animateOnPageLoad(animationsMap['containerOnPageLoadAnimation2']!),
                                             ),
                                           ],
@@ -1010,7 +1428,17 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                                               final listViewTripsRecord = listViewTripsRecordList[listViewIndex];
                                               return Padding(
                                                 padding: EdgeInsetsDirectional.fromSTEB(16.0, 8.0, 16.0, 8.0),
-                                                child: Container(
+                                                child: InkWell(
+                                                  onTap: () {
+                                                    context.pushNamed(
+                                                      'bookTrip',
+                                                      queryParameters: {
+                                                        'tripRef': listViewTripsRecord.reference.id,
+                                                      },
+                                                    );
+                                                  },
+                                                  borderRadius: BorderRadius.circular(12.0),
+                                                  child: Container(
                                                   width: 270.0,
                                                   margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
                                                   decoration: BoxDecoration(
@@ -1142,6 +1570,7 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                                                         ),
                                                       ),
                                                     ],
+                                                  ),
                                                   ),
                                                 ),
                                               );

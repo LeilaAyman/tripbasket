@@ -206,6 +206,22 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
               'searchQuery',
               ParamType.String,
             ),
+            destination: params.getParam(
+              'destination',
+              ParamType.String,
+            ),
+            month: params.getParam(
+              'month',
+              ParamType.String,
+            ),
+            travelers: params.getParam(
+              'travelers',
+              ParamType.String,
+            ),
+            budget: params.getParam(
+              'budget',
+              ParamType.String,
+            ),
           ),
         ),
         FFRoute(

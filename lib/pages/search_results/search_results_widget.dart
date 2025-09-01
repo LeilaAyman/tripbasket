@@ -24,9 +24,17 @@ class SearchResultsWidget extends StatefulWidget {
   const SearchResultsWidget({
     super.key,
     this.searchQuery,
+    this.destination,
+    this.month,
+    this.travelers,
+    this.budget,
   });
 
   final String? searchQuery;
+  final String? destination;
+  final String? month;
+  final String? travelers;
+  final String? budget;
 
   static String routeName = 'searchResults';
   static String routePath = '/searchResults';
@@ -88,24 +96,133 @@ class _SearchResultsWidgetState extends State<SearchResultsWidget>
 
   // Search function that filters trips
   List<TripsRecord> _filterTrips(List<TripsRecord> trips, String query) {
-    if (query.isEmpty) return trips;
+    List<TripsRecord> filteredTrips = trips;
     
-    final searchTerms = query.toLowerCase().trim().split(RegExp(r'\s+'));
-    
-    return trips.where((trip) {
-      final title = trip.title.toLowerCase();
-      final location = trip.location.toLowerCase();
-      final description = trip.description.toLowerCase();
-      final specifications = trip.specifications.toLowerCase();
+    // First, apply text search if query is provided
+    if (query.isNotEmpty) {
+      final searchTerms = query.toLowerCase().trim().split(RegExp(r'\s+'));
       
-      // Check if any search term matches any field
-      return searchTerms.any((term) =>
-        title.contains(term) ||
-        location.contains(term) ||
-        description.contains(term) ||
-        specifications.contains(term)
-      );
-    }).toList();
+      filteredTrips = filteredTrips.where((trip) {
+        final title = trip.title.toLowerCase();
+        final location = trip.location.toLowerCase();
+        final description = trip.description.toLowerCase();
+        final specifications = trip.specifications.toLowerCase();
+        
+        // Check if any search term matches any field
+        return searchTerms.any((term) =>
+          title.contains(term) ||
+          location.contains(term) ||
+          description.contains(term) ||
+          specifications.contains(term)
+        );
+      }).toList();
+    }
+    
+    // Apply additional filters
+    filteredTrips = _applyFilters(filteredTrips);
+    
+    return filteredTrips;
+  }
+
+  // Apply month, travelers, and budget filters
+  List<TripsRecord> _applyFilters(List<TripsRecord> trips) {
+    List<TripsRecord> filteredTrips = trips;
+    
+    // Filter by budget
+    if (widget.budget != null && widget.budget!.isNotEmpty && widget.budget != 'Any Budget') {
+      filteredTrips = filteredTrips.where((trip) {
+        return _matchesBudgetFilter(trip.price, widget.budget!);
+      }).toList();
+    }
+    
+    // Filter by travelers (if the trip has capacity constraints)
+    if (widget.travelers != null && widget.travelers!.isNotEmpty) {
+      final travelerCount = int.tryParse(widget.travelers!) ?? 1;
+      filteredTrips = filteredTrips.where((trip) {
+        // Assuming trips have a max capacity, you might need to adjust this
+        // For now, we'll assume all trips can accommodate any number of travelers
+        // You can add capacity checks here if your TripsRecord has a maxCapacity field
+        return true;
+      }).toList();
+    }
+    
+    // Month filtering would depend on trip dates
+    // If your TripsRecord has date fields, you can filter by month here
+    if (widget.month != null && widget.month!.isNotEmpty && widget.month != 'Any Month') {
+      // This would require trip records to have date information
+      // For now, we'll skip month filtering since we need to know the trip date structure
+      // You can uncomment and modify this when you have date fields:
+      /*
+      filteredTrips = filteredTrips.where((trip) {
+        return _matchesMonthFilter(trip.startDate, widget.month!);
+      }).toList();
+      */
+    }
+    
+    return filteredTrips;
+  }
+
+  // Helper method to check if price matches budget filter
+  bool _matchesBudgetFilter(int price, String budgetFilter) {
+    switch (budgetFilter) {
+      case 'Under \$500':
+        return price < 500;
+      case '\$500 - \$1,000':
+        return price >= 500 && price <= 1000;
+      case '\$1,000 - \$2,000':
+        return price >= 1000 && price <= 2000;
+      case '\$2,000 - \$5,000':
+        return price >= 2000 && price <= 5000;
+      case 'Over \$5,000':
+        return price > 5000;
+      default:
+        return true; // Any Budget or unrecognized filter
+    }
+  }
+
+  // Check if there are any active filters
+  bool _hasActiveFilters() {
+    return (widget.month != null && widget.month!.isNotEmpty && widget.month != 'Any Month') ||
+           (widget.travelers != null && widget.travelers!.isNotEmpty && widget.travelers != '1') ||
+           (widget.budget != null && widget.budget!.isNotEmpty && widget.budget != 'Any Budget');
+  }
+
+  // Build filter chips to display active filters
+  List<Widget> _buildFilterChips() {
+    List<Widget> chips = [];
+    
+    if (widget.month != null && widget.month!.isNotEmpty && widget.month != 'Any Month') {
+      chips.add(_buildFilterChip('Month: ${widget.month}'));
+    }
+    
+    if (widget.travelers != null && widget.travelers!.isNotEmpty && widget.travelers != '1') {
+      chips.add(_buildFilterChip('Travelers: ${widget.travelers}'));
+    }
+    
+    if (widget.budget != null && widget.budget!.isNotEmpty && widget.budget != 'Any Budget') {
+      chips.add(_buildFilterChip('Budget: ${widget.budget}'));
+    }
+    
+    return chips;
+  }
+
+  // Build individual filter chip
+  Widget _buildFilterChip(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFD76B30),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.poppins(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: Colors.white,
+        ),
+      ),
+    );
   }
 
   @override
@@ -246,6 +363,38 @@ class _SearchResultsWidgetState extends State<SearchResultsWidget>
                   ),
                 ),
               ),
+              
+              // Active Filters Display
+              if (_hasActiveFilters())
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD76B30).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFD76B30).withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Active Filters:',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFFD76B30),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: _buildFilterChips(),
+                      ),
+                    ],
+                  ),
+                ),
               
               // Search Results
               Expanded(

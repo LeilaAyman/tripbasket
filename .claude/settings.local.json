@@ -33,7 +33,8 @@
       "Bash(firebase:*)",
       "Bash(timeout:*)",
       "Bash(dir:*)",
-      "Bash(R)"
+      "Bash(R)",
+      "Bash(rg:*)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\maria\\OneDrive\\Desktop"

@@ -29,10 +29,12 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
 
   // Search controllers
   final TextEditingController _destinationController = TextEditingController();
-  final TextEditingController _checkinController = TextEditingController();
-  final TextEditingController _travelersController = TextEditingController();
-  DateTime? _selectedCheckinDate;
+  final TextEditingController _monthController = TextEditingController(text: 'Any Month');
+  final TextEditingController _travelersController = TextEditingController(text: '1 Traveler');
+  final TextEditingController _budgetController = TextEditingController(text: 'Any Budget');
+  DateTime? _selectedDate;
   int _travelers = 1;
+  String _selectedBudget = 'Any Budget';
 
   @override
   void initState() {
@@ -89,8 +91,9 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
     _heroController.dispose();
     _fadeController.dispose();
     _destinationController.dispose();
-    _checkinController.dispose();
+    _monthController.dispose();
     _travelersController.dispose();
+    _budgetController.dispose();
     super.dispose();
   }
 
@@ -528,21 +531,30 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
                   ),
                   const SizedBox(height: 16),
                   _buildMobileSearchField(
-                    controller: _checkinController,
-                    label: 'Check-in',
+                    controller: _monthController,
+                    label: 'Month you wish to travel',
                     icon: Icons.calendar_today,
-                    hintText: 'Select date',
+                    hintText: 'Select month',
                     readOnly: true,
-                    onTap: () => _selectCheckinDate(),
+                    onTap: () => _selectMonth(),
                   ),
                   const SizedBox(height: 16),
                   _buildMobileSearchField(
                     controller: _travelersController,
-                    label: 'Travelers',
+                    label: 'Number of travelers',
                     icon: Icons.people,
-                    hintText: 'Number of travelers',
+                    hintText: 'How many travelers?',
                     readOnly: true,
                     onTap: () => _selectTravelers(),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildMobileSearchField(
+                    controller: _budgetController,
+                    label: 'Budget',
+                    icon: Icons.account_balance_wallet,
+                    hintText: 'Select your budget',
+                    readOnly: true,
+                    onTap: () => _selectBudget(),
                   ),
                   const SizedBox(height: 24),
                   SizedBox(
@@ -1018,33 +1030,122 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
   }
 
   // Search functionality methods
-  Future<void> _selectCheckinDate() async {
-    final DateTime? picked = await showDatePicker(
+  void _selectMonth() {
+    List<String> months = [
+      'Any Month',
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    showModalBottomSheet(
       context: context,
-      initialDate: _selectedCheckinDate ?? DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: const Color(0xFFD76B30),
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.black,
-            ),
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          height: 400,
+          child: Column(
+            children: [
+              Text(
+                'Select Month',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: months.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(
+                        months[index],
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          color: _monthController.text == months[index] 
+                            ? const Color(0xFFD76B30) 
+                            : Colors.black87,
+                          fontWeight: _monthController.text == months[index] 
+                            ? FontWeight.w600 
+                            : FontWeight.normal,
+                        ),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _monthController.text = months[index];
+                        });
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
-          child: child!,
         );
       },
     );
+  }
+
+  void _selectBudget() {
+    List<String> budgets = [
+      'Any Budget',
+      'Under \$500',
+      '\$500 - \$1,000',
+      '\$1,000 - \$2,000',
+      '\$2,000 - \$5,000',
+      'Over \$5,000'
+    ];
     
-    if (picked != null && picked != _selectedCheckinDate) {
-      setState(() {
-        _selectedCheckinDate = picked;
-        _checkinController.text = "${picked.day}/${picked.month}/${picked.year}";
-      });
-    }
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          height: 350,
+          child: Column(
+            children: [
+              Text(
+                'Select Budget',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: budgets.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(
+                        budgets[index],
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          color: _budgetController.text == budgets[index] 
+                            ? const Color(0xFFD76B30) 
+                            : Colors.black87,
+                          fontWeight: _budgetController.text == budgets[index] 
+                            ? FontWeight.w600 
+                            : FontWeight.normal,
+                        ),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _budgetController.text = budgets[index];
+                          _selectedBudget = budgets[index];
+                        });
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _selectTravelers() async {
@@ -1150,24 +1251,30 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
   }
 
   void _performSearch() {
-    // Validate search criteria
-    if (_destinationController.text.trim().isEmpty) {
+    String destination = _destinationController.text.trim();
+    String month = _monthController.text.trim();
+    String budget = _budgetController.text.trim();
+    
+    if (destination.isNotEmpty) {
+      // Only use destination in the search query, other fields are filters
+      context.pushNamed(
+        'searchResults',
+        queryParameters: {
+          'searchQuery': destination, // Only destination goes in search
+          'destination': destination,
+          'month': month != 'Any Month' ? month : '',
+          'travelers': _travelers.toString(),
+          'budget': budget != 'Any Budget' ? budget : '',
+        },
+      );
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please enter a destination', style: GoogleFonts.poppins()),
-          backgroundColor: Colors.red,
+          content: Text('Please enter a destination to search'),
+          backgroundColor: Colors.orange,
         ),
       );
-      return;
     }
-
-    // Navigate to search results with search parameters
-    final searchQuery = _destinationController.text.trim();
-    print('Mobile: Performing search for: $searchQuery');
-
-    context.pushNamed('searchResults', pathParameters: {
-      'searchQuery': searchQuery,
-    });
   }
 
 
