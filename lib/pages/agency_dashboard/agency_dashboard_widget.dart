@@ -914,7 +914,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
       );
       
       // Navigate to home page to see customer view
-      context.pushNamed('home');
+      Navigator.pushNamed(context, '/home');
     }
   }
 

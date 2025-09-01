@@ -396,6 +396,7 @@ class _HomeWebPageState extends State<HomeWebPage>
       pinned: true,
       snap: false,
       toolbarHeight: 80,
+      automaticallyImplyLeading: false,
       flexibleSpace: Container(
       decoration: BoxDecoration(
           color: Colors.white,

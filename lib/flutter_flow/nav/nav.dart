@@ -99,17 +99,20 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
             
             if (appStateNotifier.loggedIn) {
               final userDoc = currentUserDocument;
+              print('ROUTER DEBUG: User document: ${userDoc?.uid ?? 'null'}');
               if (userDoc != null && userDoc.role.isNotEmpty) {
                 final roles = userDoc.role.map((role) => role.toLowerCase()).toList();
-                // Check if user has admin role - always allow admin access
+                print('ROUTER DEBUG: User roles: $roles');
+                print('ROUTER DEBUG: Agency reference: ${userDoc.agencyReference?.path ?? 'null'}');
+                // Check if user has admin role - redirect to dashboard
                 if (roles.contains('admin')) {
                   print('ROUTER DEBUG: Admin user detected, redirecting to agency dashboard');
                   return AgencyDashboardWidget();
                 }
-                // Check if user has agency role AND is approved
+                // Check if user has agency role AND is approved - redirect to profile
                 if (roles.contains('agency') && userDoc.agencyReference != null) {
-                  print('ROUTER DEBUG: Approved agency user detected, redirecting to agency dashboard');
-                  return AgencyDashboardWidget();
+                  print('ROUTER DEBUG: Approved agency user detected, redirecting to profile');
+                  return ProfileWidget();
                 }
                 // Check if user has pending agency application
                 if (userDoc.hasPendingAgencyApplication()) {
@@ -127,7 +130,26 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: HomeWidget.routeName,
           path: HomeWidget.routePath,
-          builder: (context, params) => const HomeResponsive(),
+          builder: (context, params) {
+            // Check if user is agency - redirect them to dashboard
+            // This won't affect Navigator.pushNamed() navigation from preview mode
+            final userDoc = currentUserDocument;
+            if (userDoc != null && userDoc.role.isNotEmpty) {
+              final roles = userDoc.role.map((role) => role.toLowerCase()).toList();
+              final isAgency = roles.contains('agency') && userDoc.agencyReference != null;
+              final isAdmin = roles.contains('admin');
+              
+              if (isAgency) {
+                print('ROUTER DEBUG: Redirecting agency user from home to profile');
+                return ProfileWidget();
+              }
+              if (isAdmin) {
+                print('ROUTER DEBUG: Redirecting admin user from home to dashboard');
+                return AgencyDashboardWidget();
+              }
+            }
+            return const HomeResponsive();
+          },
         ),
 
         FFRoute(

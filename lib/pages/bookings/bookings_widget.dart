@@ -9,6 +9,7 @@ import '/utils/formatting.dart';
 import '/widgets/sticky_cta_bar.dart';
 import '/widgets/price_text.dart';
 import '/services/pdf_service.dart';
+import '/services/favorites_service.dart';
 import '/index.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -182,17 +183,72 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                                         context.pushNamed(HomeWidget.routeName);
                                       },
                                     ),
-                                    FlutterFlowIconButton(
-                                      borderRadius: 20.0,
-                                      buttonSize: 40.0,
-                                      fillColor: const Color(0x80D76B30), // Orange with opacity
-                                      icon: const Icon(
-                                        Icons.favorite_border,
-                                        color: Colors.white,
-                                        size: 24.0,
-                                      ),
-                                      onPressed: () {
-                                        // TODO: handle favorite
+                                    StreamBuilder<bool>(
+                                      stream: currentUserReference != null && widget.tripref != null
+                                          ? FavoritesService.isFavoriteStream(
+                                              currentUserReference!,
+                                              widget.tripref!,
+                                            )
+                                          : Stream.value(false),
+                                      builder: (context, favoriteSnapshot) {
+                                        final isFavorite = favoriteSnapshot.data ?? false;
+                                        
+                                        return FlutterFlowIconButton(
+                                          borderRadius: 20.0,
+                                          buttonSize: 40.0,
+                                          fillColor: isFavorite 
+                                              ? const Color(0xFFD76B30)  // Solid orange when favorite
+                                              : const Color(0x80D76B30), // Orange with opacity when not favorite
+                                          icon: Icon(
+                                            isFavorite ? Icons.favorite : Icons.favorite_border,
+                                            color: Colors.white,
+                                            size: 24.0,
+                                          ),
+                                          onPressed: () async {
+                                            if (currentUserReference != null && widget.tripref != null) {
+                                              try {
+                                                if (isFavorite) {
+                                                  await FavoritesService.remove(
+                                                    currentUserReference!,
+                                                    widget.tripref!,
+                                                  );
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text('Removed from favorites'),
+                                                      backgroundColor: Colors.grey.shade600,
+                                                    ),
+                                                  );
+                                                } else {
+                                                  await FavoritesService.add(
+                                                    currentUserReference!,
+                                                    widget.tripref!,
+                                                  );
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text('Added to favorites'),
+                                                      backgroundColor: Color(0xFFD76B30),
+                                                    ),
+                                                  );
+                                                }
+                                              } catch (e) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text('Error updating favorites'),
+                                                    backgroundColor: Colors.red,
+                                                  ),
+                                                );
+                                              }
+                                            } else {
+                                              // User not logged in
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text('Please sign in to add favorites'),
+                                                  backgroundColor: Colors.orange,
+                                                ),
+                                              );
+                                            }
+                                          },
+                                        );
                                       },
                                     ),
                                   ],
@@ -390,54 +446,72 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                                 ),
                               ],
                             ),
-                            Container(
-                              width: 120.0,
-                              height: 40.0,
-                              decoration: BoxDecoration(
-                                color: FlutterFlowTheme.of(context).accent1,
-                                borderRadius: BorderRadius.circular(20.0),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(12.0),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.star,
-                                      color: Color(0xFFF2D83B), // Bright Yellow
-                                      size: 16.0,
+                            StreamBuilder<List<ReviewsRecord>>(
+                              stream: widget.tripref != null 
+                                  ? queryReviewsRecord(
+                                      queryBuilder: (q) => q
+                                          .where('trip_reference', isEqualTo: widget.tripref),
+                                    )
+                                  : Stream.value([]),
+                              builder: (context, reviewsSnapshot) {
+                                final reviews = reviewsSnapshot.data ?? [];
+                                final reviewCount = reviews.length;
+                                final averageRating = reviewCount > 0 
+                                    ? reviews.map((r) => r.rating).reduce((a, b) => a + b) / reviewCount
+                                    : 0.0;
+                                
+                                return Container(
+                                  width: 120.0,
+                                  height: 40.0,
+                                  decoration: BoxDecoration(
+                                    color: FlutterFlowTheme.of(context).accent1,
+                                    borderRadius: BorderRadius.circular(20.0),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12.0),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.star,
+                                          color: Color(0xFFF2D83B), // Bright Yellow
+                                          size: 16.0,
+                                        ),
+                                        Padding(
+                                          padding:
+                                              const EdgeInsetsDirectional.fromSTEB(
+                                                  4.0, 0.0, 4.0, 0.0),
+                                          child: Text(
+                                            reviewCount > 0 
+                                                ? '${averageRating.toStringAsFixed(1)} (${reviewCount})'
+                                                : 'No reviews',
+                                            style: FlutterFlowTheme.of(context)
+                                                .bodyMedium
+                                                .override(
+                                                  font: GoogleFonts.inter(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontStyle:
+                                                        FlutterFlowTheme.of(context)
+                                                            .bodyMedium
+                                                            .fontStyle,
+                                                  ),
+                                                  color:
+                                                      FlutterFlowTheme.of(context)
+                                                          .primary,
+                                                  letterSpacing: 0.0,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontStyle:
+                                                      FlutterFlowTheme.of(context)
+                                                          .bodyMedium
+                                                          .fontStyle,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    Padding(
-                                      padding:
-                                          const EdgeInsetsDirectional.fromSTEB(
-                                              4.0, 0.0, 4.0, 0.0),
-                                      child: Text(
-                                        '4.8 (124)',
-                                        style: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .override(
-                                              font: GoogleFonts.inter(
-                                                fontWeight: FontWeight.w600,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .bodyMedium
-                                                        .fontStyle,
-                                              ),
-                                              color:
-                                                  FlutterFlowTheme.of(context)
-                                                      .primary,
-                                              letterSpacing: 0.0,
-                                              fontWeight: FontWeight.w600,
-                                              fontStyle:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodyMedium
-                                                      .fontStyle,
-                                            ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),

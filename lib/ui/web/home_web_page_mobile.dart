@@ -125,6 +125,7 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
       floating: true,
       snap: true,
       toolbarHeight: 80,
+      automaticallyImplyLeading: false,
       flexibleSpace: Container(
         decoration: BoxDecoration(
           color: Colors.white,

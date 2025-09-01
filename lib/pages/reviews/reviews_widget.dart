@@ -149,13 +149,37 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
                 );
               }
 
+              if (snapshot.hasError) {
+                return _buildEmptyState(
+                  icon: Icons.error_outline,
+                  title: 'Error Loading Reviews',
+                  subtitle: 'Unable to load reviews. Please try again.',
+                  buttonText: 'Refresh',
+                  onButtonPressed: () => setState(() {}),
+                );
+              }
+
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                String title = tripReference != null ? 'No Reviews for This Trip Yet' : 'No Trip Reviews Yet';
+                String subtitle = tripReference != null ? 'No reviews available for this trip.' : 'No trip reviews available.';
+                
+                // Check if filters are applied
+                if (_selectedRatingFilter != null) {
+                  title = 'No Reviews Match Your Filter';
+                  subtitle = 'Try adjusting your rating filter or clear all filters.';
+                }
+                
                 return _buildEmptyState(
                   icon: Icons.rate_review,
-                  title: tripReference != null ? 'No Reviews for This Trip Yet' : 'No Trip Reviews Yet',
-                  subtitle: tripReference != null ? 'No reviews available for this trip.' : 'No trip reviews available.',
-                  buttonText: 'Browse Trips',
-                  onButtonPressed: () => context.pushNamed('home'),
+                  title: title,
+                  subtitle: subtitle,
+                  buttonText: _selectedRatingFilter != null ? 'Clear Filters' : 'Browse Trips',
+                  onButtonPressed: _selectedRatingFilter != null 
+                    ? () => setState(() { 
+                        _selectedRatingFilter = null; 
+                        _sortBy = 'newest';
+                      })
+                    : () => context.pushNamed('home'),
                 );
               }
 
@@ -323,17 +347,17 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
           query = query.where('trip_reference', isEqualTo: tripReference);
         }
         
-        // Apply rating filter
+        // Apply rating filter - simplified to avoid index conflicts
         if (_selectedRatingFilter != null) {
           double minRating = _selectedRatingFilter!;
           double maxRating = _selectedRatingFilter! + 0.99;
           query = query
               .where('rating', isGreaterThanOrEqualTo: minRating)
-              .where('rating', isLessThan: maxRating + 0.01);
+              .where('rating', isLessThanOrEqualTo: maxRating);
         }
         
-        // Base ordering for consistent results
-        return query.orderBy('rating').orderBy('created_at', descending: true);
+        // Single orderBy to avoid index conflicts
+        return query.orderBy('created_at', descending: true);
       },
     );
   }
@@ -377,13 +401,37 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
                   );
                 }
 
+                if (snapshot.hasError) {
+                  return _buildEmptyState(
+                    icon: Icons.error_outline,
+                    title: 'Error Loading Reviews',
+                    subtitle: 'Unable to load agency reviews. Please try again.',
+                    buttonText: 'Refresh',
+                    onButtonPressed: () => setState(() {}),
+                  );
+                }
+
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  String title = 'No Agency Reviews Yet';
+                  String subtitle = 'No agency reviews available.';
+                  
+                  // Check if filters are applied
+                  if (_selectedRatingFilter != null) {
+                    title = 'No Reviews Match Your Filter';
+                    subtitle = 'Try adjusting your rating filter or clear all filters.';
+                  }
+                  
                   return _buildEmptyState(
                     icon: Icons.business,
-                    title: 'No Agency Reviews Yet',
-                    subtitle: 'No agency reviews available.',
-                    buttonText: 'Browse Agencies',
-                    onButtonPressed: () => context.pushNamed('agenciesList'),
+                    title: title,
+                    subtitle: subtitle,
+                    buttonText: _selectedRatingFilter != null ? 'Clear Filters' : 'Browse Agencies',
+                    onButtonPressed: _selectedRatingFilter != null 
+                      ? () => setState(() { 
+                          _selectedRatingFilter = null; 
+                          _sortBy = 'newest';
+                        })
+                      : () => context.pushNamed('agenciesList'),
                   );
                 }
 
@@ -438,16 +486,17 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
                     queryBuilder: (q) {
                       var query = q.where('agency_reference', isEqualTo: trip.agencyReference);
                       
-                      // Apply rating filter
+                      // Apply rating filter - simplified to avoid index conflicts
                       if (_selectedRatingFilter != null) {
                         double minRating = _selectedRatingFilter!;
                         double maxRating = _selectedRatingFilter! + 0.99;
                         query = query
                             .where('rating', isGreaterThanOrEqualTo: minRating)
-                            .where('rating', isLessThan: maxRating + 0.01);
+                            .where('rating', isLessThanOrEqualTo: maxRating);
                       }
                       
-                      return query.orderBy('rating').orderBy('created_at', descending: true);
+                      // Single orderBy to avoid index conflicts
+                      return query.orderBy('created_at', descending: true);
                     },
                   ),
                   builder: (context, reviewSnapshot) {
@@ -459,13 +508,37 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
                       );
                     }
 
+                    if (reviewSnapshot.hasError) {
+                      return _buildEmptyState(
+                        icon: Icons.error_outline,
+                        title: 'Error Loading Reviews',
+                        subtitle: 'Unable to load agency reviews. Please try again.',
+                        buttonText: 'Refresh',
+                        onButtonPressed: () => setState(() {}),
+                      );
+                    }
+
                     if (!reviewSnapshot.hasData || reviewSnapshot.data!.isEmpty) {
+                      String title = 'No Reviews for This Agency';
+                      String subtitle = 'No reviews available for this agency.';
+                      
+                      // Check if filters are applied
+                      if (_selectedRatingFilter != null) {
+                        title = 'No Reviews Match Your Filter';
+                        subtitle = 'Try adjusting your rating filter or clear all filters.';
+                      }
+                      
                       return _buildEmptyState(
                         icon: Icons.business,
-                        title: 'No Reviews for This Agency',
-                        subtitle: 'No reviews available for this agency.',
-                        buttonText: 'Browse Agencies',
-                        onButtonPressed: () => context.pushNamed('agenciesList'),
+                        title: title,
+                        subtitle: subtitle,
+                        buttonText: _selectedRatingFilter != null ? 'Clear Filters' : 'Browse Agencies',
+                        onButtonPressed: _selectedRatingFilter != null 
+                          ? () => setState(() { 
+                              _selectedRatingFilter = null; 
+                              _sortBy = 'newest';
+                            })
+                          : () => context.pushNamed('agenciesList'),
                       );
                     }
 
@@ -494,17 +567,17 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
       queryBuilder: (q) {
         var query = q;
         
-        // Apply rating filter
+        // Apply rating filter - simplified to avoid index conflicts
         if (_selectedRatingFilter != null) {
           double minRating = _selectedRatingFilter!;
           double maxRating = _selectedRatingFilter! + 0.99;
           query = query
               .where('rating', isGreaterThanOrEqualTo: minRating)
-              .where('rating', isLessThan: maxRating + 0.01);
+              .where('rating', isLessThanOrEqualTo: maxRating);
         }
         
-        // Base ordering for consistent results
-        return query.orderBy('rating').orderBy('created_at', descending: true);
+        // Single orderBy to avoid index conflicts
+        return query.orderBy('created_at', descending: true);
       },
     );
   }

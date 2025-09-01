@@ -678,20 +678,6 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
         appBar: AppBar(
           backgroundColor: Color(0xFFD76B30),
           automaticallyImplyLeading: false,
-          leading: FlutterFlowIconButton(
-            borderColor: Colors.transparent,
-            borderRadius: 30.0,
-            borderWidth: 1.0,
-            buttonSize: 60.0,
-            icon: Icon(
-              Icons.menu,
-              color: Colors.white,
-              size: 30.0,
-            ),
-            onPressed: () async {
-              scaffoldKey.currentState!.openDrawer();
-            },
-          ),
           title: Text(
             'Tripsbasket',
             style: GoogleFonts.poppins(
