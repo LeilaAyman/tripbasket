@@ -165,16 +165,16 @@ class _SearchResultsWidgetState extends State<SearchResultsWidget>
   // Helper method to check if price matches budget filter
   bool _matchesBudgetFilter(int price, String budgetFilter) {
     switch (budgetFilter) {
-      case 'Under \$500':
-        return price < 500;
-      case '\$500 - \$1,000':
-        return price >= 500 && price <= 1000;
-      case '\$1,000 - \$2,000':
-        return price >= 1000 && price <= 2000;
-      case '\$2,000 - \$5,000':
-        return price >= 2000 && price <= 5000;
-      case 'Over \$5,000':
-        return price > 5000;
+      case 'Under EGP 15,000':
+        return price < 15000;
+      case 'EGP 15,000 - EGP 30,000':
+        return price >= 15000 && price <= 30000;
+      case 'EGP 30,000 - EGP 60,000':
+        return price >= 30000 && price <= 60000;
+      case 'EGP 60,000 - EGP 150,000':
+        return price >= 60000 && price <= 150000;
+      case 'Over EGP 150,000':
+        return price > 150000;
       default:
         return true; // Any Budget or unrecognized filter
     }

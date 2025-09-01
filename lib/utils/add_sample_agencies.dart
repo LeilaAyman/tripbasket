@@ -13,7 +13,7 @@ Future<void> addSampleAgencies() async {
     await agencyCollection.doc('adventure_world_travel').set({
       'name': 'Adventure World Travel',
       'description': 'Specializing in thrilling outdoor adventures and extreme sports experiences around the globe.',
-      'logo': 'https://via.placeholder.com/150x150?text=Adventure+World',
+      'logo': '',
       'contact_email': 'info@adventureworld.com',
       'contact_phone': '+1-555-ADVENTURE',
       'website': 'https://www.adventureworld.com',
@@ -29,7 +29,7 @@ Future<void> addSampleAgencies() async {
     await agencyCollection.doc('luxury_escapes_intl').set({
       'name': 'Luxury Escapes International',
       'description': 'Premium luxury travel experiences with 5-star accommodations and personalized service.',
-      'logo': 'https://via.placeholder.com/150x150?text=Luxury+Escapes',
+      'logo': '',
       'contact_email': 'bookings@luxuryescapes.com',
       'contact_phone': '+1-555-LUXURY',
       'website': 'https://www.luxuryescapes.com',
@@ -45,7 +45,7 @@ Future<void> addSampleAgencies() async {
     await agencyCollection.doc('cultural_heritage_tours').set({
       'name': 'Cultural Heritage Tours',
       'description': 'Authentic cultural experiences and historical site visits with expert local guides.',
-      'logo': 'https://via.placeholder.com/150x150?text=Cultural+Heritage',
+      'logo': '',
       'contact_email': 'explore@culturalheritage.com',
       'contact_phone': '+1-555-CULTURE',
       'website': 'https://www.culturalheritage.com',
@@ -61,7 +61,7 @@ Future<void> addSampleAgencies() async {
     await agencyCollection.doc('eco_travel_solutions').set({
       'name': 'Eco Travel Solutions',
       'description': 'Sustainable and eco-friendly travel options that protect and preserve natural environments.',
-      'logo': 'https://via.placeholder.com/150x150?text=Eco+Travel',
+      'logo': '',
       'contact_email': 'green@ecotravelsolutions.com',
       'contact_phone': '+1-555-ECOTRIP',
       'website': 'https://www.ecotravelsolutions.com',
@@ -77,7 +77,7 @@ Future<void> addSampleAgencies() async {
     await agencyCollection.doc('family_fun_adventures').set({
       'name': 'Family Fun Adventures',
       'description': 'Family-friendly trips with activities suitable for all ages and memorable experiences for everyone.',
-      'logo': 'https://via.placeholder.com/150x150?text=Family+Fun',
+      'logo': '',
       'contact_email': 'fun@familyadventures.com',
       'contact_phone': '+1-555-FAMILY',
       'website': 'https://www.familyadventures.com',

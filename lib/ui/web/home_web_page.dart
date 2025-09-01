@@ -1345,11 +1345,11 @@ class _HomeWebPageState extends State<HomeWebPage>
   void _selectBudget() {
     List<String> budgets = [
       'Any Budget',
-      'Under \$500',
-      '\$500 - \$1,000',
-      '\$1,000 - \$2,000',
-      '\$2,000 - \$5,000',
-      'Over \$5,000'
+      'Under EGP 15,000',
+      'EGP 15,000 - EGP 30,000',
+      'EGP 30,000 - EGP 60,000',
+      'EGP 60,000 - EGP 150,000',
+      'Over EGP 150,000'
     ];
     
     showModalBottomSheet(

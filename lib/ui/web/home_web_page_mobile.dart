@@ -1090,11 +1090,11 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
   void _selectBudget() {
     List<String> budgets = [
       'Any Budget',
-      'Under \$500',
-      '\$500 - \$1,000',
-      '\$1,000 - \$2,000',
-      '\$2,000 - \$5,000',
-      'Over \$5,000'
+      'Under EGP 15,000',
+      'EGP 15,000 - EGP 30,000',
+      'EGP 30,000 - EGP 60,000',
+      'EGP 60,000 - EGP 150,000',
+      'Over EGP 150,000'
     ];
     
     showModalBottomSheet(
@@ -1279,8 +1279,8 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
 
 
   void _scrollToFeatures() {
-    // Scroll to features section
-    // This would need a ScrollController to work properly
+    // Navigate to features section - for now we'll scroll down or navigate to search
+    context.pushNamed('searchResults');
   }
 
   void _checkForAuthRedirect() {
@@ -1434,23 +1434,13 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
 
 
   void _scrollToSearch() {
-    // For now, just show a snackbar since we'd need a scroll controller to implement this
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Scroll down to see search options'),
-        backgroundColor: Color(0xFFD76B30),
-      ),
-    );
+    // Navigate to search results page
+    context.pushNamed('searchResults');
   }
 
   void _scrollToContact() {
-    // For now, just show a snackbar since we'd need a scroll controller to implement this
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Scroll down to see contact information'),
-        backgroundColor: Color(0xFFD76B30),
-      ),
-    );
+    // Open live chat support
+    _startLiveChat();
   }
 
   Widget _buildMobilePremiumDestinationsSection() {
@@ -1585,24 +1575,32 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
   }
 
   Widget _buildMobileDestinationCard(TripsRecord trip) {
-    return InkWell(
+    return GestureDetector(
       onTap: () {
-        // Navigate to trip details page
+        // Navigate to trip booking page
         print('Mobile: Tapping destination card for trip: ${trip.title}');
-        context.pushNamed('bookTrip', extra: trip);
+        print('Mobile: Trip reference ID: ${trip.reference.id}');
+        
+        context.pushNamed(
+          'bookings',
+          queryParameters: {
+            'tripref': trip.reference.id,
+          },
+        );
       },
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: Stack(
@@ -1613,14 +1611,14 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
               width: double.infinity,
               decoration: BoxDecoration(
                 color: Colors.grey.shade200,
-                image: trip.imageUrl.isNotEmpty
+                image: trip.image.isNotEmpty
                     ? DecorationImage(
-                        image: NetworkImage(trip.imageUrl),
+                        image: NetworkImage(trip.image),
                         fit: BoxFit.cover,
                       )
                     : null,
               ),
-              child: trip.imageUrl.isEmpty
+              child: trip.image.isEmpty
                   ? Icon(
                       Icons.image,
                       size: 64,
@@ -1679,7 +1677,7 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          'From \$${trip.price.toInt()}',
+                          'From EGP ${trip.price.toInt()}',
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -1711,6 +1709,7 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
             ),
             ],
           ),
+        ),
         ),
       ),
     );
