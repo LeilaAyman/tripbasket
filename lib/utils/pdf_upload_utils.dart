@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
@@ -8,19 +9,38 @@ class PdfUploadUtils {
   static Future<String?> uploadTripPdf({
     required String agencyId,
     required String tripId,
-    required String filePath,
+    String? filePath,
+    Uint8List? fileBytes,
     required String fileName,
   }) async {
     try {
-      final file = File(filePath);
+      Uint8List bytes;
+      int fileSize;
       
-      // Check if file exists
-      if (!await file.exists()) {
-        throw Exception('File does not exist');
+      if (kIsWeb) {
+        // Web platform: use bytes
+        if (fileBytes == null) {
+          throw Exception('File bytes are required for web platform');
+        }
+        bytes = fileBytes;
+        fileSize = bytes.length;
+      } else {
+        // Mobile platform: use file path
+        if (filePath == null) {
+          throw Exception('File path is required for mobile platform');
+        }
+        final file = File(filePath);
+        
+        // Check if file exists
+        if (!await file.exists()) {
+          throw Exception('File does not exist');
+        }
+        
+        bytes = await file.readAsBytes();
+        fileSize = bytes.length;
       }
       
       // Check file size
-      final fileSize = await file.length();
       if (fileSize > _maxFileSizeBytes) {
         throw Exception('File size exceeds 10MB limit');
       }
@@ -37,12 +57,13 @@ class PdfUploadUtils {
       if (kDebugMode) {
         print('Uploading PDF to: $storagePath');
         print('File size: ${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB');
+        print('Platform: ${kIsWeb ? 'Web' : 'Mobile'}');
       }
       
       // Upload to Firebase Storage
       final storageRef = FirebaseStorage.instance.ref().child(storagePath);
-      final uploadTask = storageRef.putFile(
-        file,
+      final uploadTask = storageRef.putData(
+        bytes,
         SettableMetadata(
           contentType: 'application/pdf',
           customMetadata: {

@@ -42,46 +42,85 @@ class ImageUploadService {
     Function(double)? onProgress,
   }) async {
     try {
+      print('=== IMAGE UPLOAD DEBUG START ===');
+      print('Creating Firebase Storage reference: $folderPath/$fileName');
+      print('Image file path: ${imageFile.path}');
+      print('Image file name: ${imageFile.name}');
+      
       // Create reference
       final ref = _storage.ref().child('$folderPath/$fileName');
+      print('Storage reference created: ${ref.fullPath}');
 
       // Upload task
       UploadTask uploadTask;
       
       if (kIsWeb) {
+        print('Preparing web upload...');
         // Web upload
         final bytes = await imageFile.readAsBytes();
+        print('Image bytes length: ${bytes.length}');
         uploadTask = ref.putData(
           bytes,
           SettableMetadata(contentType: 'image/jpeg'),
         );
       } else {
+        print('Preparing mobile upload...');
         // Mobile upload
         final file = File(imageFile.path);
+        print('File path: ${file.path}, exists: ${await file.exists()}');
         uploadTask = ref.putFile(
           file,
           SettableMetadata(contentType: 'image/jpeg'),
         );
       }
 
+      print('Starting upload task...');
+      
       // Listen to progress
       if (onProgress != null) {
         uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
           double progress = snapshot.bytesTransferred / snapshot.totalBytes;
+          print('Upload progress: ${(progress * 100).toStringAsFixed(1)}%');
           onProgress(progress);
         });
       }
 
       // Wait for completion
+      print('Waiting for upload completion...');
       final TaskSnapshot snapshot = await uploadTask;
+      print('Upload task state: ${snapshot.state}');
+      print('Bytes transferred: ${snapshot.bytesTransferred}');
+      print('Total bytes: ${snapshot.totalBytes}');
+      
+      if (snapshot.state != TaskState.success) {
+        throw Exception('Upload failed with state: ${snapshot.state}');
+      }
+      
+      print('Upload completed successfully, getting download URL...');
       final String downloadUrl = await snapshot.ref.getDownloadURL();
+      
+      if (downloadUrl.isEmpty) {
+        throw Exception('Received empty download URL from Firebase Storage');
+      }
 
       print('Image uploaded successfully: $downloadUrl');
+      print('=== IMAGE UPLOAD DEBUG END ===');
       return downloadUrl;
 
     } catch (e) {
       print('Error uploading image: $e');
-      return null;
+      if (e.toString().contains('permission')) {
+        print('Permission error detected. Check Firebase Storage security rules.');
+        throw Exception('Permission denied. Please check your access rights.');
+      } else if (e.toString().contains('network')) {
+        print('Network error detected. Check internet connection.');
+        throw Exception('Network error. Please check your internet connection.');
+      } else if (e.toString().contains('storage/')) {
+        // Firebase Storage specific error
+        throw Exception('Upload failed: ${e.toString().split('] ').last}');
+      } else {
+        throw Exception('Upload failed: $e');
+      }
     }
   }
 
@@ -89,26 +128,44 @@ class ImageUploadService {
   static Future<String?> uploadUserProfilePicture(XFile imageFile, {
     Function(double)? onProgress,
   }) async {
-    if (!loggedIn) {
-      print('User must be logged in to upload profile picture');
-      return null;
+    try {
+      if (!loggedIn) {
+        print('Error: User must be logged in to upload profile picture');
+        throw Exception('User must be logged in to upload profile picture');
+      }
+
+      if (currentUserUid.isEmpty) {
+        print('Error: Current user UID is empty');
+        throw Exception('Current user UID is empty');
+      }
+
+      print('Starting profile picture upload for user: $currentUserUid');
+
+      final fileName = 'profile_${currentUserUid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      
+      print('Uploading image to Firebase Storage...');
+      final downloadUrl = await uploadImage(
+        imageFile: imageFile,
+        folderPath: 'profile_pictures',
+        fileName: fileName,
+        onProgress: onProgress,
+      );
+
+      if (downloadUrl != null && downloadUrl.isNotEmpty) {
+        print('Image uploaded successfully. Updating user document...');
+        // Update user document with new profile picture URL
+        await updateUserProfilePicture(downloadUrl);
+        print('Profile picture upload completed successfully');
+      } else {
+        print('Error: Upload returned null or empty URL');
+        throw Exception('Failed to get download URL from upload. Please try again.');
+      }
+
+      return downloadUrl;
+    } catch (e) {
+      print('Error in uploadUserProfilePicture: $e');
+      rethrow;
     }
-
-    final fileName = 'profile_${currentUserUid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    
-    final downloadUrl = await uploadImage(
-      imageFile: imageFile,
-      folderPath: 'profile_pictures',
-      fileName: fileName,
-      onProgress: onProgress,
-    );
-
-    if (downloadUrl != null) {
-      // Update user document with new profile picture URL
-      await updateUserProfilePicture(downloadUrl);
-    }
-
-    return downloadUrl;
   }
 
   /// Upload profile picture for agency
@@ -137,19 +194,37 @@ class ImageUploadService {
   /// Update user profile picture URL in Firestore and Firebase Auth
   static Future<void> updateUserProfilePicture(String downloadUrl) async {
     try {
+      print('Updating Firebase Auth user profile...');
       // Update Firebase Auth user profile
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         await user.updatePhotoURL(downloadUrl);
+        print('Firebase Auth profile photo updated successfully');
+      } else {
+        print('Warning: No current Firebase Auth user found');
       }
 
+      print('Updating Firestore user document...');
       // Update Firestore user document
-      if (currentUserDocument != null) {
-        await currentUserDocument!.reference.update({
+      if (currentUserReference != null) {
+        await currentUserReference!.update({
           'photo_url': downloadUrl,
-          'profile_photo_url': downloadUrl,
-          'updated_time': FieldValue.serverTimestamp(),
+          'profilePhotoUrl': downloadUrl,
         });
+        print('Firestore user document updated successfully');
+      } else {
+        print('Warning: currentUserReference is null');
+        // Try to create the user document reference manually
+        if (currentUserUid.isNotEmpty) {
+          final userDocRef = FirebaseFirestore.instance.collection('users').doc(currentUserUid);
+          await userDocRef.update({
+            'photo_url': downloadUrl,
+            'profilePhotoUrl': downloadUrl,
+          });
+          print('Firestore user document updated using manual reference');
+        } else {
+          throw Exception('Cannot update user document: no user reference or UID available');
+        }
       }
 
       print('User profile picture updated successfully');
@@ -159,17 +234,36 @@ class ImageUploadService {
     }
   }
 
-  /// Update agency profile picture URL in Firestore
+  /// Update agency logo URL in Firestore
   static Future<void> updateAgencyProfilePicture(String agencyId, String downloadUrl) async {
     try {
-      await _firestore.collection('agencies').doc(agencyId).update({
-        'profile_picture_url': downloadUrl,
-        'updated_time': FieldValue.serverTimestamp(),
-      });
-
-      print('Agency profile picture updated successfully');
+      print('Attempting to update agency logo for ID: $agencyId');
+      
+      // First check if the document exists
+      final docRef = _firestore.collection('agency').doc(agencyId);
+      final docSnapshot = await docRef.get();
+      
+      if (!docSnapshot.exists) {
+        print('Agency document does not exist: $agencyId');
+        // Create the document with just the logo for now
+        await docRef.set({
+          'logo': downloadUrl,
+          'updated_at': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        print('Agency document created/updated with logo');
+      } else {
+        // Document exists, update it
+        await docRef.update({
+          'logo': downloadUrl,
+          'updated_at': FieldValue.serverTimestamp(),
+        });
+        print('Agency logo updated successfully');
+      }
     } catch (e) {
-      print('Error updating agency profile picture: $e');
+      print('Error updating agency logo: $e');
+      if (e.toString().contains('not-found')) {
+        throw Exception('Agency document not found. Please ensure the agency exists in the database.');
+      }
       rethrow;
     }
   }

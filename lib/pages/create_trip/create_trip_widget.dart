@@ -54,6 +54,9 @@ class _CreateTripWidgetState extends State<CreateTripWidget> {
     _model.descriptionController ??= TextEditingController();
     _model.descriptionFocusNode ??= FocusNode();
 
+    _model.specificationsController ??= TextEditingController();
+    _model.specificationsFocusNode ??= FocusNode();
+
     _model.itineraryController ??= TextEditingController();
     _model.itineraryFocusNode ??= FocusNode();
   }
@@ -123,6 +126,7 @@ class _CreateTripWidgetState extends State<CreateTripWidget> {
         price: price,
         location: _model.locationController!.text.trim(),
         description: _model.descriptionController!.text.trim(),
+        specifications: _model.specificationsController!.text.trim(),
         image: _uploadedImageUrl ?? '',
         gallery: _galleryImages,
         itenarary: _model.itineraryControllers.map((controller) => controller.text.trim()).where((text) => text.isNotEmpty).toList(),
@@ -334,6 +338,15 @@ class _CreateTripWidgetState extends State<CreateTripWidget> {
                 Icons.description,
                 maxLines: 3,
                 validator: (value) => value?.isEmpty == true ? 'Please enter a description' : null,
+              ),
+              SizedBox(height: 16),
+              _buildFormField(
+                'What\'s Included',
+                _model.specificationsController!,
+                _model.specificationsFocusNode!,
+                Icons.check_circle_outline,
+                maxLines: 3,
+                validator: null, // Optional field
               ),
               SizedBox(height: 16),
               ImageUploadWidget(

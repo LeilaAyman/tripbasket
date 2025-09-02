@@ -152,14 +152,58 @@ class _AgencyTripsWidgetState extends State<AgencyTripsWidget>
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              agency.name,
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 28.0,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.0,
-                              ),
+                            // Agency logo and name row
+                            Row(
+                              children: [
+                                // Agency logo
+                                Container(
+                                  width: 60.0,
+                                  height: 60.0,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(12.0),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.4),
+                                      width: 2.0,
+                                    ),
+                                  ),
+                                  child: agency.logo.isNotEmpty
+                                      ? ClipRRect(
+                                          borderRadius: BorderRadius.circular(10.0),
+                                          child: Image.network(
+                                            agency.logo,
+                                            width: 60.0,
+                                            height: 60.0,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Icon(
+                                                Icons.business,
+                                                color: Colors.white,
+                                                size: 30.0,
+                                              );
+                                            },
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.business,
+                                          color: Colors.white,
+                                          size: 30.0,
+                                        ),
+                                ),
+                                SizedBox(width: 16.0),
+                                // Agency name
+                                Expanded(
+                                  child: Text(
+                                    agency.name,
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize: 28.0,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.0,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                             SizedBox(height: 8.0),
                             Text(

@@ -170,7 +170,10 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
                             icon: CircleAvatar(
                               radius: 16,
                               backgroundColor: const Color(0xFFD76B30),
-                              child: Text(
+                              backgroundImage: currentUserPhoto.isNotEmpty 
+                                  ? NetworkImage(currentUserPhoto) 
+                                  : null,
+                              child: currentUserPhoto.isEmpty ? Text(
                                 currentUserDisplayName?.isNotEmpty == true && currentUserDisplayName!.isNotEmpty 
                                     ? currentUserDisplayName!.substring(0, 1).toUpperCase() 
                                     : (currentUserEmail.isNotEmpty ? currentUserEmail.substring(0, 1).toUpperCase() : 'U'),
@@ -179,7 +182,7 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
                                   fontWeight: FontWeight.w600,
                                   fontSize: 12,
                                 ),
-                              ),
+                              ) : null,
                             ),
                             itemBuilder: (context) => [
                               PopupMenuItem(

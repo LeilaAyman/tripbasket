@@ -97,28 +97,9 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
             print('ROUTER DEBUG: loggedIn = ${appStateNotifier.loggedIn}');
             print('ROUTER DEBUG: loading = ${appStateNotifier.loading}');
             
-            if (appStateNotifier.loggedIn) {
-              final userDoc = currentUserDocument;
-              print('ROUTER DEBUG: User document: ${userDoc?.uid ?? 'null'}');
-              if (userDoc != null && userDoc.role.isNotEmpty) {
-                final roles = userDoc.role.map((role) => role.toLowerCase()).toList();
-                print('ROUTER DEBUG: User roles: $roles');
-                print('ROUTER DEBUG: Agency reference: ${userDoc.agencyReference?.path ?? 'null'}');
-                // Check if user has agency role AND is approved - redirect to profile
-                if (roles.contains('agency') && userDoc.agencyReference != null) {
-                  print('ROUTER DEBUG: Approved agency user detected, redirecting to profile');
-                  return ProfileWidget();
-                }
-                // Check if user has pending agency application
-                if (userDoc.hasPendingAgencyApplication()) {
-                  print('ROUTER DEBUG: User has pending agency application, showing home with waiting message');
-                  return const HomeResponsive(); // They'll see a pending message in the UI
-                }
-              }
-              return const HomeResponsive();
-            } else {
-              return const HomeResponsive();
-            }
+            // Always allow users to access the homepage normally
+            // Specific routing will be handled by individual page navigation
+            return const HomeResponsive();
           },
         ),
 

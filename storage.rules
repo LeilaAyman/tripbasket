@@ -12,13 +12,30 @@ service firebase.storage {
       allow read: if isOwner(uid) || (request.auth.token.admin == true);
     }
 
-    // Allow profile photo uploads for authenticated users
+    // Allow profile photo uploads for authenticated users (both old and new paths)
     match /profile_photos/{fileName} {
       allow write: if isSignedIn()
-        && request.resource.size < 5 * 1024 * 1024
-        && request.resource.contentType.matches('image/(jpeg|jpg|png)')
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*')
         && fileName.matches('.*' + request.auth.uid + '.*');
-      allow read: if isSignedIn();
+      allow read: if true; // Allow public read access
+    }
+    
+    // Allow profile pictures (new path) for authenticated users
+    match /profile_pictures/{fileName} {
+      allow write: if isSignedIn()
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*')
+        && fileName.matches('profile_' + request.auth.uid + '_.*');
+      allow read: if true; // Allow public read access
+    }
+    
+    // Allow agency logos
+    match /agency_pictures/{fileName} {
+      allow write: if isSignedIn()
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow read: if true; // Allow public read access
     }
 
     // Allow trip images for authenticated users (agencies and admins)
@@ -40,9 +57,23 @@ service firebase.storage {
     // Allow user profile images
     match /users/{uid}/profile/{fileName} {
       allow write: if isSignedIn() && isOwner(uid)
-        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.size < 10 * 1024 * 1024
         && request.resource.contentType.matches('image/(jpeg|jpg|png|webp)');
       allow read: if true; // Public read access for profile images
+    }
+    
+    // Allow PDF uploads for trips
+    match /agencies/{agencyId}/trips/{tripId}/pdfs/{fileName} {
+      allow write: if isSignedIn()
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType == 'application/pdf';
+      allow read: if true; // Public read access for trip PDFs
+    }
+    
+    // Catch-all for any other uploads (more permissive for development)
+    match /{allPaths=**} {
+      allow read: if true; // Allow public read
+      allow write: if isSignedIn() && request.resource.size < 10 * 1024 * 1024; // Allow authenticated write with size limit
     }
   }
 }

@@ -177,6 +177,90 @@ class _BookTripWidgetState extends State<BookTripWidget> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
+
+                        // What's Included section
+                        if (widget.tripRecord.specifications.isNotEmpty) ...[
+                          SizedBox(height: 16),
+                          Text(
+                            'What\'s Included',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: FlutterFlowTheme.of(context).primaryText,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            widget.tripRecord.specifications,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: FlutterFlowTheme.of(context).secondaryText,
+                            ),
+                          ),
+                        ],
+
+                        // PDF Itinerary download
+                        if (widget.tripRecord.itineraryPdf.isNotEmpty) ...[
+                          SizedBox(height: 16),
+                          GestureDetector(
+                            onTap: () => launchURL(widget.tripRecord.itineraryPdf),
+                            child: Container(
+                              padding: EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Color(0xFFD76B30).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Color(0xFFD76B30).withOpacity(0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Color(0xFFD76B30),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Icon(
+                                      Icons.picture_as_pdf,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Trip Itinerary',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: FlutterFlowTheme.of(context).primaryText,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Download detailed itinerary (PDF)',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 12,
+                                            color: FlutterFlowTheme.of(context).secondaryText,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.download,
+                                    color: Color(0xFFD76B30),
+                                    size: 20,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

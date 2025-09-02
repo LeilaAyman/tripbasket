@@ -34,6 +34,11 @@ class EditTripModel extends FlutterFlowModel<EditTripWidget> {
   TextEditingController? descriptionController;
   String? Function(BuildContext, String?)? descriptionControllerValidator;
 
+  // State field(s) for specifications/what's included field
+  FocusNode? specificationsFocusNode;
+  TextEditingController? specificationsController;
+  String? Function(BuildContext, String?)? specificationsControllerValidator;
+
   // State field(s) for TextField widget.
   FocusNode? imageFocusNode;
   TextEditingController? imageController;
@@ -71,6 +76,9 @@ class EditTripModel extends FlutterFlowModel<EditTripWidget> {
 
     descriptionFocusNode?.dispose();
     descriptionController?.dispose();
+
+    specificationsFocusNode?.dispose();
+    specificationsController?.dispose();
 
     imageFocusNode?.dispose();
     imageController?.dispose();

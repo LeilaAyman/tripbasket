@@ -9,6 +9,7 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import '/utils/agency_utils.dart';
 import '/utils/migration_helper.dart';
 import '/components/review_import_dialog.dart';
+import '/services/image_upload_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -190,7 +191,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
             size: 24,
           ),
           onPressed: () async {
-            context.pop();
+            context.go('/');
           },
         ),
       ),
@@ -308,6 +309,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                   _buildSearchAndFilter(constraints),
                   _buildDashboardStats(constraints),
                   _buildQuickActions(constraints),
+                  _buildAgencyProfileSection(constraints),
                   _buildBookingsSection(),
                   _buildMessagingInbox(),
                   _buildAnalyticsSection(),
@@ -4347,5 +4349,508 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
         ],
       ),
     );
+  }
+
+  Widget _buildAgencyProfileSection(BoxConstraints constraints) {
+    final isMobile = constraints.maxWidth < 768;
+    final isAdmin = _isCurrentUserAdmin();
+    final agencyRef = isAdmin ? null : AgencyUtils.getCurrentAgencyRef();
+
+    // If no agency reference and not admin, don't show this section
+    if (!isAdmin && agencyRef == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: EdgeInsets.symmetric(
+        horizontal: isMobile ? 0 : 8,
+        vertical: 16,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Header
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD76B30).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.business,
+                    color: Color(0xFFD76B30),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Agency Profile',
+                  style: FlutterFlowTheme.of(context).titleMedium.override(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: FlutterFlowTheme.of(context).primaryText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Profile Card
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: FlutterFlowTheme.of(context).secondaryBackground,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: StreamBuilder<AgenciesRecord?>(
+              stream: agencyRef?.snapshots().map((s) => s.exists ? AgenciesRecord.fromSnapshot(s) : null),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                
+                final agency = snapshot.data;
+                if (agency == null) {
+                  return _buildCreateAgencyPrompt();
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Agency Logo
+                        GestureDetector(
+                          onTap: () => _showLogoUploadDialog(agency),
+                          child: Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFD76B30).withOpacity(0.3),
+                                width: 2,
+                              ),
+                            ),
+                            child: agency.logo.isNotEmpty
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Image.network(
+                                      agency.logo,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stack) => _buildLogoPlaceholder(),
+                                    ),
+                                  )
+                                : _buildLogoPlaceholder(),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Agency Info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                agency.name.isEmpty ? 'Your Agency' : agency.name,
+                                style: FlutterFlowTheme.of(context).titleLarge.override(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              if (agency.description.isNotEmpty)
+                                Text(
+                                  agency.description,
+                                  style: FlutterFlowTheme.of(context).bodyMedium.override(
+                                    color: FlutterFlowTheme.of(context).secondaryText,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              const SizedBox(height: 12),
+                              // Edit button
+                              FFButtonWidget(
+                                onPressed: () => _showAgencyEditDialog(agency),
+                                text: 'Edit Profile',
+                                icon: const Icon(Icons.edit, size: 16),
+                                options: FFButtonOptions(
+                                  height: 36,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  color: Colors.transparent,
+                                  textStyle: FlutterFlowTheme.of(context).bodySmall.override(
+                                    color: const Color(0xFFD76B30),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFD76B30),
+                                    width: 1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogoPlaceholder() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFFD76B30).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.add_photo_alternate,
+            color: Color(0xFFD76B30),
+            size: 28,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Add Logo',
+            style: FlutterFlowTheme.of(context).bodySmall.override(
+              color: const Color(0xFFD76B30),
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCreateAgencyPrompt() {
+    return Center(
+      child: Column(
+        children: [
+          const Icon(
+            Icons.business_outlined,
+            size: 48,
+            color: Colors.grey,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Complete Your Agency Profile',
+            style: FlutterFlowTheme.of(context).titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Set up your agency profile to get started',
+            style: FlutterFlowTheme.of(context).bodyMedium.override(
+              color: FlutterFlowTheme.of(context).secondaryText,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLogoUploadDialog(AgenciesRecord agency) async {
+    final source = await ImageUploadService.showImageSourceDialog(context);
+    if (source == null) return;
+
+    final imageFile = await ImageUploadService.pickImage(
+      source: source,
+      imageQuality: 80,
+      maxWidth: 512,
+      maxHeight: 512,
+    );
+
+    if (imageFile == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No image selected'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Show upload progress dialog
+    ImageUploadService.showUploadProgressDialog(
+      context,
+      uploadFuture: ImageUploadService.uploadAgencyProfilePicture(imageFile, agency.reference.id),
+      onSuccess: (downloadUrl) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Agency logo updated successfully!'),
+              backgroundColor: Color(0xFFD76B30),
+            ),
+          );
+        }
+      },
+      onError: (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to upload logo: $error'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  void _showAgencyEditDialog(AgenciesRecord agency) {
+    final nameController = TextEditingController(text: agency.name);
+    final descriptionController = TextEditingController(text: agency.description);
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Row(
+                children: [
+                  Icon(
+                    Icons.business,
+                    color: const Color(0xFFD76B30),
+                    size: 24,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text('Edit Agency Profile'),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.8,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Logo Section
+                      Text(
+                        'Agency Logo',
+                        style: FlutterFlowTheme.of(context).bodyMedium.override(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Center(
+                        child: GestureDetector(
+                          onTap: () => _uploadLogoInDialog(agency, setState),
+                          child: Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFD76B30).withOpacity(0.3),
+                                width: 2,
+                              ),
+                            ),
+                            child: agency.logo.isNotEmpty
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Image.network(
+                                      agency.logo,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stack) => _buildLogoPlaceholder(),
+                                    ),
+                                  )
+                                : _buildLogoPlaceholder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Center(
+                        child: Text(
+                          'Tap to change logo',
+                          style: FlutterFlowTheme.of(context).bodySmall.override(
+                            color: const Color(0xFFD76B30),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Agency Name
+                      Text(
+                        'Agency Name',
+                        style: FlutterFlowTheme.of(context).bodyMedium.override(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: nameController,
+                        decoration: InputDecoration(
+                          hintText: 'Enter agency name',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.business, color: Color(0xFFD76B30)),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // About Agency
+                      Text(
+                        'About Agency',
+                        style: FlutterFlowTheme.of(context).bodyMedium.override(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: descriptionController,
+                        maxLines: 4,
+                        decoration: InputDecoration(
+                          hintText: 'Tell customers about your agency...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.description, color: Color(0xFFD76B30)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    nameController.dispose();
+                    descriptionController.dispose();
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    await _saveAgencyChanges(
+                      agency,
+                      nameController.text.trim(),
+                      descriptionController.text.trim(),
+                    );
+                    nameController.dispose();
+                    descriptionController.dispose();
+                    Navigator.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD76B30),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Save Changes'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _uploadLogoInDialog(AgenciesRecord agency, StateSetter setState) async {
+    final source = await ImageUploadService.showImageSourceDialog(context);
+    if (source == null) return;
+
+    final imageFile = await ImageUploadService.pickImage(
+      source: source,
+      imageQuality: 80,
+      maxWidth: 512,
+      maxHeight: 512,
+    );
+
+    if (imageFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No image selected'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Upload the image
+      final downloadUrl = await ImageUploadService.uploadAgencyProfilePicture(imageFile, agency.reference.id);
+      
+      if (downloadUrl != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Agency logo updated successfully!'),
+            backgroundColor: Color(0xFFD76B30),
+          ),
+        );
+        // The logo will update automatically through the StreamBuilder
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to upload logo'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error uploading logo: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _saveAgencyChanges(AgenciesRecord agency, String name, String description) async {
+    try {
+      await agency.reference.update({
+        'name': name,
+        'description': description,
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Agency profile updated successfully!'),
+            backgroundColor: Color(0xFFD76B30),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating profile: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

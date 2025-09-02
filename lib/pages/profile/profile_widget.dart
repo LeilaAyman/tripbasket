@@ -621,7 +621,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
               size: 30,
             ),
             onPressed: () async {
-              context.pop();
+              context.go('/');
             },
           ),
           title: Text(

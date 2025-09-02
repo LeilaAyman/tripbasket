@@ -67,17 +67,19 @@ class _PdfUploadWidgetState extends State<PdfUploadWidget> {
         allowMultiple: false,
       );
 
-      if (result != null && result.files.single.path != null) {
+      if (result != null && result.files.single.name.isNotEmpty) {
         final fileName = result.files.single.name;
         
         if (kDebugMode) {
           print('PDF selected: $fileName');
+          print('Platform: ${kIsWeb ? 'Web' : 'Mobile'}');
         }
 
         final uploadedUrl = await PdfUploadUtils.uploadTripPdf(
           agencyId: widget.agencyId,
           tripId: widget.tripId,
-          filePath: result.files.single.path!,
+          filePath: kIsWeb ? null : result.files.single.path,
+          fileBytes: kIsWeb ? result.files.single.bytes : null,
           fileName: fileName,
         );
 

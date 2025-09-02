@@ -7,6 +7,7 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import '/utils/agency_utils.dart';
 import '/components/image_upload_widget.dart';
 import '/components/multiple_image_upload_widget.dart';
+import '/components/pdf_upload_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -34,6 +35,7 @@ class _EditTripWidgetState extends State<EditTripWidget> {
   bool _isLoading = true;
   String? _uploadedImageUrl;
   List<String> _galleryImages = [];
+  String? _uploadedPdfUrl;
   late final String _fallbackTripId;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -95,11 +97,17 @@ class _EditTripWidgetState extends State<EditTripWidget> {
     _model.descriptionController = TextEditingController(text: _trip!.description);
     _model.descriptionFocusNode = FocusNode();
 
+    _model.specificationsController = TextEditingController(text: _trip!.specifications);
+    _model.specificationsFocusNode = FocusNode();
+
     // Initialize uploaded image URL with existing image
     _uploadedImageUrl = _trip!.image.isNotEmpty ? _trip!.image : null;
     
     // Initialize gallery images with existing gallery
     _galleryImages = List.from(_trip!.gallery);
+
+    // Initialize PDF URL with existing PDF
+    _uploadedPdfUrl = _trip!.itineraryPdf.isNotEmpty ? _trip!.itineraryPdf : null;
 
     // Initialize itinerary controllers for each day
     _initializeItineraryControllers(_trip!.itenarary);
@@ -226,9 +234,11 @@ class _EditTripWidgetState extends State<EditTripWidget> {
         'price': price,
         'location': _model.locationController!.text.trim(),
         'description': _model.descriptionController!.text.trim(),
+        'specifications': _model.specificationsController!.text.trim(),
         'image': _uploadedImageUrl ?? '',
         'gallery': _galleryImages,
         'itenarary': days,
+        'itinerary_pdf': _uploadedPdfUrl ?? '',
         'start_date': startDate,
         'end_date': endDate,
         'quantity': quantity,
@@ -478,6 +488,16 @@ class _EditTripWidgetState extends State<EditTripWidget> {
                 validator: (value) => value?.isEmpty == true ? 'Please enter a description' : null,
               ),
               SizedBox(height: 16),
+              _buildFormField(
+                'What\'s Included',
+                _model.specificationsController!,
+                _model.specificationsFocusNode!,
+                Icons.checklist,
+                maxLines: 4,
+                hintText: 'e.g., Accommodation, Transportation, Meals, Tour guide, Entry fees...',
+                validator: null,
+              ),
+              SizedBox(height: 16),
               ImageUploadWidget(
                 agencyId: _trip?.agencyReference?.id ?? 'unknown',
                 tripId: _tripId,
@@ -501,6 +521,19 @@ class _EditTripWidgetState extends State<EditTripWidget> {
                 },
                 label: 'Additional Photos (Optional)',
                 initialImageUrls: _galleryImages,
+              ),
+              SizedBox(height: 16),
+              PdfUploadWidget(
+                agencyId: _trip?.agencyReference?.id ?? 'unknown',
+                tripId: _tripId,
+                initialPdfUrl: _uploadedPdfUrl,
+                onPdfUploaded: (url) {
+                  setState(() {
+                    _uploadedPdfUrl = url;
+                  });
+                },
+                label: 'Trip Itinerary PDF',
+                isRequired: false,
               ),
               SizedBox(height: 16),
               _buildItinerarySection(),
@@ -701,6 +734,7 @@ class _EditTripWidgetState extends State<EditTripWidget> {
     int maxLines = 1,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
+    String? hintText,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -735,7 +769,7 @@ class _EditTripWidgetState extends State<EditTripWidget> {
                 color: Color(0xFFD76B30),
                 size: 24,
               ),
-              hintText: 'Enter $label',
+              hintText: hintText ?? 'Enter $label',
               hintStyle: FlutterFlowTheme.of(context).bodyLarge.override(
                 color: FlutterFlowTheme.of(context).secondaryText,
                 fontSize: 16,

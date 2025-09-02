@@ -181,7 +181,7 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                                         size: 24.0,
                                       ),
                                       onPressed: () async {
-                                        context.pushNamed(HomeWidget.routeName);
+                                        context.safePop();
                                       },
                                     ),
                                     StreamBuilder<bool>(
@@ -1025,42 +1025,49 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                                     },
                                   ),
                                 ),
+                                
+                                // What's Included - Dynamic content
+                                if (tripRecord.specifications.isNotEmpty) ...[
+                                  const SizedBox(height: 24),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "What's Included",
+                                        style: FlutterFlowTheme.of(context)
+                                            .titleLarge
+                                            .override(
+                                              font: GoogleFonts.interTight(
+                                                fontWeight: FontWeight.w600,
+                                                fontStyle: FlutterFlowTheme.of(context)
+                                                    .titleLarge
+                                                    .fontStyle,
+                                              ),
+                                              letterSpacing: 0.0,
+                                              fontWeight: FontWeight.w600,
+                                              fontStyle: FlutterFlowTheme.of(context)
+                                                  .titleLarge
+                                                  .fontStyle,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      // Parse specifications and create rows
+                                      ...tripRecord.specifications
+                                          .split('\n')
+                                          .where((line) => line.trim().isNotEmpty)
+                                          .map((item) => Padding(
+                                            padding: const EdgeInsets.only(bottom: 12),
+                                            child: _includedRow(context, item.trim()),
+                                          )),
+                                    ],
+                                  ),
+                                ],
                               ],
                             );
                           },
                         ),
 
-                        // What's Included
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "What's Included",
-                              style: FlutterFlowTheme.of(context)
-                                  .titleLarge
-                                  .override(
-                                    font: GoogleFonts.interTight(
-                                      fontWeight: FontWeight.w600,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .titleLarge
-                                          .fontStyle,
-                                    ),
-                                    letterSpacing: 0.0,
-                                    fontWeight: FontWeight.w600,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .titleLarge
-                                        .fontStyle,
-                                  ),
-                            ),
-                            _includedRow(
-                                context, 'Professional mountain guide'),
-                            _includedRow(context, '4 nights accommodation'),
-                            _includedRow(context, 'All meals and snacks'),
-                            _includedRow(context, 'Safety equipment provided'),
-                            _includedRow(
-                                context, 'Transportation to/from base'),
-                          ].divide(const SizedBox(height: 12.0)),
-                        ),
+                        // What's Included section now moved inside StreamBuilder above
                       ]
                           .divide(const SizedBox(height: 24.0))
                           .addToStart(const SizedBox(height: 24.0)),
@@ -1075,7 +1082,7 @@ class _BookingsWidgetState extends State<BookingsWidget> {
           price: totalPrice,
           buttonText: 'Add to Cart',
           currencyCode: 'USD',
-          symbol: '\$',
+          symbol: '',
           icon: Icons.shopping_cart_outlined,
           onPressed: () async {
             // Check if user is signed in

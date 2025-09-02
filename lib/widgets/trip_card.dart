@@ -33,6 +33,7 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
   int _currentImageIndex = 0;
   late AnimationController _elevationController;
   late Animation<double> _elevationAnimation;
+  AgenciesRecord? _agencyData;
 
   List<String> get _images {
     final images = <String>[];
@@ -59,6 +60,22 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
       parent: _elevationController,
       curve: Curves.easeOut,
     ));
+    _loadAgencyData();
+  }
+
+  Future<void> _loadAgencyData() async {
+    if (widget.trip.hasAgencyReference() && widget.trip.agencyReference != null) {
+      try {
+        final doc = await widget.trip.agencyReference!.get();
+        if (doc.exists && mounted) {
+          setState(() {
+            _agencyData = AgenciesRecord.fromSnapshot(doc);
+          });
+        }
+      } catch (e) {
+        print('Error loading agency data: $e');
+      }
+    }
   }
 
   @override
@@ -256,6 +273,8 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
                         children: [
                           _buildWebTitle(),
                           const SizedBox(height: 8),
+                          _buildWebAgencyInfo(),
+                          const SizedBox(height: 8),
                           _buildWebLocation(),
                           const SizedBox(height: 12),
                           _buildWebRating(),
@@ -379,6 +398,66 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
       ),
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildWebAgencyInfo() {
+    if (_agencyData == null) {
+      return const SizedBox.shrink();
+    }
+    
+    return Row(
+      children: [
+        if (_agencyData!.logo.isNotEmpty)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: CachedNetworkImage(
+              imageUrl: _agencyData!.logo,
+              width: 24,
+              height: 24,
+              fit: BoxFit.cover,
+              errorWidget: (context, url, error) => Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD76B30),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.business,
+                  color: Colors.white,
+                  size: 14,
+                ),
+              ),
+            ),
+          )
+        else
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: const Color(0xFFD76B30),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.business,
+              color: Colors.white,
+              size: 14,
+            ),
+          ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            'Offered by ${_agencyData!.name}',
+            style: TextStyle(
+              color: const Color(0xFF6B7280),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 
@@ -653,6 +732,64 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
                         letterSpacing: 0.0,
                       ),
                     ),
+                    if (_agencyData != null)
+                      Padding(
+                        padding: EdgeInsetsDirectional.fromSTEB(0.0, 4.0, 0.0, 0.0),
+                        child: Row(
+                          children: [
+                            if (_agencyData!.logo.isNotEmpty)
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: CachedNetworkImage(
+                                  imageUrl: _agencyData!.logo,
+                                  width: 20,
+                                  height: 20,
+                                  fit: BoxFit.cover,
+                                  errorWidget: (context, url, error) => Container(
+                                    width: 20,
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      color: Color(0xFFD76B30),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(
+                                      Icons.business,
+                                      color: Colors.white,
+                                      size: 12,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else
+                              Container(
+                                width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  color: Color(0xFFD76B30),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  Icons.business,
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
+                              ),
+                            SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Offered by ${_agencyData!.name}',
+                                style: GoogleFonts.poppins(
+                                  color: FlutterFlowTheme.of(context).secondaryText,
+                                  fontSize: 12.0,
+                                  letterSpacing: 0.0,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     Padding(
                       padding: EdgeInsetsDirectional.fromSTEB(0.0, 4.0, 0.0, 0.0),
                       child: Text(

@@ -26,7 +26,9 @@ String get currentUserDisplayName =>
     currentUserDocument?.displayName ?? currentUser?.displayName ?? '';
 
 String get currentUserPhoto =>
-    currentUserDocument?.photoUrl ?? currentUser?.photoUrl ?? '';
+    currentUserDocument?.profilePhotoUrl ?? 
+    currentUserDocument?.photoUrl ?? 
+    currentUser?.photoUrl ?? '';
 
 String get currentPhoneNumber =>
     currentUserDocument?.phoneNumber ?? currentUser?.phoneNumber ?? '';

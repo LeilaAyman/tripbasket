@@ -12,6 +12,30 @@ service firebase.storage {
       allow read: if isOwner(uid) || (request.auth.token.admin == true);
     }
     
+    // Allow authenticated users to upload their profile pictures
+    match /profile_pictures/{fileName} {
+      allow read: if true; // Profile pictures can be read by anyone
+      allow write: if isSignedIn() 
+        && fileName.matches('profile_' + request.auth.uid + '_.*')
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+    
+    // Allow agencies to upload their logos
+    match /agency_pictures/{fileName} {
+      allow read: if true; // Agency logos can be read by anyone
+      allow write: if isSignedIn()
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+    
+    // Allow trip-related uploads (images, PDFs, gallery)
+    match /agencies/{agencyId}/trips/{tripId}/{category}/{fileName} {
+      allow read: if true; // Trip content can be read by anyone
+      allow write: if isSignedIn()
+        && request.resource.size < 10 * 1024 * 1024;
+    }
+    
     match /{allPaths=**} {
       allow read, write: if false;
     }

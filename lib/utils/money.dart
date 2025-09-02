@@ -5,7 +5,7 @@ enum AppCurrency { EGP, USD, EUR }
 
 String currencySymbol(AppCurrency c) => switch (c) {
   AppCurrency.EGP => 'EGP ',
-  AppCurrency.USD => '\$',
+  AppCurrency.USD => '',
   AppCurrency.EUR => '€',
 };
 

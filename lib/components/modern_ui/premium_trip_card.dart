@@ -38,6 +38,7 @@ class _PremiumTripCardState extends State<PremiumTripCard>
   late Animation<double> _shimmerAnimation;
   
   bool _isHovered = false;
+  AgenciesRecord? _agencyData;
 
   @override
   void initState() {
@@ -95,6 +96,22 @@ class _PremiumTripCardState extends State<PremiumTripCard>
     }
     
     _shimmerController.repeat();
+    _loadAgencyData();
+  }
+
+  Future<void> _loadAgencyData() async {
+    if (widget.trip.hasAgencyReference() && widget.trip.agencyReference != null) {
+      try {
+        final doc = await widget.trip.agencyReference!.get();
+        if (doc.exists && mounted) {
+          setState(() {
+            _agencyData = AgenciesRecord.fromSnapshot(doc);
+          });
+        }
+      } catch (e) {
+        print('Error loading agency data: $e');
+      }
+    }
   }
 
   @override
@@ -320,6 +337,61 @@ class _PremiumTripCardState extends State<PremiumTripCard>
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 8),
+        if (_agencyData != null) ...[
+          Row(
+            children: [
+              if (_agencyData!.logo.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: CachedNetworkImage(
+                    imageUrl: _agencyData!.logo,
+                    width: 20,
+                    height: 20,
+                    fit: BoxFit.cover,
+                    errorWidget: (context, url, error) => Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: AppDesignSystem.neutralWhite,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.business,
+                        color: AppDesignSystem.neutralGray800,
+                        size: 12,
+                      ),
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: AppDesignSystem.neutralWhite,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.business,
+                    color: AppDesignSystem.neutralGray800,
+                    size: 12,
+                  ),
+                ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Offered by ${_agencyData!.name}',
+                  style: AppDesignSystem.bodySmall.copyWith(
+                    color: AppDesignSystem.neutralGray200,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
         Row(
           children: [
             Icon(

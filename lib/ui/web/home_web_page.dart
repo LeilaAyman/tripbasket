@@ -437,12 +437,8 @@ class _HomeWebPageState extends State<HomeWebPage>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _buildNavButton('Home', () {
-                        // Scroll to top or refresh page
-                        _scrollController.animateTo(
-                          0,
-                          duration: Duration(milliseconds: 800),
-                          curve: Curves.easeInOut,
-                        );
+                        // Navigate to home route
+                        context.go('/');
                       }),
                       if (isDesktop) ...[
                         _buildNavButton('Destinations', () {
@@ -545,7 +541,10 @@ class _HomeWebPageState extends State<HomeWebPage>
                                 child: CircleAvatar(
                                   radius: 18,
                                   backgroundColor: const Color(0xFFD76B30),
-                                  child: Text(
+                                  backgroundImage: currentUserPhoto.isNotEmpty 
+                                      ? NetworkImage(currentUserPhoto) 
+                                      : null,
+                                  child: currentUserPhoto.isEmpty ? Text(
                                     currentUserDisplayName?.isNotEmpty == true && currentUserDisplayName!.isNotEmpty 
                                         ? currentUserDisplayName!.substring(0, 1).toUpperCase() 
                                         : (currentUserEmail.isNotEmpty ? currentUserEmail.substring(0, 1).toUpperCase() : 'U'),
@@ -554,7 +553,7 @@ class _HomeWebPageState extends State<HomeWebPage>
                                       fontWeight: FontWeight.w600,
                                       fontSize: 14,
                                     ),
-                                  ),
+                                  ) : null,
                                 ),
                               ),
                             ] else ...[
@@ -2173,14 +2172,17 @@ class _HomeWebPageState extends State<HomeWebPage>
           CircleAvatar(
             radius: 30,
             backgroundColor: const Color(0xFFD76B30),
-            child: Text(
+            backgroundImage: currentUserPhoto.isNotEmpty 
+                ? NetworkImage(currentUserPhoto) 
+                : null,
+            child: currentUserPhoto.isEmpty ? Text(
               getInitials(),
               style: GoogleFonts.poppins(
                 color: Colors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
-            ),
+            ) : null,
           ),
           const SizedBox(height: 24),
           Text(
@@ -2222,14 +2224,17 @@ class _HomeWebPageState extends State<HomeWebPage>
           CircleAvatar(
             radius: 30,
             backgroundColor: const Color(0xFFD76B30),
-            child: Text(
+            backgroundImage: currentUserPhoto.isNotEmpty 
+                ? NetworkImage(currentUserPhoto) 
+                : null,
+            child: currentUserPhoto.isEmpty ? Text(
               initials,
               style: GoogleFonts.poppins(
                 color: Colors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
-            ),
+            ) : null,
           ),
           const SizedBox(height: 24),
           Text(
