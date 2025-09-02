@@ -230,163 +230,168 @@ class _InteractiveTripRatingState extends State<InteractiveTripRating>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Rating stars row
-        Row(
+        // Rating and info row
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Interactive rating stars
-            AnimatedBuilder(
-              animation: _scaleAnimation,
-              builder: (context, child) {
-                return Transform.scale(
-                  scale: _scaleAnimation.value,
-                  child: RatingBar.builder(
-                    initialRating: _reviewCount > 0 ? _averageRating : 0.0,
-                    minRating: 1,
-                    direction: Axis.horizontal,
-                    allowHalfRating: true,
-                    itemCount: 5,
-                    itemPadding: EdgeInsets.symmetric(horizontal: 1.0),
-                    itemBuilder: (context, _) => Icon(
-                      Icons.star,
-                      color: Color(0xFFF2D83B), // Bright yellow stars
-                    ),
-                    unratedColor: FlutterFlowTheme.of(context).secondaryText.withOpacity(0.3),
-                    onRatingUpdate: _submitRating,
-                    tapOnlyMode: false,
-                    glow: true,
-                    glowColor: Color(0xFFF2D83B).withOpacity(0.3),
-                    itemSize: 18.0,
-                  ),
-                );
-              },
-            ),
-            
-            // Tap to rate indicator (only show if user hasn't rated and is logged in)
-            if (loggedIn && !_hasUserRated && _averageRating == 0) ...[
-              SizedBox(width: 4),
-              Icon(
-                Icons.touch_app,
-                size: 12,
-                color: FlutterFlowTheme.of(context).primary.withOpacity(0.6),
-              ),
-            ],
-            
-            SizedBox(width: 8),
-            
-            // Rating display and count
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            // First row: Stars and rating info
+            Row(
               children: [
-                if (_averageRating > 0) ...[
-                  Text(
-                    _averageRating.toStringAsFixed(1),
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.0,
-                      color: FlutterFlowTheme.of(context).primaryText,
-                    ),
-                  ),
-                  if (_reviewCount > 0)
-                    Text(
-                      '($_reviewCount ${_reviewCount == 1 ? 'review' : 'reviews'})',
-                      style: GoogleFonts.poppins(
-                        fontSize: 10,
-                        letterSpacing: 0.0,
-                        color: FlutterFlowTheme.of(context).secondaryText,
+                // Interactive rating stars
+                AnimatedBuilder(
+                  animation: _scaleAnimation,
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: _scaleAnimation.value,
+                      child: RatingBar.builder(
+                        initialRating: _reviewCount > 0 ? _averageRating : 0.0,
+                        minRating: 1,
+                        direction: Axis.horizontal,
+                        allowHalfRating: true,
+                        itemCount: 5,
+                        itemPadding: EdgeInsets.symmetric(horizontal: 1.0),
+                        itemBuilder: (context, _) => Icon(
+                          Icons.star,
+                          color: Color(0xFFF2D83B), // Bright yellow stars
+                        ),
+                        unratedColor: FlutterFlowTheme.of(context).secondaryText.withOpacity(0.3),
+                        onRatingUpdate: _submitRating,
+                        tapOnlyMode: false,
+                        glow: true,
+                        glowColor: Color(0xFFF2D83B).withOpacity(0.3),
+                        itemSize: 18.0,
                       ),
-                    ),
-                ] else ...[
-                  Text(
-                    'Be the first to rate!',
-                    style: GoogleFonts.poppins(
-                      fontSize: 9,
-                      fontStyle: FontStyle.italic,
-                      letterSpacing: 0.0,
-                      color: FlutterFlowTheme.of(context).primary,
-                    ),
+                    );
+                  },
+                ),
+                
+                // Tap to rate indicator (only show if user hasn't rated and is logged in)
+                if (loggedIn && !_hasUserRated && _averageRating == 0) ...[
+                  SizedBox(width: 4),
+                  Icon(
+                    Icons.touch_app,
+                    size: 12,
+                    color: FlutterFlowTheme.of(context).primary.withOpacity(0.6),
                   ),
                 ],
+                
+                SizedBox(width: 8),
+                
+                // Rating display and count
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_averageRating > 0) ...[
+                        Text(
+                          _averageRating.toStringAsFixed(1),
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.0,
+                            color: FlutterFlowTheme.of(context).primaryText,
+                          ),
+                        ),
+                        if (_reviewCount > 0)
+                          Text(
+                            '($_reviewCount ${_reviewCount == 1 ? 'review' : 'reviews'})',
+                            style: GoogleFonts.poppins(
+                              fontSize: 10,
+                              letterSpacing: 0.0,
+                              color: FlutterFlowTheme.of(context).secondaryText,
+                            ),
+                          ),
+                      ],
+                    ],
+                  ),
+                ),
               ],
             ),
             
-            Spacer(),
-            
-            // View Reviews button
-            if (widget.showReviewsButton && _reviewCount > 0)
-              InkWell(
-                onTap: widget.onViewReviews ?? () => _showReviewsDialog(),
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: FlutterFlowTheme.of(context).primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: FlutterFlowTheme.of(context).primary.withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.rate_review,
-                        size: 14,
-                        color: FlutterFlowTheme.of(context).primary,
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        'Reviews',
-                        style: GoogleFonts.poppins(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.0,
-                          color: FlutterFlowTheme.of(context).primary,
+            // Second row: Action buttons (only if needed)
+            if ((widget.showReviewsButton && _reviewCount > 0) || loggedIn) ...[
+              SizedBox(height: 6),
+              Row(
+                children: [
+                  // View Reviews button
+                  if (widget.showReviewsButton && _reviewCount > 0)
+                    InkWell(
+                      onTap: widget.onViewReviews ?? () => _showReviewsDialog(),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: FlutterFlowTheme.of(context).primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: FlutterFlowTheme.of(context).primary.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.rate_review,
+                              size: 12,
+                              color: FlutterFlowTheme.of(context).primary,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Review',
+                              style: GoogleFonts.poppins(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.0,
+                                color: FlutterFlowTheme.of(context).primary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-            
-            // Write Review button
-            if (loggedIn)
-              SizedBox(width: 8),
-            if (loggedIn)
-              InkWell(
-                onTap: () => _showWriteReviewDialog(),
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Color(0xFFF2D83B).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Color(0xFFF2D83B).withOpacity(0.5),
-                      width: 1,
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.edit,
-                        size: 12,
-                        color: Color(0xFFD76B30),
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        _hasUserRated ? 'Edit' : 'Write',
-                        style: GoogleFonts.poppins(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.0,
-                          color: Color(0xFFD76B30),
+                  
+                  // Write Review button
+                  if (loggedIn) ...[
+                    if (widget.showReviewsButton && _reviewCount > 0)
+                      SizedBox(width: 8),
+                    InkWell(
+                      onTap: () => _showWriteReviewDialog(),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Color(0xFFF2D83B).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Color(0xFFF2D83B).withOpacity(0.5),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.edit,
+                              size: 12,
+                              color: Color(0xFFD76B30),
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              _hasUserRated ? 'Edit' : 'Write',
+                              style: GoogleFonts.poppins(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.0,
+                                color: Color(0xFFD76B30),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  ],
+                ],
               ),
+            ],
           ],
         ),
         
