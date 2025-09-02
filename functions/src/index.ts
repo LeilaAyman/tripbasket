@@ -1,7 +1,108 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import * as nodemailer from "nodemailer";
 
 admin.initializeApp();
+
+// Email configuration - you'll need to set these up in Firebase Functions config
+const gmailEmail = functions.config().gmail?.email;
+const gmailPassword = functions.config().gmail?.password;
+
+// Create reusable transporter object using Gmail SMTP
+const mailTransporter = gmailEmail && gmailPassword ? nodemailer.createTransporter({
+  service: 'gmail',
+  auth: {
+    user: gmailEmail,
+    pass: gmailPassword
+  }
+}) : null;
+
+// Send verification email for 2FA
+export const send2FAEmail = functions.https.onCall(async (data, context) => {
+  try {
+    // Verify user is authenticated
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    const { email, code } = data;
+
+    if (!email || !code) {
+      throw new functions.https.HttpsError('invalid-argument', 'Email and code are required');
+    }
+
+    // Check if email configuration is available
+    if (!mailTransporter) {
+      console.log(`⚠️ Email not configured, code for ${email}: ${code}`);
+      // For development - show in a more user-friendly way
+      return { 
+        success: true, 
+        message: 'Email service not configured. Check console for verification code.',
+        developmentCode: code // Only for development
+      };
+    }
+
+    // Compose email
+    const mailOptions = {
+      from: gmailEmail,
+      to: email,
+      subject: 'TripBasket - Two-Factor Authentication Code',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #D76B30, #F2D83B); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0;">TripBasket</h1>
+            <p style="color: white; margin: 10px 0 0 0;">Your Travel Verification Code</p>
+          </div>
+          
+          <div style="padding: 30px; background: #f9f9f9;">
+            <h2 style="color: #333;">Security Verification Required</h2>
+            <p style="color: #666; line-height: 1.6;">
+              We received a request to verify your account. Please use the verification code below:
+            </p>
+            
+            <div style="background: white; border: 2px solid #D76B30; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
+              <h1 style="color: #D76B30; font-size: 32px; letter-spacing: 4px; margin: 0;">${code}</h1>
+            </div>
+            
+            <p style="color: #666; line-height: 1.6;">
+              This code will expire in <strong>10 minutes</strong> for security purposes.
+            </p>
+            
+            <p style="color: #666; line-height: 1.6;">
+              If you didn't request this verification, please ignore this email or contact our support team.
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+            
+            <p style="color: #999; font-size: 12px; text-align: center;">
+              This email was sent by TripBasket Security System<br>
+              Please do not reply to this email.
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    // Send email
+    await mailTransporter.sendMail(mailOptions);
+    
+    console.log(`✅ 2FA email sent successfully to ${email}`);
+    
+    return { 
+      success: true, 
+      message: 'Verification code sent successfully'
+    };
+
+  } catch (error) {
+    console.error('❌ Error sending 2FA email:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to send verification email');
+  }
+});
 
 // Award 100 loyalty points when a booking is created with completed payment
 export const onBookingCreate_awardPoints = functions.firestore

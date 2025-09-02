@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '/auth/firebase_auth/auth_util.dart';
@@ -33,13 +34,33 @@ class TwoFactorService {
         'used': false,
       });
 
-      // In a real app, you would send this via email service
-      // For now, we'll show it in a debug dialog
-      print('Verification code for $email: $code');
-
-      return true;
+      // Send email using Cloud Function
+      try {
+        final functions = FirebaseFunctions.instance;
+        final callable = functions.httpsCallable('send2FAEmail');
+        
+        final result = await callable.call({
+          'email': email,
+          'code': code,
+        });
+        
+        final data = result.data as Map<String, dynamic>;
+        print('✅ Email service response: ${data['message']}');
+        
+        // For development mode when email isn't configured
+        if (data.containsKey('developmentCode')) {
+          print('🔧 Development mode - Verification code: ${data['developmentCode']}');
+        }
+        
+        return data['success'] == true;
+      } catch (emailError) {
+        print('❌ Error calling email service: $emailError');
+        // Fallback: show code in console for development
+        print('🔧 Fallback - Verification code for $email: $code');
+        return true; // Still return true so the flow continues
+      }
     } catch (e) {
-      print('Error sending verification code: $e');
+      print('❌ Error in sendVerificationCode: $e');
       return false;
     }
   }
