@@ -57,33 +57,65 @@ class _LiveChatWidgetState extends State<LiveChatWidget> {
   }
 
   Future<void> _sendMessage(String message, {bool isAdmin = false}) async {
-    if (message.trim().isEmpty || _chatRoomId == null) return;
+    if (message.trim().isEmpty) return;
 
+    if (isAdmin) {
+      // Admin welcome message - just add to local messages
+      await FirebaseFirestore.instance
+          .collection('chat_rooms')
+          .doc(_chatRoomId)
+          .collection('messages')
+          .add({
+        'message': message,
+        'senderId': 'support',
+        'senderName': 'Support Team',
+        'isAdmin': true,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+      return;
+    }
+
+    // User message - save to database for agency dashboard and send email
+    await FirebaseFirestore.instance
+        .collection('support_messages')
+        .add({
+      'message': message,
+      'userId': currentUserUid,
+      'userEmail': currentUserEmail,
+      'userName': currentUserDisplayName ?? currentUserEmail,
+      'timestamp': FieldValue.serverTimestamp(),
+      'status': 'new',
+      'chatRoomId': _chatRoomId,
+    });
+
+    // Also add to chat room for user's view
     await FirebaseFirestore.instance
         .collection('chat_rooms')
         .doc(_chatRoomId)
         .collection('messages')
         .add({
       'message': message,
-      'senderId': isAdmin ? 'support' : currentUserUid,
-      'senderName': isAdmin ? 'Support Team' : currentUserDisplayName ?? currentUserEmail,
-      'isAdmin': isAdmin,
+      'senderId': currentUserUid,
+      'senderName': currentUserDisplayName ?? currentUserEmail,
+      'isAdmin': false,
       'timestamp': FieldValue.serverTimestamp(),
     });
 
-    // Update last message in chat room
+    // Add confirmation message for user
     await FirebaseFirestore.instance
         .collection('chat_rooms')
         .doc(_chatRoomId)
-        .update({
-      'lastMessage': message,
-      'lastMessageTime': FieldValue.serverTimestamp(),
+        .collection('messages')
+        .add({
+      'message': 'Thank you for your message. Our support team will respond to your email at ${currentUserEmail} within 24 hours.',
+      'senderId': 'support',
+      'senderName': 'Support Team',
+      'isAdmin': true,
+      'timestamp': FieldValue.serverTimestamp(),
     });
 
-    if (!isAdmin) {
-      _messageController.clear();
-      _scrollToBottom();
-    }
+    _messageController.clear();
+    _scrollToBottom();
   }
 
   void _scrollToBottom() {

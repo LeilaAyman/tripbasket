@@ -8,6 +8,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/utils/agency_utils.dart';
 import '/utils/chat_cleanup_utils.dart';
+import '/services/user_management_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -286,6 +287,7 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
             child: ListView(
               children: [
                 _buildSidebarItem('overview', Icons.dashboard, 'Overview'),
+                _buildSidebarItem('users', Icons.people, 'Users'),
                 _buildSidebarItem('agencies', Icons.business, 'Agencies'),
                 _buildSidebarItem('trips', Icons.travel_explore, 'All Trips'),
                 _buildSidebarItem('bookings', Icons.book_online, 'All Bookings'),
@@ -335,6 +337,7 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
         child: Row(
           children: [
             _buildMobileTab('overview', 'Overview'),
+            _buildMobileTab('users', 'Users'),
             _buildMobileTab('agencies', 'Agencies'),
             _buildMobileTab('trips', 'Trips'),
             _buildMobileTab('bookings', 'Bookings'),
@@ -438,6 +441,8 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
 
   String _getSearchHint() {
     switch (_selectedTab) {
+      case 'users':
+        return 'users by name or email';
       case 'agencies':
         return 'agencies by name or email';
       case 'trips':
@@ -455,6 +460,8 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
     switch (_selectedTab) {
       case 'overview':
         return _buildOverviewTab();
+      case 'users':
+        return _buildUsersTab();
       case 'agencies':
         return _buildAgenciesTab();
       case 'trips':
@@ -1915,5 +1922,314 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
         );
       }
     }
+  }
+
+  Widget _buildUsersTab() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'User Management',
+              style: FlutterFlowTheme.of(context).headlineSmall.override(
+                color: const Color(0xFF1A237E),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.warning, size: 16, color: Colors.red),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Admin Only',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .orderBy('created_time', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text('Error: ${snapshot.error}'),
+                );
+              }
+
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final users = snapshot.data?.docs ?? [];
+              final filteredUsers = users.where((doc) {
+                if (_searchQuery.isEmpty) return true;
+                final userData = doc.data() as Map<String, dynamic>;
+                final email = userData['email']?.toString().toLowerCase() ?? '';
+                final displayName = userData['display_name']?.toString().toLowerCase() ?? '';
+                final name = userData['name']?.toString().toLowerCase() ?? '';
+                return email.contains(_searchQuery.toLowerCase()) ||
+                       displayName.contains(_searchQuery.toLowerCase()) ||
+                       name.contains(_searchQuery.toLowerCase());
+              }).toList();
+
+              return Column(
+                children: [
+                  // Stats Row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Total Users',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.blue[700],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${users.length}',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  color: Colors.blue[700],
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.green.withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Filtered Results',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.green[700],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${filteredUsers.length}',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  color: Colors.green[700],
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Users List
+                  Expanded(
+                    child: filteredUsers.isEmpty
+                        ? const Center(
+                            child: Text('No users found'),
+                          )
+                        : ListView.builder(
+                            itemCount: filteredUsers.length,
+                            itemBuilder: (context, index) {
+                              final userDoc = filteredUsers[index];
+                              final userData = userDoc.data() as Map<String, dynamic>;
+                              return _buildUserCard(userDoc.id, userData);
+                            },
+                          ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUserCard(String uid, Map<String, dynamic> userData) {
+    final email = userData['email'] ?? 'No email';
+    final displayName = userData['display_name'] ?? '';
+    final name = userData['name'] ?? '';
+    final phoneNumber = userData['phone_number'] ?? '';
+    final roles = List<String>.from(userData['role'] ?? []);
+    final createdTime = userData['created_time'] as Timestamp?;
+    final loyaltyPoints = userData['loyaltyPoints'] ?? 0;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: FlutterFlowTheme.of(context).secondaryBackground,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: FlutterFlowTheme.of(context).alternate,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Row
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        displayName.isNotEmpty ? displayName : name.isNotEmpty ? name : email.split('@').first,
+                        style: FlutterFlowTheme.of(context).titleMedium.override(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        email,
+                        style: FlutterFlowTheme.of(context).bodyMedium.override(
+                          color: FlutterFlowTheme.of(context).secondaryText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Roles
+                if (roles.isNotEmpty) ...[
+                  const SizedBox(width: 12),
+                  Wrap(
+                    spacing: 4,
+                    children: roles.map((role) {
+                      final isAdmin = role.toLowerCase() == 'admin';
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isAdmin ? Colors.red.withOpacity(0.1) : Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isAdmin ? Colors.red.withOpacity(0.3) : Colors.blue.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Text(
+                          role.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: isAdmin ? Colors.red[700] : Colors.blue[700],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+                // Delete Button
+                const SizedBox(width: 12),
+                IconButton(
+                  onPressed: () {
+                    UserManagementService.showDeleteUserDialog(
+                      context,
+                      email: email,
+                      uid: uid,
+                      onDeleted: () {
+                        // Refresh will happen automatically due to StreamBuilder
+                        setState(() {});
+                      },
+                    );
+                  },
+                  icon: Icon(
+                    Icons.delete_forever,
+                    color: Colors.red,
+                    size: 20,
+                  ),
+                  tooltip: 'Delete User Completely',
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // Details Row
+            Row(
+              children: [
+                if (phoneNumber.isNotEmpty) ...[
+                  Icon(Icons.phone, size: 14, color: FlutterFlowTheme.of(context).secondaryText),
+                  const SizedBox(width: 4),
+                  Text(
+                    phoneNumber,
+                    style: FlutterFlowTheme.of(context).bodySmall,
+                  ),
+                  const SizedBox(width: 16),
+                ],
+                Icon(Icons.stars, size: 14, color: Colors.amber),
+                const SizedBox(width: 4),
+                Text(
+                  '$loyaltyPoints pts',
+                  style: FlutterFlowTheme.of(context).bodySmall,
+                ),
+                const SizedBox(width: 16),
+                Icon(Icons.calendar_today, size: 14, color: FlutterFlowTheme.of(context).secondaryText),
+                const SizedBox(width: 4),
+                Text(
+                  createdTime != null 
+                    ? DateFormat('MMM dd, yyyy').format(createdTime.toDate())
+                    : 'Unknown',
+                  style: FlutterFlowTheme.of(context).bodySmall,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

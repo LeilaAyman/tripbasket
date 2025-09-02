@@ -194,73 +194,94 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
           },
         ),
       ),
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            isAdmin ? 'Agency Dashboard (Admin)' : 'Agency Dashboard',
-            style: FlutterFlowTheme.of(context).headlineMedium.override(
-              color: Colors.white,
-              fontSize: 24,
-              letterSpacing: 0.5,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          Text(
-            isAdmin ? 'Manage all agency trips and performance' : 'Manage your trips and performance',
-            style: FlutterFlowTheme.of(context).bodyMedium.override(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 14,
-              letterSpacing: 0.2,
-            ),
-          ),
-        ],
+      title: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = MediaQuery.of(context).size.width < 768;
+          
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                isAdmin ? (isMobile ? 'Dashboard (Admin)' : 'Agency Dashboard (Admin)') 
+                       : (isMobile ? 'Dashboard' : 'Agency Dashboard'),
+                style: FlutterFlowTheme.of(context).headlineMedium.override(
+                  color: Colors.white,
+                  fontSize: isMobile ? 18 : 24,
+                  letterSpacing: 0.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (!isMobile)
+                Text(
+                  isAdmin ? 'Manage all agency trips and performance' : 'Manage your trips and performance',
+                  style: FlutterFlowTheme.of(context).bodyMedium.override(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 14,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+            ],
+          );
+        },
       ),
       actions: [
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          child: FlutterFlowIconButton(
-            borderColor: Colors.white.withOpacity(0.2),
-            borderRadius: 12,
-            borderWidth: 1,
-            buttonSize: 48,
-            icon: const Icon(
-              Icons.sync,
-              color: Colors.white,
-              size: 24,
-            ),
-            onPressed: () async {
-              // Temporary migration button
-              try {
-                await MigrationHelper.checkMigrationStatus();
-                await MigrationHelper.migrateBookingAgencyReferences();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Migration completed! Check console for details.')),
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Migration failed: $e')),
-                );
-              }
-            },
-          ),
-        ),
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          child: FlutterFlowIconButton(
-            borderColor: Colors.white.withOpacity(0.2),
-            borderRadius: 12,
-            borderWidth: 1,
-            buttonSize: 48,
-            icon: const Icon(
-              Icons.add,
-              color: Colors.white,
-              size: 24,
-            ),
-            onPressed: () async {
-              context.pushNamed('create_trip');
-            },
-          ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = MediaQuery.of(context).size.width < 768;
+            final buttonSize = isMobile ? 40.0 : 48.0;
+            final iconSize = isMobile ? 20.0 : 24.0;
+            
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  margin: EdgeInsets.only(right: isMobile ? 4 : 8),
+                  child: FlutterFlowIconButton(
+                    borderColor: Colors.white.withOpacity(0.2),
+                    borderRadius: isMobile ? 8 : 12,
+                    borderWidth: 1,
+                    buttonSize: buttonSize,
+                    icon: Icon(
+                      Icons.sync,
+                      color: Colors.white,
+                      size: iconSize,
+                    ),
+                    onPressed: () async {
+                      // Temporary migration button
+                      try {
+                        await MigrationHelper.checkMigrationStatus();
+                        await MigrationHelper.migrateBookingAgencyReferences();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Migration completed! Check console for details.')),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Migration failed: $e')),
+                        );
+                      }
+                    },
+                  ),
+                ),
+                Container(
+                  margin: EdgeInsets.only(right: isMobile ? 8 : 8),
+                  child: FlutterFlowIconButton(
+                    borderColor: Colors.white.withOpacity(0.2),
+                    borderRadius: isMobile ? 8 : 12,
+                    borderWidth: 1,
+                    buttonSize: buttonSize,
+                    icon: Icon(
+                      Icons.add,
+                      color: Colors.white,
+                      size: iconSize,
+                    ),
+                    onPressed: () async {
+                      context.pushNamed('create_trip');
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ],
       centerTitle: false,
@@ -279,7 +300,8 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
           return SingleChildScrollView(
             child: Padding(
               padding: EdgeInsets.symmetric(
-                horizontal: isDesktop ? 32 : (isTablet ? 24 : 16),
+                horizontal: isDesktop ? 32 : (isTablet ? 24 : 12),
+                vertical: isMobile ? 8 : 0,
               ),
               child: Column(
                 children: [
@@ -561,62 +583,133 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
             children: [
               _buildAgencyInfoCard(),
               const SizedBox(height: 16),
-              Container(
-                constraints: BoxConstraints(
-                  minHeight: MediaQuery.of(context).size.height * 0.12, // 12% of screen height
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildEnhancedStatCard(
-                        'Total Trips',
-                        trips.length.toString(),
-                        Icons.flight_takeoff,
-                        const [Color(0xFFD76B30), Color(0xFFDBA237)],
-                        'trips',
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildEnhancedStatCard(
-                        'Active',
-                        activeTrips.toString(),
-                        Icons.check_circle,
-                        const [Color(0xFFD76B30), Color(0xFFE8A657)],
-                        'trips',
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FutureBuilder<double>(
-                        future: AgencyUtils.calculateRealTotalRevenue(
-                          _isCurrentUserAdmin() ? null : AgencyUtils.getCurrentAgencyRef(), 
-                          _isCurrentUserAdmin()
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isMobile = constraints.maxWidth < 768;
+                  
+                  if (isMobile) {
+                    // Mobile: 2x2 Grid Layout
+                    return Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildEnhancedStatCard(
+                                'Total Trips',
+                                trips.length.toString(),
+                                Icons.flight_takeoff,
+                                const [Color(0xFFD76B30), Color(0xFFDBA237)],
+                                'trips',
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _buildEnhancedStatCard(
+                                'Active',
+                                activeTrips.toString(),
+                                Icons.check_circle,
+                                const [Color(0xFFD76B30), Color(0xFFE8A657)],
+                                'trips',
+                              ),
+                            ),
+                          ],
                         ),
-                        builder: (context, revenueSnapshot) {
-                          final totalRevenue = revenueSnapshot.data ?? 0.0;
-                          return _buildEnhancedStatCard(
-                            'Revenue',
-                            _currency.format(totalRevenue.toInt()),
-                            Icons.attach_money,
-                            const [Color(0xFFDBA237), Color(0xFFD76B30)],
-                            'total',
-                          );
-                        },
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FutureBuilder<double>(
+                                future: AgencyUtils.calculateRealTotalRevenue(
+                                  _isCurrentUserAdmin() ? null : AgencyUtils.getCurrentAgencyRef(), 
+                                  _isCurrentUserAdmin()
+                                ),
+                                builder: (context, revenueSnapshot) {
+                                  final totalRevenue = revenueSnapshot.data ?? 0.0;
+                                  return _buildEnhancedStatCard(
+                                    'Revenue',
+                                    _currency.format(totalRevenue.toInt()),
+                                    Icons.attach_money,
+                                    const [Color(0xFFDBA237), Color(0xFFD76B30)],
+                                    'total',
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _buildEnhancedStatCard(
+                                'Rating',
+                                avgRating.toStringAsFixed(1),
+                                Icons.star,
+                                const [Color(0xFFE8A657), Color(0xFFDBA237)],
+                                'avg',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  } else {
+                    // Desktop/Tablet: Single Row Layout
+                    return Container(
+                      constraints: BoxConstraints(
+                        minHeight: MediaQuery.of(context).size.height * 0.12,
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildEnhancedStatCard(
-                        'Rating',
-                        avgRating.toStringAsFixed(1),
-                        Icons.star,
-                        const [Color(0xFFE8A657), Color(0xFFDBA237)],
-                        'avg',
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildEnhancedStatCard(
+                              'Total Trips',
+                              trips.length.toString(),
+                              Icons.flight_takeoff,
+                              const [Color(0xFFD76B30), Color(0xFFDBA237)],
+                              'trips',
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildEnhancedStatCard(
+                              'Active',
+                              activeTrips.toString(),
+                              Icons.check_circle,
+                              const [Color(0xFFD76B30), Color(0xFFE8A657)],
+                              'trips',
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: FutureBuilder<double>(
+                              future: AgencyUtils.calculateRealTotalRevenue(
+                                _isCurrentUserAdmin() ? null : AgencyUtils.getCurrentAgencyRef(), 
+                                _isCurrentUserAdmin()
+                              ),
+                              builder: (context, revenueSnapshot) {
+                                final totalRevenue = revenueSnapshot.data ?? 0.0;
+                                return _buildEnhancedStatCard(
+                                  'Revenue',
+                                  _currency.format(totalRevenue.toInt()),
+                                  Icons.attach_money,
+                                  const [Color(0xFFDBA237), Color(0xFFD76B30)],
+                                  'total',
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildEnhancedStatCard(
+                              'Rating',
+                              avgRating.toStringAsFixed(1),
+                              Icons.star,
+                              const [Color(0xFFE8A657), Color(0xFFDBA237)],
+                              'avg',
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
+                    );
+                  }
+                },
               ),
             ],
           );
@@ -922,7 +1015,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
       );
       
       // Navigate to home page to see customer view
-      Navigator.pushNamed(context, '/home');
+      context.pushNamed('home');
     }
   }
 
@@ -2780,28 +2873,50 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
   }
 
   Widget _buildFloatingActionButton() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8, right: 8),
-      child: FloatingActionButton.extended(
-        onPressed: () async {
-          context.pushNamed('create_trip');
-        },
-        backgroundColor: const Color(0xFFD76B30),
-        elevation: 8,
-        icon: const Icon(
-          Icons.add,
-          color: Colors.white,
-          size: 24,
-        ),
-        label: const Text(
-          'New Trip',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = MediaQuery.of(context).size.width < 768;
+        
+        return Container(
+          margin: EdgeInsets.only(
+            bottom: isMobile ? 16 : 8, 
+            right: isMobile ? 16 : 8
           ),
-        ),
-      ),
+          child: isMobile
+              ? FloatingActionButton(
+                  onPressed: () async {
+                    context.pushNamed('create_trip');
+                  },
+                  backgroundColor: const Color(0xFFD76B30),
+                  elevation: 6,
+                  child: const Icon(
+                    Icons.add,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                )
+              : FloatingActionButton.extended(
+                  onPressed: () async {
+                    context.pushNamed('create_trip');
+                  },
+                  backgroundColor: const Color(0xFFD76B30),
+                  elevation: 8,
+                  icon: const Icon(
+                    Icons.add,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                  label: const Text(
+                    'New Trip',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+        );
+      },
     );
   }
 

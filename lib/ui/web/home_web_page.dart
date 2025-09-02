@@ -2324,7 +2324,7 @@ class _HomeWebPageState extends State<HomeWebPage>
                         _buildContactMethod(
                           Icons.email_outlined,
                           'Email Support',
-                          'support@tripsbasket.com',
+                          'info@tripsbasket.com',
                           'Response within 2 hours',
                           const [Color(0xFFFF9800), Color(0xFFFFB74D)],
                           () => _sendEmail(),
@@ -2699,7 +2699,7 @@ class _HomeWebPageState extends State<HomeWebPage>
   }
 
   void _sendEmail() async {
-    final url = Uri.parse('mailto:support@tripsbasket.com?subject=Support Request');
+    final url = Uri.parse('mailto:info@tripsbasket.com?subject=Support Request');
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
     }

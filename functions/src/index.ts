@@ -295,3 +295,119 @@ export const removeExpiredBookingsManually = functions.https.onCall(async (data,
     throw new functions.https.HttpsError('internal', 'Failed to remove expired bookings');
   }
 });
+
+// Admin function to completely delete a user (both Auth and Firestore)
+export const deleteUserCompletely = functions.https.onCall(async (data, context) => {
+  try {
+    // Check if the caller is authenticated and is an admin
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Get the caller's user document to check admin role
+    const callerDoc = await admin.firestore()
+      .doc(`users/${context.auth.uid}`)
+      .get();
+
+    if (!callerDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'User document not found');
+    }
+
+    const callerData = callerDoc.data();
+    const isAdmin = callerData?.role?.includes('admin') || false;
+
+    if (!isAdmin) {
+      throw new functions.https.HttpsError('permission-denied', 'Only admins can delete users');
+    }
+
+    const { email, uid } = data;
+
+    if (!email && !uid) {
+      throw new functions.https.HttpsError('invalid-argument', 'Either email or uid must be provided');
+    }
+
+    let userToDelete;
+
+    try {
+      // Get user by email or uid
+      if (uid) {
+        userToDelete = await admin.auth().getUser(uid);
+      } else if (email) {
+        userToDelete = await admin.auth().getUserByEmail(email);
+      }
+    } catch (authError) {
+      console.log(`User not found in Firebase Auth: ${email || uid}`);
+    }
+
+    const deletionResults: {
+      authDeleted: boolean;
+      firestoreDeleted: boolean;
+      userEmail: string;
+      userUid: string;
+      bookingsDeleted?: number;
+    } = {
+      authDeleted: false,
+      firestoreDeleted: false,
+      userEmail: email || userToDelete?.email || 'unknown',
+      userUid: uid || userToDelete?.uid || 'unknown'
+    };
+
+    // Delete from Firebase Auth
+    if (userToDelete) {
+      try {
+        await admin.auth().deleteUser(userToDelete.uid);
+        deletionResults.authDeleted = true;
+        console.log(`✅ Deleted user from Firebase Auth: ${userToDelete.email}`);
+      } catch (authDeleteError) {
+        console.error(`❌ Failed to delete user from Auth: ${authDeleteError}`);
+      }
+    }
+
+    // Delete from Firestore
+    const firestoreUid = uid || userToDelete?.uid;
+    if (firestoreUid) {
+      try {
+        await admin.firestore().doc(`users/${firestoreUid}`).delete();
+        deletionResults.firestoreDeleted = true;
+        console.log(`✅ Deleted user document from Firestore: ${firestoreUid}`);
+      } catch (firestoreDeleteError) {
+        console.error(`❌ Failed to delete user from Firestore: ${firestoreDeleteError}`);
+      }
+    }
+
+    // Also check if there are any related data to clean up
+    if (firestoreUid) {
+      // Delete user's bookings
+      const bookingsSnapshot = await admin.firestore()
+        .collection('bookings')
+        .where('user_reference', '==', admin.firestore().doc(`users/${firestoreUid}`))
+        .get();
+
+      const batch = admin.firestore().batch();
+      let bookingsDeleted = 0;
+
+      bookingsSnapshot.forEach(doc => {
+        batch.delete(doc.ref);
+        bookingsDeleted++;
+      });
+
+      if (bookingsDeleted > 0) {
+        await batch.commit();
+        console.log(`✅ Deleted ${bookingsDeleted} bookings for user ${firestoreUid}`);
+      }
+
+      deletionResults.bookingsDeleted = bookingsDeleted;
+    }
+
+    return {
+      success: true,
+      message: `User deletion completed`,
+      details: deletionResults
+    };
+
+  } catch (error) {
+    console.error("❌ Error in deleteUserCompletely:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new functions.https.HttpsError('internal', `Failed to delete user: ${errorMessage}`);
+  }
+});

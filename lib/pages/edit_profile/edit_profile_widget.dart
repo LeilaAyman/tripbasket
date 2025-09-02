@@ -5,8 +5,10 @@ import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
+import '/services/image_upload_service.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'edit_profile_model.dart';
 export 'edit_profile_model.dart';
 
@@ -35,6 +37,11 @@ class _EditProfileWidgetState extends State<EditProfileWidget> {
     );
     _model.displayNameFocusNode ??= FocusNode();
 
+    _model.nameTextController ??= TextEditingController(
+      text: currentUserDocument?.name ?? ''
+    );
+    _model.nameFocusNode ??= FocusNode();
+
     _model.emailTextController ??= TextEditingController(
       text: currentUserEmail
     );
@@ -50,6 +57,51 @@ class _EditProfileWidgetState extends State<EditProfileWidget> {
   void dispose() {
     _model.dispose();
     super.dispose();
+  }
+
+  Future<void> _uploadProfilePicture() async {
+    final source = await ImageUploadService.showImageSourceDialog(context);
+    if (source == null) return;
+
+    final imageFile = await ImageUploadService.pickImage(
+      source: source,
+      imageQuality: 80,
+      maxWidth: 500,
+      maxHeight: 500,
+    );
+
+    if (imageFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No image selected'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    ImageUploadService.showUploadProgressDialog(
+      context,
+      uploadFuture: ImageUploadService.uploadUserProfilePicture(imageFile),
+      onSuccess: (downloadUrl) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Profile picture updated successfully!'),
+            backgroundColor: Color(0xFF6B73FF),
+          ),
+        );
+        // Refresh the UI
+        setState(() {});
+      },
+      onError: (error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to upload image: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _saveProfile() async {
@@ -74,6 +126,7 @@ class _EditProfileWidgetState extends State<EditProfileWidget> {
       if (currentUserDocument != null) {
         await currentUserDocument!.reference.update({
           'display_name': _model.displayNameTextController.text,
+          'name': _model.nameTextController.text,
           'phone_number': _model.phoneTextController.text,
         });
       }
@@ -171,12 +224,7 @@ class _EditProfileWidgetState extends State<EditProfileWidget> {
                     children: [
                       GestureDetector(
                         onTap: () async {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Photo upload feature coming soon!'),
-                              backgroundColor: Color(0xFF6B73FF),
-                            ),
-                          );
+                          await _uploadProfilePicture();
                         },
                         child: Container(
                           width: 120.0,
@@ -352,6 +400,76 @@ class _EditProfileWidgetState extends State<EditProfileWidget> {
                               }
                               return null;
                             },
+                          ),
+                        ],
+                      ),
+                      
+                      SizedBox(height: 24.0),
+
+                      // Full Name Field
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Full Name',
+                            style: GoogleFonts.poppins(
+                              color: FlutterFlowTheme.of(context).primaryText,
+                              fontSize: 16.0,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          SizedBox(height: 8.0),
+                          TextFormField(
+                            controller: _model.nameTextController,
+                            focusNode: _model.nameFocusNode,
+                            obscureText: false,
+                            decoration: InputDecoration(
+                              hintText: 'Enter your full name',
+                              hintStyle: GoogleFonts.poppins(
+                                color: FlutterFlowTheme.of(context).secondaryText,
+                                fontSize: 14.0,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Color(0xFFE0E0E0),
+                                  width: 1.5,
+                                ),
+                                borderRadius: BorderRadius.circular(12.0),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Color(0xFF6B73FF),
+                                  width: 2.0,
+                                ),
+                                borderRadius: BorderRadius.circular(12.0),
+                              ),
+                              errorBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Colors.red,
+                                  width: 1.5,
+                                ),
+                                borderRadius: BorderRadius.circular(12.0),
+                              ),
+                              focusedErrorBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Colors.red,
+                                  width: 2.0,
+                                ),
+                                borderRadius: BorderRadius.circular(12.0),
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: EdgeInsetsDirectional.fromSTEB(16.0, 16.0, 16.0, 16.0),
+                              prefixIcon: Icon(
+                                Icons.badge_outlined,
+                                color: FlutterFlowTheme.of(context).secondaryText,
+                                size: 20.0,
+                              ),
+                            ),
+                            style: GoogleFonts.poppins(
+                              color: FlutterFlowTheme.of(context).primaryText,
+                              fontSize: 14.0,
+                            ),
                           ),
                         ],
                       ),

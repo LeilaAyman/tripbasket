@@ -167,7 +167,7 @@ class FirebaseAuthManager extends AuthManager
   ) =>
       _signInOrCreateAccount(
         context,
-        () => emailCreateAccountFunc(email, password),
+        () => emailCreateAccountFunc(email, password, context: context),
         'EMAIL',
       );
 

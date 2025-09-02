@@ -34,7 +34,10 @@
       "Bash(timeout:*)",
       "Bash(dir:*)",
       "Bash(R)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(npm install)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\maria\\OneDrive\\Desktop"

@@ -1761,7 +1761,7 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
                 _buildMobileContactMethod(
                   Icons.email_outlined,
                   'Email Support',
-                  'support@tripsbasket.com',
+                  'info@tripsbasket.com',
                   () => _sendEmail(),
                 ),
               ],
@@ -1847,7 +1847,7 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
   }
 
   void _sendEmail() async {
-    final url = Uri.parse('mailto:support@tripsbasket.com');
+    final url = Uri.parse('mailto:info@tripsbasket.com');
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
     } else {

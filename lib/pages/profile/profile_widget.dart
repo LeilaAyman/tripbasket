@@ -15,8 +15,10 @@ import '/utils/kyc_utils.dart';
 import '/utils/money.dart';
 import '/components/user_interests_form.dart';
 import '/services/profile_service.dart';
+import '/services/image_upload_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:image_picker/image_picker.dart';
 import 'profile_model.dart';
 export 'profile_model.dart';
 
@@ -81,6 +83,50 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     return 'U';
   }
 
+  Future<void> _uploadProfilePicture() async {
+    final source = await ImageUploadService.showImageSourceDialog(context);
+    if (source == null) return;
+
+    final imageFile = await ImageUploadService.pickImage(
+      source: source,
+      imageQuality: 80,
+      maxWidth: 500,
+      maxHeight: 500,
+    );
+
+    if (imageFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No image selected'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    ImageUploadService.showUploadProgressDialog(
+      context,
+      uploadFuture: ImageUploadService.uploadUserProfilePicture(imageFile),
+      onSuccess: (downloadUrl) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Profile picture updated successfully!'),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
+        );
+        // The StreamBuilder will automatically refresh the UI
+      },
+      onError: (error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to upload image: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildHeaderCard() {
     return Card(
       margin: EdgeInsets.zero,
@@ -97,22 +143,50 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                 final profilePhotoUrl = userDoc?.profilePhotoUrl ?? '';
                 final displayPhoto = profilePhotoUrl.isNotEmpty ? profilePhotoUrl : currentUserPhoto;
                 
-                return CircleAvatar(
-                  radius: 32,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  backgroundImage: displayPhoto.isNotEmpty 
-                    ? NetworkImage(displayPhoto) 
-                    : null,
-                  child: displayPhoto.isEmpty 
-                    ? Text(
-                        _getInitials(currentUserDisplayName, currentUserEmail),
-                        style: GoogleFonts.poppins(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onPrimary,
+                return GestureDetector(
+                  onTap: () => _uploadProfilePicture(),
+                  child: Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 32,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        backgroundImage: displayPhoto.isNotEmpty 
+                          ? NetworkImage(displayPhoto) 
+                          : null,
+                        child: displayPhoto.isEmpty 
+                          ? Text(
+                              _getInitials(currentUserDisplayName, currentUserEmail),
+                              style: GoogleFonts.poppins(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.onPrimary,
+                              ),
+                            )
+                          : null,
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          width: 20,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Theme.of(context).scaffoldBackgroundColor,
+                              width: 2,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.camera_alt,
+                            size: 12,
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ),
                         ),
-                      )
-                    : null,
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
@@ -136,6 +210,15 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
+                  if (currentPhoneNumber.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      currentPhoneNumber,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                   if (isAdmin) ...[
                     const SizedBox(height: 8),
                     Container(
@@ -156,6 +239,17 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                   ],
                 ],
               ),
+            ),
+            IconButton(
+              onPressed: () {
+                context.pushNamed('edit_profile');
+              },
+              icon: Icon(
+                Icons.edit,
+                color: Theme.of(context).colorScheme.primary,
+                size: 24,
+              ),
+              tooltip: 'Edit Profile',
             ),
           ],
         ),

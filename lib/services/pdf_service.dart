@@ -281,7 +281,7 @@ class PdfService {
                   ),
                   pw.SizedBox(height: 10),
                   pw.Text(
-                    'For questions or support, contact us at support@tripsbasket.com',
+                    'For questions or support, contact us at info@tripsbasket.com',
                     style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
                   ),
                   pw.SizedBox(height: 5),
