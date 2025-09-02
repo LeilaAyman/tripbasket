@@ -127,3 +127,6 @@ integration_test/screenshots/
 # --------------------------------------
 # Example: ignore whole images folder if too heavy
 # assets/images/
+linux/flutter/ephemeral/
+.flutter-plugins
+.flutter-plugins-dependencies
