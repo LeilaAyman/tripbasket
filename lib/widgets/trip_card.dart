@@ -489,7 +489,10 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
     final hasRatings = hasStoredRatings || (widget.trip.hasRating() && widget.trip.rating > 0);
     final displayRating = hasRatings ? (widget.trip.hasRatingAvg() ? widget.trip.ratingAvg : widget.trip.rating) : 0.0;
     
-    return Row(
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         RatingBarIndicator(
           itemBuilder: (context, index) => const Icon(
@@ -502,7 +505,6 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
           itemCount: 5,
           itemSize: 16,
         ),
-        const SizedBox(width: 8),
         if (hasRatings)
           Text(
             displayRating.toStringAsFixed(1),
@@ -511,8 +513,7 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
               fontSize: 14,
             ),
           ),
-        if (hasRatings) ...[
-          const SizedBox(width: 4),
+        if (hasRatings)
           Text(
             '(${widget.trip.hasRatingCount() ? widget.trip.ratingCount : '•'})',
             style: TextStyle(
@@ -520,8 +521,6 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
               fontSize: 12,
             ),
           ),
-        ],
-        const SizedBox(width: 8),
         OutlinedButton(
           onPressed: () => context.pushNamed('reviews', queryParameters: {
             'tripId': widget.trip.reference.id,
@@ -540,7 +539,6 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
             style: TextStyle(fontSize: 12),
           ),
         ),
-        const SizedBox(width: 8),
         FutureBuilder<ReviewsRecord?>(
           future: _getUserExistingReview(),
           builder: (context, snapshot) {
@@ -630,8 +628,8 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
                   borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(0.0),
                     bottomRight: Radius.circular(0.0),
-                    topLeft: Radius.circular(12.0),
-                    topRight: Radius.circular(12.0),
+                    topLeft: Radius.circular(11.0),
+                    topRight: Radius.circular(11.0),
                   ),
                   child: Stack(
                     children: [

@@ -1681,7 +1681,7 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          'From EGP ${trip.price.toInt()}',
+                          'EGP ${trip.price.toInt()}',
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,

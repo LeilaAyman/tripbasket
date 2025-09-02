@@ -134,27 +134,30 @@ class _BookingsWidgetState extends State<BookingsWidget> {
 
                   return Container(
                     width: double.infinity,
-                    height: 300.0,
+                    height: 400.0,
                     decoration: BoxDecoration(
-                      color: FlutterFlowTheme.of(context).secondaryBackground,
+                      color: Colors.grey[100],
                     ),
                     child: Stack(
                       children: [
-                        Image.network(
-                          specificImageUrl,
-                          width: double.infinity,
-                          height: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stack) {
-                            print('===== DEBUG: Error loading image: $error');
-                            // Fall back to default Unsplash image if the specific image fails
-                            return Image.network(
-                              'https://images.unsplash.com/photo-1519451241324-20b4ea2c4220?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTI3NzMzMTB8&ixlib=rb-4.1.0&q=80&w=1080',
-                              width: double.infinity,
-                              height: double.infinity,
-                              fit: BoxFit.cover,
-                            );
-                          },
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(0),
+                          child: Image.network(
+                            specificImageUrl,
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stack) {
+                              print('===== DEBUG: Error loading image: $error');
+                              // Fall back to default Unsplash image if the specific image fails
+                              return Image.network(
+                                'https://images.unsplash.com/photo-1519451241324-20b4ea2c4220?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTI3NzMzMTB8&ixlib=rb-4.1.0&q=80&w=1080',
+                                width: double.infinity,
+                                height: double.infinity,
+                                fit: BoxFit.contain,
+                              );
+                            },
+                          ),
                         ),
                         Container(
                           width: double.infinity,
@@ -298,8 +301,36 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                                         );
                                       },
                                     ),
-                                    Text(
-                                      '5 Days • 4 Nights',
+                                    StreamBuilder<TripsRecord>(
+                                      stream: TripsRecord.getDocument(widget.tripref!),
+                                      builder: (context, snapshot) {
+                                        if (!snapshot.hasData) {
+                                          return Text(
+                                            'Loading...',
+                                            style: FlutterFlowTheme.of(context)
+                                                .bodyMedium
+                                                .override(
+                                                  color: Colors.white,
+                                                  fontSize: 16.0,
+                                                  letterSpacing: 0.0,
+                                                ),
+                                          );
+                                        }
+                                        final trip = snapshot.data!;
+                                        
+                                        // Calculate days from start and end dates
+                                        String daysText = '5 Days • 4 Nights'; // Default fallback
+                                        
+                                        if (trip.hasStartDate() && trip.hasEndDate() && 
+                                            trip.startDate != null && trip.endDate != null) {
+                                          final difference = trip.endDate!.difference(trip.startDate!).inDays;
+                                          final days = difference + 1; // Include both start and end day
+                                          final nights = difference;
+                                          daysText = '$days Days • $nights Nights';
+                                        }
+                                        
+                                        return Text(
+                                          daysText,
                                       style: FlutterFlowTheme.of(context)
                                           .bodyMedium
                                           .override(
@@ -325,6 +356,8 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                                                     .bodyMedium
                                                     .fontStyle,
                                           ),
+                                        );
+                                      },
                                     ),
                                   ],
                                 ),
@@ -371,27 +404,6 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                                     return Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Text(
-                                          'From ',
-                                          style: FlutterFlowTheme.of(context)
-                                              .headlineSmall
-                                              .override(
-                                                font: GoogleFonts.interTight(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(context)
-                                                          .headlineSmall
-                                                          .fontStyle,
-                                                ),
-                                                color: const Color(0xFFD76B30), // Orange
-                                                letterSpacing: 0.0,
-                                                fontWeight: FontWeight.bold,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .headlineSmall
-                                                        .fontStyle,
-                                              ),
-                                        ),
                                         PriceText(
                                           priceTripsRecord.price,
                                           style: FlutterFlowTheme.of(context)
@@ -462,15 +474,16 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                                     : 0.0;
                                 
                                 return Container(
-                                  width: 120.0,
+                                  constraints: BoxConstraints(maxWidth: 150.0),
                                   height: 40.0,
                                   decoration: BoxDecoration(
                                     color: FlutterFlowTheme.of(context).accent1,
                                     borderRadius: BorderRadius.circular(20.0),
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsets.all(12.0),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
                                     child: Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Icon(
@@ -478,10 +491,8 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                                           color: Color(0xFFF2D83B), // Bright Yellow
                                           size: 16.0,
                                         ),
-                                        Padding(
-                                          padding:
-                                              const EdgeInsetsDirectional.fromSTEB(
-                                                  4.0, 0.0, 4.0, 0.0),
+                                        SizedBox(width: 4.0),
+                                        Flexible(
                                           child: Text(
                                             reviewCount > 0 
                                                 ? '${averageRating.toStringAsFixed(1)} (${reviewCount})'
@@ -506,6 +517,8 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                                                           .bodyMedium
                                                           .fontStyle,
                                                 ),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
                                           ),
                                         ),
                                       ],

@@ -241,13 +241,34 @@ class _AgencyTripsWidgetState extends State<AgencyTripsWidget>
                                   ),
                                 ),
                                 Spacer(),
-                                Text(
-                                  '${agency.totalTrips} trips available',
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white.withOpacity(0.9),
-                                    fontSize: 12.0,
-                                    letterSpacing: 0.0,
+                                StreamBuilder<List<TripsRecord>>(
+                                  stream: queryTripsRecord(
+                                    queryBuilder: (tripsQuery) => tripsQuery
+                                        .where('agency_reference', isEqualTo: agency.reference),
                                   ),
+                                  builder: (context, tripsSnapshot) {
+                                    if (!tripsSnapshot.hasData) {
+                                      return Text(
+                                        'Loading trips...',
+                                        style: GoogleFonts.poppins(
+                                          color: Colors.white.withOpacity(0.7),
+                                          fontSize: 12.0,
+                                          letterSpacing: 0.0,
+                                        ),
+                                      );
+                                    }
+                                    
+                                    final actualTripsCount = tripsSnapshot.data!.length;
+                                    
+                                    return Text(
+                                      '$actualTripsCount trips available',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white.withOpacity(0.9),
+                                        fontSize: 12.0,
+                                        letterSpacing: 0.0,
+                                      ),
+                                    );
+                                  },
                                 ),
                               ],
                             ),
