@@ -33,7 +33,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
   String _searchQuery = '';
   String _filterStatus = 'all';
   Timer? _debounce;
-  bool _isPreviewMode = false;
+  // bool _isPreviewMode = false; // Temporarily commented out
 
   // Currency formatter
   static final _currency = NumberFormat.currency(symbol: '\$');
@@ -972,7 +972,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
             {'title': 'CSV Upload', 'icon': Icons.upload_file, 'colors': [Color(0xFFDBA237), Color(0xFFE8A657)], 'onTap': () => context.pushNamed('agencyCsvUpload')},
             {'title': 'View Bookings', 'icon': Icons.book_online, 'colors': [Color(0xFFE8A657), Color(0xFFD76B30)], 'onTap': () => _showAllBookingsDialog()},
             {'title': 'Import Reviews', 'icon': Icons.rate_review, 'colors': [Color(0xFF4CAF50), Color(0xFF66BB6A)], 'onTap': () => _showReviewImportDialog()},
-            {'title': 'Preview Mode', 'icon': Icons.preview, 'colors': [Color(0xFF2196F3), Color(0xFF42A5F5)], 'onTap': () => _togglePreviewMode()},
+            // {'title': 'Preview Mode', 'icon': Icons.preview, 'colors': [Color(0xFF2196F3), Color(0xFF42A5F5)], 'onTap': () => _togglePreviewMode()},
           ]),
         ],
       ),
@@ -986,38 +986,39 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
     );
   }
 
-  void _togglePreviewMode() {
-    if (_isPreviewMode) {
-      // Exit preview mode - stay on dashboard
-      setState(() {
-        _isPreviewMode = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Exited customer preview mode'),
-          backgroundColor: Colors.grey.shade600,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } else {
-      // Enter preview mode - go to customer view
-      setState(() {
-        _isPreviewMode = true;
-      });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Viewing as customer - tap "Exit Preview" to return'),
-          backgroundColor: const Color(0xFF2196F3),
-          behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 3),
-        ),
-      );
-      
-      // Navigate to home page to see customer view
-      context.pushNamed('home');
-    }
-  }
+  // Temporarily commented out preview mode functionality
+  // void _togglePreviewMode() {
+  //   if (_isPreviewMode) {
+  //     // Exit preview mode - stay on dashboard
+  //     setState(() {
+  //       _isPreviewMode = false;
+  //     });
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text('Exited customer preview mode'),
+  //         backgroundColor: Colors.grey.shade600,
+  //         behavior: SnackBarBehavior.floating,
+  //       ),
+  //     );
+  //   } else {
+  //     // Enter preview mode - go to customer view
+  //     setState(() {
+  //       _isPreviewMode = true;
+  //     });
+  //     
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text('Viewing as customer - tap "Exit Preview" to return'),
+  //         backgroundColor: const Color(0xFF2196F3),
+  //         behavior: SnackBarBehavior.floating,
+  //         duration: Duration(seconds: 3),
+  //       ),
+  //     );
+  //     
+  //     // Navigate to home page to see customer view
+  //     context.pushNamed('home');
+  //   }
+  // }
 
   Widget _buildQuickActionCard(String title, IconData icon, List<Color> colors, VoidCallback onTap) {
     return Container(

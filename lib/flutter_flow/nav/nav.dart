@@ -126,6 +126,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: HomeWidget.routeName,
           path: HomeWidget.routePath,
           builder: (context, params) {
+            // Temporarily allowing agencies to access home page normally
             // Check if user is agency - redirect them to dashboard
             // This won't affect Navigator.pushNamed() navigation from preview mode
             final userDoc = currentUserDocument;
@@ -134,10 +135,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
               final isAgency = roles.contains('agency') && userDoc.agencyReference != null;
               final isAdmin = roles.contains('admin');
               
-              if (isAgency) {
-                print('ROUTER DEBUG: Redirecting agency user from home to profile');
-                return ProfileWidget();
-              }
+              // Temporarily commented out agency redirect to allow normal home access
+              // if (isAgency) {
+              //   print('ROUTER DEBUG: Redirecting agency user from home to profile');
+              //   return ProfileWidget();
+              // }
             }
             return const HomeResponsive();
           },
