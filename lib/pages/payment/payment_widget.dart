@@ -489,6 +489,26 @@ class _PaymentWidgetState extends State<PaymentWidget> {
                     ),
                   ],
                 ),
+                SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 16,
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      'No added tax or fees',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

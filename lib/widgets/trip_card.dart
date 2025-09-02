@@ -424,13 +424,14 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
           itemSize: 16,
         ),
         const SizedBox(width: 8),
-        Text(
-          hasRatings ? displayRating.toStringAsFixed(1) : 'Be the first to share your review',
-          style: TextStyle(
-            color: const Color(0xFF6B7280),
-            fontSize: 14,
+        if (hasRatings)
+          Text(
+            displayRating.toStringAsFixed(1),
+            style: TextStyle(
+              color: const Color(0xFF6B7280),
+              fontSize: 14,
+            ),
           ),
-        ),
         if (hasRatings) ...[
           const SizedBox(width: 4),
           Text(
@@ -686,12 +687,12 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
                               ),
                               Padding(
                                 padding: EdgeInsetsDirectional.fromSTEB(8.0, 0.0, 0.0, 0.0),
-                                child: Text(
-                                  hasRatings ? displayRating.toStringAsFixed(1) : 'Be the first to share your review',
+                                child: hasRatings ? Text(
+                                  displayRating.toStringAsFixed(1),
                                   style: GoogleFonts.poppins(
                                     letterSpacing: 0.0,
                                   ),
-                                ),
+                                ) : const SizedBox.shrink(),
                               ),
                               if (hasRatings)
                                 Padding(

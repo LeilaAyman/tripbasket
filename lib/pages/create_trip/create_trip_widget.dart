@@ -7,6 +7,7 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import '/utils/agency_utils.dart';
 import '/components/image_upload_widget.dart';
 import '/components/multiple_image_upload_widget.dart';
+import '/components/pdf_upload_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -29,6 +30,7 @@ class _CreateTripWidgetState extends State<CreateTripWidget> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
   String? _uploadedImageUrl;
   List<String> _galleryImages = [];
+  String? _uploadedPdfUrl;
   late final String _tripId;
 
   @override
@@ -132,6 +134,7 @@ class _CreateTripWidgetState extends State<CreateTripWidget> {
         modifiedAt: DateTime.now(),
         agencyReference: agencyRef,
         rating: 0.0,
+        itineraryPdf: _uploadedPdfUrl,
       );
 
       await FirebaseFirestore.instance.collection('trips').add(tripData);
@@ -355,6 +358,18 @@ class _CreateTripWidgetState extends State<CreateTripWidget> {
                 },
                 label: 'Additional Photos (Optional)',
                 initialImageUrls: _galleryImages,
+              ),
+              SizedBox(height: 16),
+              PdfUploadWidget(
+                agencyId: AgencyUtils.getCurrentAgencyRef()?.id ?? 'unknown',
+                tripId: _tripId,
+                onPdfUploaded: (url) {
+                  setState(() {
+                    _uploadedPdfUrl = url;
+                  });
+                },
+                label: 'Trip Itinerary PDF',
+                isRequired: false,
               ),
               SizedBox(height: 16),
               _buildItinerarySection(),

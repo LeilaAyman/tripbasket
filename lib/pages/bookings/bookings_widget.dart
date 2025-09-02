@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'dart:ui';
+import 'package:url_launcher/url_launcher.dart';
 import 'bookings_model.dart';
 export 'bookings_model.dart';
 
@@ -551,31 +552,48 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                                     return StreamBuilder<TripsRecord>(
                                       stream: TripsRecord.getDocument(widget.tripref!),
                                       builder: (context, tripSnapshot) {
-                                        if (!bookingSnapshot.hasData || 
-                                            bookingSnapshot.data!.isEmpty || 
-                                            !tripSnapshot.hasData) {
+                                        if (!tripSnapshot.hasData) {
                                           return const SizedBox.shrink();
                                         }
                                         
-                                        final booking = bookingSnapshot.data!.first;
                                         final trip = tripSnapshot.data!;
                                         
-                                        return ElevatedButton.icon(
-                                          onPressed: () {
-                                            PdfService.downloadItineraryPdf(
-                                              trip: trip,
-                                              booking: booking,
-                                              context: context,
-                                            );
-                                          },
-                                          icon: const Icon(Icons.picture_as_pdf),
-                                          label: const Text('Download PDF'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFFD76B30),
-                                            foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                          ),
-                                        );
+                                        // Show download button only if PDF exists
+                                        if (trip.hasItineraryPdf() && trip.itineraryPdf.isNotEmpty) {
+                                          return ElevatedButton.icon(
+                                            onPressed: () => _downloadTripPdf(trip.itineraryPdf),
+                                            icon: const Icon(Icons.picture_as_pdf),
+                                            label: const Text('Download Itinerary'),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(0xFFD76B30),
+                                              foregroundColor: Colors.white,
+                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                            ),
+                                          );
+                                        }
+                                        
+                                        // Fallback: Show generated PDF for existing bookings
+                                        if (bookingSnapshot.hasData && bookingSnapshot.data!.isNotEmpty) {
+                                          final booking = bookingSnapshot.data!.first;
+                                          return ElevatedButton.icon(
+                                            onPressed: () {
+                                              PdfService.downloadItineraryPdf(
+                                                trip: trip,
+                                                booking: booking,
+                                                context: context,
+                                              );
+                                            },
+                                            icon: const Icon(Icons.picture_as_pdf),
+                                            label: const Text('Download PDF'),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(0xFFD76B30),
+                                              foregroundColor: Colors.white,
+                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                            ),
+                                          );
+                                        }
+                                        
+                                        return const SizedBox.shrink();
                                       },
                                     );
                                   },
@@ -881,6 +899,137 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                           ].divide(const SizedBox(height: 16.0)),
                         ),
 
+                        // Photo Gallery Section
+                        StreamBuilder<TripsRecord>(
+                          stream: TripsRecord.getDocument(widget.tripref!),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) {
+                              return const SizedBox.shrink();
+                            }
+                            final tripRecord = snapshot.data!;
+                            final allImages = <String>[];
+                            
+                            if (tripRecord.image.isNotEmpty) {
+                              allImages.add(tripRecord.image);
+                            }
+                            if (tripRecord.gallery.isNotEmpty) {
+                              allImages.addAll(tripRecord.gallery);
+                            }
+                            
+                            if (allImages.length <= 1) {
+                              return const SizedBox.shrink();
+                            }
+                            
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Photos',
+                                      style: FlutterFlowTheme.of(context)
+                                          .titleLarge
+                                          .override(
+                                            font: GoogleFonts.interTight(
+                                              fontWeight: FontWeight.w600,
+                                              fontStyle: FlutterFlowTheme.of(context)
+                                                  .titleLarge
+                                                  .fontStyle,
+                                            ),
+                                            letterSpacing: 0.0,
+                                            fontWeight: FontWeight.w600,
+                                            fontStyle: FlutterFlowTheme.of(context)
+                                                .titleLarge
+                                                .fontStyle,
+                                          ),
+                                    ),
+                                    if (allImages.length > 4)
+                                      GestureDetector(
+                                        onTap: () => _showAllPhotos(context, allImages),
+                                        child: Text(
+                                          'View all (${allImages.length})',
+                                          style: FlutterFlowTheme.of(context)
+                                              .bodyMedium
+                                              .override(
+                                                color: const Color(0xFFD76B30),
+                                                letterSpacing: 0.0,
+                                                fontWeight: FontWeight.w500,
+                                                decoration: TextDecoration.underline,
+                                              ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  height: 100,
+                                  child: ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: allImages.length > 4 ? 4 : allImages.length,
+                                    itemBuilder: (context, index) {
+                                      final isLast = index == 3 && allImages.length > 4;
+                                      return Padding(
+                                        padding: EdgeInsets.only(right: index < 3 ? 12 : 0),
+                                        child: GestureDetector(
+                                          onTap: () => _showPhotoViewer(context, allImages, index),
+                                          child: Stack(
+                                            children: [
+                                              ClipRRect(
+                                                borderRadius: BorderRadius.circular(8),
+                                                child: Image.network(
+                                                  allImages[index],
+                                                  width: 100,
+                                                  height: 100,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (context, error, stackTrace) {
+                                                    return Container(
+                                                      width: 100,
+                                                      height: 100,
+                                                      decoration: BoxDecoration(
+                                                        color: FlutterFlowTheme.of(context).alternate,
+                                                        borderRadius: BorderRadius.circular(8),
+                                                      ),
+                                                      child: const Icon(
+                                                        Icons.image_not_supported,
+                                                        color: Colors.grey,
+                                                        size: 30,
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                              if (isLast)
+                                                Positioned.fill(
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.black54,
+                                                      borderRadius: BorderRadius.circular(8),
+                                                    ),
+                                                    child: Center(
+                                                      child: Text(
+                                                        '+${allImages.length - 4}',
+                                                        style: GoogleFonts.poppins(
+                                                          color: Colors.white,
+                                                          fontSize: 18,
+                                                          fontWeight: FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+
                         // What's Included
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -929,6 +1078,12 @@ class _BookingsWidgetState extends State<BookingsWidget> {
           symbol: '\$',
           icon: Icons.shopping_cart_outlined,
           onPressed: () async {
+            // Check if user is signed in
+            if (!loggedIn || currentUserReference == null) {
+              _showSignInDialog(context);
+              return;
+            }
+            
             // Add to Cart functionality
             try {
               final cartCreateData = {
@@ -968,6 +1123,255 @@ class _BookingsWidgetState extends State<BookingsWidget> {
     );
   }
 
+  void _showPhotoViewer(BuildContext context, List<String> images, int initialIndex) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => _PhotoViewerPage(
+          images: images,
+          initialIndex: initialIndex,
+        ),
+      ),
+    );
+  }
+
+  void _showAllPhotos(BuildContext context, List<String> images) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.9,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: BoxDecoration(
+              color: FlutterFlowTheme.of(context).secondaryBackground,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'All Photos (${images.length})',
+                        style: FlutterFlowTheme.of(context).titleLarge.override(
+                          font: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                          letterSpacing: 0.0,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: GridView.builder(
+                    controller: scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 1.0,
+                    ),
+                    itemCount: images.length,
+                    itemBuilder: (context, index) {
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context);
+                          _showPhotoViewer(context, images, index);
+                        },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            images[index],
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: FlutterFlowTheme.of(context).alternate,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.image_not_supported,
+                                  color: Colors.grey,
+                                  size: 50,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showSignInDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.login,
+                color: const Color(0xFFD76B30),
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Sign In Required',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: FlutterFlowTheme.of(context).primaryText,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'You need to sign in to add trips to your cart.',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  color: FlutterFlowTheme.of(context).secondaryText,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD76B30).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: const Color(0xFFD76B30).withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.shopping_cart,
+                      color: const Color(0xFFD76B30),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Sign in to save trips and manage your bookings',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: const Color(0xFFD76B30),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: FlutterFlowTheme.of(context).secondaryText,
+              ),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.pushNamed('home'); // Navigate to sign-in page
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD76B30),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+              child: Text(
+                'Sign In',
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _downloadTripPdf(String pdfUrl) async {
+    try {
+      final uri = Uri.parse(pdfUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open PDF'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _includedRow(BuildContext context, String text) {
     return Row(
       children: [
@@ -999,6 +1403,186 @@ class _BookingsWidgetState extends State<BookingsWidget> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PhotoViewerPage extends StatefulWidget {
+  final List<String> images;
+  final int initialIndex;
+
+  const _PhotoViewerPage({
+    required this.images,
+    required this.initialIndex,
+  });
+
+  @override
+  State<_PhotoViewerPage> createState() => _PhotoViewerPageState();
+}
+
+class _PhotoViewerPageState extends State<_PhotoViewerPage> {
+  late PageController _pageController;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          '${_currentIndex + 1} of ${widget.images.length}',
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: Stack(
+        children: [
+          PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            itemCount: widget.images.length,
+            itemBuilder: (context, index) {
+              return Center(
+                child: InteractiveViewer(
+                  panEnabled: true,
+                  boundaryMargin: const EdgeInsets.all(20),
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: Image.network(
+                    widget.images[index],
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: double.infinity,
+                        height: double.infinity,
+                        color: Colors.grey[800],
+                        child: const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.broken_image,
+                                color: Colors.white54,
+                                size: 64,
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                'Failed to load image',
+                                style: TextStyle(color: Colors.white54),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+          if (widget.images.length > 1) ...[
+            // Previous button
+            if (_currentIndex > 0)
+              Positioned(
+                left: 16,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                      onPressed: () {
+                        _pageController.previousPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            // Next button
+            if (_currentIndex < widget.images.length - 1)
+              Positioned(
+                right: 16,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
+                      onPressed: () {
+                        _pageController.nextPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+          ],
+          // Page indicator dots
+          if (widget.images.length > 1)
+            Positioned(
+              bottom: 32,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  widget.images.length,
+                  (index) => Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: index == _currentIndex
+                          ? const Color(0xFFD76B30)
+                          : Colors.white54,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

@@ -298,14 +298,6 @@ class _InteractiveTripRatingState extends State<InteractiveTripRating>
                     ),
                 ] else ...[
                   Text(
-                    'Be the first to share your review',
-                    style: GoogleFonts.poppins(
-                      fontSize: 10,
-                      letterSpacing: 0.0,
-                      color: FlutterFlowTheme.of(context).secondaryText,
-                    ),
-                  ),
-                  Text(
                     'Be the first to rate!',
                     style: GoogleFonts.poppins(
                       fontSize: 9,

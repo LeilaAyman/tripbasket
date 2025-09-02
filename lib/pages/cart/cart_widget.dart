@@ -32,9 +32,6 @@ class _CartWidgetState extends State<CartWidget> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
   final NumberFormat _money = NumberFormat.currency(symbol: 'EGP ');
 
-  static const double _taxRate = 0.15; // 15%
-  static const double _serviceFeeFlat = 40.0;
-
   int get userPoints => currentUserDocument?.loyaltyPoints ?? 0;
   double get loyaltyDiscountAmount => _model.totalRedemptionDiscount;
 
@@ -255,13 +252,10 @@ class _CartWidgetState extends State<CartWidget> {
 
   Widget _buildCartList(BuildContext context, List<CartRecord> cartItems) {
     final double baseTotal = cartItems.fold(0.0, (sum, item) => sum + (item.totalPrice));
-    final double taxes = baseTotal * _taxRate;
-    final double serviceFee = baseTotal > 0 ? _serviceFeeFlat : 0.0;
-    final double subtotal = baseTotal + taxes + serviceFee;
     
     // Apply per-trip redemption discount
     final double loyaltyRedemptionDiscount = _model.totalRedemptionDiscount;
-    final double grandTotal = subtotal - loyaltyRedemptionDiscount;
+    final double grandTotal = baseTotal - loyaltyRedemptionDiscount;
 
     return Wrap(
       spacing: 16.0,
@@ -372,9 +366,30 @@ class _CartWidgetState extends State<CartWidget> {
                         padding: const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 12.0),
                         child: Text('Price Breakdown', style: FlutterFlowTheme.of(context).labelMedium),
                       ),
-                      _rowPrice(context, 'Base Price', _money.format(baseTotal)),
-                      _rowPrice(context, 'Taxes (15%)', _money.format(taxes)),
-                      _rowPrice(context, 'Service Fee', _money.format(serviceFee)),
+                      _rowPrice(context, 'Subtotal', _money.format(baseTotal)),
+                      // No added fees message
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.check_circle,
+                              color: Colors.green,
+                              size: 16,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'No added tax or fees',
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.green,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       // Loyalty discount line (if applicable)
                       if (loyaltyDiscountAmount > 0) ...[
                         _rowPrice(
