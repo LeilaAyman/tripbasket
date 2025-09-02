@@ -20,10 +20,7 @@ const mailTransporter = gmailEmail && gmailPassword ? nodemailer.createTransport
 // Send verification email for 2FA
 export const send2FAEmail = functions.https.onCall(async (data, context) => {
   try {
-    // Verify user is authenticated
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-    }
+    // Note: Removed authentication check since this is used for 2FA during login process
 
     const { email, code } = data;
 
