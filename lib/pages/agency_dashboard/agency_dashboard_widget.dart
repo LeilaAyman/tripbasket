@@ -198,20 +198,33 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
       title: LayoutBuilder(
         builder: (context, constraints) {
           final isMobile = MediaQuery.of(context).size.width < 768;
+          final agencyRef = isAdmin ? null : AgencyUtils.getCurrentAgencyRef();
           
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                isAdmin ? (isMobile ? 'Dashboard (Admin)' : 'Agency Dashboard (Admin)') 
-                       : (isMobile ? 'Dashboard' : 'Agency Dashboard'),
-                style: FlutterFlowTheme.of(context).headlineMedium.override(
-                  color: Colors.white,
-                  fontSize: isMobile ? 18 : 24,
-                  letterSpacing: 0.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+          return StreamBuilder<AgenciesRecord?>(
+            stream: agencyRef != null ? AgenciesRecord.getDocument(agencyRef) : null,
+            builder: (context, agencySnapshot) {
+              final agencyName = agencySnapshot.hasData && agencySnapshot.data != null
+                  ? agencySnapshot.data!.name
+                  : '';
+              
+              final displayTitle = isAdmin 
+                  ? (isMobile ? 'Dashboard (Admin)' : 'Agency Dashboard (Admin)')
+                  : agencyName.isNotEmpty
+                      ? (isMobile ? agencyName : '$agencyName Dashboard')
+                      : (isMobile ? 'Dashboard' : 'Agency Dashboard');
+              
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    displayTitle,
+                    style: FlutterFlowTheme.of(context).headlineMedium.override(
+                      color: Colors.white,
+                      fontSize: isMobile ? 18 : 24,
+                      letterSpacing: 0.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
               if (!isMobile)
                 Text(
                   isAdmin ? 'Manage all agency trips and performance' : 'Manage your trips and performance',
@@ -221,7 +234,9 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                     letterSpacing: 0.2,
                   ),
                 ),
-            ],
+                ],
+              );
+            },
           );
         },
       ),
@@ -2929,7 +2944,7 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
+        height: MediaQuery.of(context).size.height * 0.6,
         decoration: BoxDecoration(
           color: FlutterFlowTheme.of(context).primaryBackground,
           borderRadius: const BorderRadius.only(
@@ -2954,15 +2969,178 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      trip.title,
-                      style: FlutterFlowTheme.of(context).headlineSmall.override(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                    // Trip Title and Status
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            trip.title,
+                            style: FlutterFlowTheme.of(context).headlineSmall.override(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: trip.price > 0 ? const Color(0xFF4CAF50) : const Color(0xFF9E9E9E),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            trip.price > 0 ? 'Available' : 'Draft',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Quick Info Grid
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: FlutterFlowTheme.of(context).secondaryBackground,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFFD76B30).withOpacity(0.1),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildInfoItem(
+                                  context,
+                                  Icons.location_on,
+                                  'Location',
+                                  trip.location.isNotEmpty ? trip.location : 'Not specified',
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: _buildInfoItem(
+                                  context,
+                                  Icons.attach_money,
+                                  'Price',
+                                  _currency.format(trip.price),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildInfoItem(
+                                  context,
+                                  Icons.calendar_today,
+                                  'Dates',
+                                  _formatTripDates(trip),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: _buildInfoItem(
+                                  context,
+                                  Icons.star,
+                                  'Rating',
+                                  trip.hasRatingAvg() && trip.ratingAvg > 0 
+                                      ? '${trip.ratingAvg.toStringAsFixed(1)} ★'
+                                      : 'No ratings',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Add more trip details here
+                    
+                    // Description
+                    if (trip.description.isNotEmpty) ...[
+                      Text(
+                        'Description',
+                        style: FlutterFlowTheme.of(context).titleMedium.override(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: FlutterFlowTheme.of(context).secondaryBackground,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          trip.description,
+                          style: FlutterFlowTheme.of(context).bodyMedium,
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    
+                    // Action Buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              context.pushNamed(
+                                'bookings',
+                                queryParameters: {
+                                  'tripref': trip.reference.id,
+                                },
+                              );
+                            },
+                            icon: const Icon(Icons.visibility, size: 18),
+                            label: const Text('View Full Details'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD76B30),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              context.pushNamed(
+                                'editTrip',
+                                queryParameters: {
+                                  'tripId': trip.reference.id,
+                                },
+                              );
+                            },
+                            icon: const Icon(Icons.edit, size: 18),
+                            label: const Text('Edit Trip'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFD76B30),
+                              side: const BorderSide(color: Color(0xFFD76B30)),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -2971,6 +3149,52 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
         ),
       ),
     );
+  }
+  
+  Widget _buildInfoItem(BuildContext context, IconData icon, String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: const Color(0xFFD76B30),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: FlutterFlowTheme.of(context).bodySmall.override(
+                color: FlutterFlowTheme.of(context).secondaryText,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: FlutterFlowTheme.of(context).bodyMedium.override(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+  
+  String _formatTripDates(TripsRecord trip) {
+    if (trip.hasStartDate() && trip.hasEndDate() && 
+        trip.startDate != null && trip.endDate != null) {
+      final start = DateFormat('MMM dd').format(trip.startDate!);
+      final end = DateFormat('MMM dd, yyyy').format(trip.endDate!);
+      return '$start - $end';
+    }
+    return 'Dates not set';
   }
 
   Future<void> _showDeleteConfirmation(BuildContext context, TripsRecord trip) async {

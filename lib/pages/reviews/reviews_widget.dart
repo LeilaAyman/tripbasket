@@ -796,18 +796,27 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
           ),
           SizedBox(height: 20),
           
-          // Circular avatar with initials
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: Color(0xFFD76B30),
-            child: Text(
-              getInitials(),
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+          // Circular avatar with profile picture or initials
+          StreamBuilder<UsersRecord?>(
+            stream: review.userReference != null ? UsersRecord.getDocument(review.userReference!) : null,
+            builder: (context, userSnapshot) {
+              final user = userSnapshot.data;
+              final hasProfilePicture = user?.hasPhotoUrl() == true && user!.photoUrl.isNotEmpty;
+              
+              return CircleAvatar(
+                radius: 30,
+                backgroundColor: Color(0xFFD76B30),
+                backgroundImage: hasProfilePicture ? NetworkImage(user!.photoUrl) : null,
+                child: hasProfilePicture ? null : Text(
+                  getInitials(),
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              );
+            },
           ),
           SizedBox(height: 16),
           
@@ -1053,18 +1062,27 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
           ),
           SizedBox(height: 20),
           
-          // Circular avatar with initials
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: Color(0xFFD76B30),
-            child: Text(
-              getInitials(),
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+          // Circular avatar with profile picture or initials
+          StreamBuilder<UsersRecord?>(
+            stream: review.userReference != null ? UsersRecord.getDocument(review.userReference!) : null,
+            builder: (context, userSnapshot) {
+              final user = userSnapshot.data;
+              final hasProfilePicture = user?.hasPhotoUrl() == true && user!.photoUrl.isNotEmpty;
+              
+              return CircleAvatar(
+                radius: 30,
+                backgroundColor: Color(0xFFD76B30),
+                backgroundImage: hasProfilePicture ? NetworkImage(user!.photoUrl) : null,
+                child: hasProfilePicture ? null : Text(
+                  getInitials(),
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              );
+            },
           ),
           SizedBox(height: 16),
           

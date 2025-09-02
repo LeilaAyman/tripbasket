@@ -102,6 +102,22 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
     _slideTimer?.cancel();
   }
 
+  void _nextImage() {
+    if (_images.length > 1) {
+      setState(() {
+        _currentImageIndex = (_currentImageIndex + 1) % _images.length;
+      });
+    }
+  }
+
+  void _previousImage() {
+    if (_images.length > 1) {
+      setState(() {
+        _currentImageIndex = (_currentImageIndex - 1 + _images.length) % _images.length;
+      });
+    }
+  }
+
   Stream<bool> _isFavoriteStream() {
     if (currentUserReference == null) return Stream.value(false);
     return FavoritesService.isFavoriteStream(currentUserReference!, widget.trip.reference);
@@ -267,18 +283,18 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
                   children: [
                     _buildWebImage(),
                     Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildWebTitle(),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           _buildWebAgencyInfo(),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           _buildWebLocation(),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 8),
                           _buildWebRating(),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 8),
                           _buildWebPrice(),
                         ],
                       ),
@@ -303,33 +319,33 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
         children: [
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 500),
-            child: CachedNetworkImage(
+            child: AspectRatio(
               key: ValueKey(_currentImageIndex),
-              imageUrl: _images[_currentImageIndex],
-              width: double.infinity,
-              height: 200,
-              fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
+              aspectRatio: 1.5, // Default aspect ratio, will be adjusted by image
+              child: CachedNetworkImage(
+                imageUrl: _images[_currentImageIndex],
                 width: double.infinity,
-                height: 200,
-                color: Theme.of(context).colorScheme.surfaceVariant,
-                child: const Center(child: CircularProgressIndicator()),
-              ),
-              errorWidget: (context, url, error) => Container(
-                width: double.infinity,
-                height: 200,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFFD76B30).withOpacity(0.3),
-                      const Color(0xFFF2D83B).withOpacity(0.3),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  width: double.infinity,
+                  color: Theme.of(context).colorScheme.surfaceVariant,
+                  child: const Center(child: CircularProgressIndicator()),
                 ),
-                child: const Center(
-                  child: Icon(Icons.image_not_supported, size: 48),
+                errorWidget: (context, url, error) => Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFFD76B30).withOpacity(0.3),
+                        const Color(0xFFF2D83B).withOpacity(0.3),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.image_not_supported, size: 48),
+                  ),
                 ),
               ),
             ),
@@ -354,6 +370,86 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
               ),
             ),
           ),
+          // Navigation arrows
+          if (_images.length > 1) ...[
+            Positioned(
+              left: 8,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: AnimatedOpacity(
+                  opacity: _isHovered ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: GestureDetector(
+                    onTap: _previousImage,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.chevron_left,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              right: 8,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: AnimatedOpacity(
+                  opacity: _isHovered ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: GestureDetector(
+                    onTap: _nextImage,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.chevron_right,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+          // Image indicators
+          if (_images.length > 1)
+            Positioned(
+              bottom: 12,
+              left: 12,
+              child: AnimatedOpacity(
+                opacity: _isHovered ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                child: Row(
+                  children: _images.asMap().entries.map((entry) {
+                    return Container(
+                      margin: const EdgeInsets.only(right: 4),
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: entry.key == _currentImageIndex 
+                            ? Colors.white 
+                            : Colors.white.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
           // Favorite heart - only on hover
           Positioned(
             top: 12,
@@ -415,7 +511,7 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
               imageUrl: _agencyData!.logo,
               width: 24,
               height: 24,
-              fit: BoxFit.cover,
+              fit: BoxFit.contain,
               errorWidget: (context, url, error) => Container(
                 width: 24,
                 height: 24,
@@ -633,36 +729,37 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
                   ),
                   child: Stack(
                     children: [
-                      CachedNetworkImage(
-                        imageUrl: widget.trip.image.isNotEmpty 
-                            ? widget.trip.image
-                            : 'https://images.unsplash.com/photo-1528114039593-4366cc08227d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8OHx8aXRhbHl8ZW58MHx8MHx8&auto=format&fit=crop&w=900&q=60',
-                        width: double.infinity,
-                        height: 200.0,
-                        fit: BoxFit.cover,
-                        errorWidget: (context, url, error) {
-                          return Container(
-                            width: double.infinity,
-                            height: 200.0,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Color(0xFFD76B30).withOpacity(0.3),
-                                  Color(0xFFF2D83B).withOpacity(0.3),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
+                      AspectRatio(
+                        aspectRatio: 1.3, // Default aspect ratio for mobile
+                        child: CachedNetworkImage(
+                          imageUrl: widget.trip.image.isNotEmpty 
+                              ? widget.trip.image
+                              : 'https://images.unsplash.com/photo-1528114039593-4366cc08227d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8OHx8aXRhbHl8ZW58MHx8MHx8&auto=format&fit=crop&w=900&q=60',
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorWidget: (context, url, error) {
+                            return Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Color(0xFFD76B30).withOpacity(0.3),
+                                    Color(0xFFF2D83B).withOpacity(0.3),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
                               ),
-                            ),
-                            child: Center(
-                              child: Icon(
-                                Icons.image_not_supported,
-                                size: 48,
-                                color: Colors.grey[400],
+                              child: Center(
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  size: 48,
+                                  color: Colors.grey[400],
+                                ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
                       Positioned(
                         top: 16.0,
@@ -717,7 +814,7 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
                 ),
               ),
               Padding(
-                padding: EdgeInsetsDirectional.fromSTEB(16.0, 12.0, 16.0, 16.0),
+                padding: EdgeInsetsDirectional.fromSTEB(12.0, 10.0, 12.0, 12.0),
                 child: Column(
                   mainAxisSize: MainAxisSize.max,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -742,7 +839,7 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
                                   imageUrl: _agencyData!.logo,
                                   width: 20,
                                   height: 20,
-                                  fit: BoxFit.cover,
+                                  fit: BoxFit.contain,
                                   errorWidget: (context, url, error) => Container(
                                     width: 20,
                                     height: 20,

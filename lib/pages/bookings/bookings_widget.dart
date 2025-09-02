@@ -17,6 +17,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'dart:ui';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'bookings_model.dart';
 export 'bookings_model.dart';
 
@@ -39,6 +40,10 @@ class _BookingsWidgetState extends State<BookingsWidget> {
   late BookingsModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  
+  // Image gallery state
+  int _currentImageIndex = 0;
+  final PageController _pageController = PageController();
 
   @override
   void initState() {
@@ -49,7 +54,104 @@ class _BookingsWidgetState extends State<BookingsWidget> {
   @override
   void dispose() {
     _model.dispose();
+    _pageController.dispose();
     super.dispose();
+  }
+
+  // Helper methods for image gallery
+  List<String> _getImageUrls(TripsRecord trip) {
+    final images = <String>[];
+    if (trip.image.isNotEmpty) {
+      images.add(trip.image);
+    }
+    // Add fallback image if no images
+    if (images.isEmpty) {
+      images.add('https://images.unsplash.com/photo-1519451241324-20b4ea2c4220?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTI3NzMzMTB8&ixlib=rb-4.1.0&q=80&w=1080');
+    }
+    return images;
+  }
+
+  void _showImageZoom(List<String> images, int initialIndex) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(
+                width: double.infinity,
+                height: double.infinity,
+                color: Colors.transparent,
+              ),
+            ),
+            Center(
+              child: InteractiveViewer(
+                child: PageView.builder(
+                  itemCount: images.length,
+                  controller: PageController(initialPage: initialIndex),
+                  itemBuilder: (context, index) {
+                    return Center(
+                      child: CachedNetworkImage(
+                        imageUrl: images[index],
+                        fit: BoxFit.contain,
+                        errorWidget: (context, url, error) => const Icon(
+                          Icons.image_not_supported,
+                          size: 100,
+                          color: Colors.white,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+            if (images.length > 1)
+              Positioned(
+                bottom: 20,
+                left: 0,
+                right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: images.asMap().entries.map((entry) {
+                    return Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.7),
+                        shape: BoxShape.circle,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -134,31 +236,160 @@ class _BookingsWidgetState extends State<BookingsWidget> {
 
                   return Container(
                     width: double.infinity,
-                    height: 400.0,
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
                     ),
-                    child: Stack(
+                    child: Row(
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(0),
-                          child: Image.network(
-                            specificImageUrl,
-                            width: double.infinity,
-                            height: double.infinity,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stack) {
-                              print('===== DEBUG: Error loading image: $error');
-                              // Fall back to default Unsplash image if the specific image fails
-                              return Image.network(
-                                'https://images.unsplash.com/photo-1519451241324-20b4ea2c4220?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTI3NzMzMTB8&ixlib=rb-4.1.0&q=80&w=1080',
-                                width: double.infinity,
-                                height: double.infinity,
-                                fit: BoxFit.contain,
-                              );
-                            },
+                        // Thumbnail Gallery - Vertical on the left
+                        if (_getImageUrls(headerTripsRecord).length > 1)
+                          Container(
+                            width: 80,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+                            child: ListView.builder(
+                              scrollDirection: Axis.vertical,
+                              itemCount: _getImageUrls(headerTripsRecord).length,
+                              itemBuilder: (context, index) {
+                                final images = _getImageUrls(headerTripsRecord);
+                                return GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _currentImageIndex = index;
+                                    });
+                                  },
+                                  child: Container(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: index == _currentImageIndex 
+                                            ? const Color(0xFFD76B30) 
+                                            : Colors.transparent,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(6),
+                                      child: CachedNetworkImage(
+                                        imageUrl: images[index],
+                                        fit: BoxFit.cover,
+                                        placeholder: (context, url) => Container(
+                                          color: Colors.grey[300],
+                                          child: const Center(
+                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                          ),
+                                        ),
+                                        errorWidget: (context, url, error) => Container(
+                                          color: Colors.grey[300],
+                                          child: const Icon(
+                                            Icons.image_not_supported,
+                                            size: 20,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        // Main Image Container - Takes remaining space
+                        Expanded(
+                          child: AspectRatio(
+                            aspectRatio: 2.5, // Wider aspect ratio for smaller height
+                            child: Stack(
+                              children: [
+                        // Single Main Image Display
+                        GestureDetector(
+                          onTap: () => _showImageZoom(_getImageUrls(headerTripsRecord), _currentImageIndex),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(0),
+                            child: CachedNetworkImage(
+                              imageUrl: _getImageUrls(headerTripsRecord)[_currentImageIndex],
+                              width: double.infinity,
+                              height: double.infinity,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: Colors.grey[300],
+                                child: const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                color: Colors.grey[300],
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    size: 48,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
+                        // Navigation Arrows
+                        if (_getImageUrls(headerTripsRecord).length > 1) ...[
+                          // Previous Arrow
+                          if (_currentImageIndex > 0)
+                            Positioned(
+                              left: 16,
+                              top: 0,
+                              bottom: 0,
+                              child: Center(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _currentImageIndex = _currentImageIndex - 1;
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.6),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.arrow_back_ios,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          // Next Arrow
+                          if (_currentImageIndex < _getImageUrls(headerTripsRecord).length - 1)
+                            Positioned(
+                              right: 16,
+                              top: 0,
+                              bottom: 0,
+                              child: Center(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _currentImageIndex = _currentImageIndex + 1;
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.6),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.arrow_forward_ios,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                         Container(
                           width: double.infinity,
                           height: double.infinity,
@@ -257,111 +488,11 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                                     ),
                                   ],
                                 ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    StreamBuilder<TripsRecord>(
-                                      stream: TripsRecord.getDocument(
-                                          widget.tripref!),
-                                      builder: (context, snapshot) {
-                                        if (!snapshot.hasData) {
-                                          return Center(
-                                            child: SizedBox(
-                                              width: 50.0,
-                                              height: 50.0,
-                                              child:
-                                                  CircularProgressIndicator(
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<
-                                                        Color>(
-                                                  FlutterFlowTheme.of(context)
-                                                      .primary,
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                        final textTripsRecord =
-                                            snapshot.data!;
-                                        return Text(
-                                          valueOrDefault<String>(
-                                            textTripsRecord.title,
-                                            'Trip Name',
-                                          ),
-                                          style: FlutterFlowTheme.of(context)
-                                              .headlineMedium
-                                              .override(
-                                                font: GoogleFonts.poppins(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                                color: Colors.white,
-                                                letterSpacing: 0.0,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                        );
-                                      },
-                                    ),
-                                    StreamBuilder<TripsRecord>(
-                                      stream: TripsRecord.getDocument(widget.tripref!),
-                                      builder: (context, snapshot) {
-                                        if (!snapshot.hasData) {
-                                          return Text(
-                                            'Loading...',
-                                            style: FlutterFlowTheme.of(context)
-                                                .bodyMedium
-                                                .override(
-                                                  color: Colors.white,
-                                                  fontSize: 16.0,
-                                                  letterSpacing: 0.0,
-                                                ),
-                                          );
-                                        }
-                                        final trip = snapshot.data!;
-                                        
-                                        // Calculate days from start and end dates
-                                        String daysText = '5 Days • 4 Nights'; // Default fallback
-                                        
-                                        if (trip.hasStartDate() && trip.hasEndDate() && 
-                                            trip.startDate != null && trip.endDate != null) {
-                                          final difference = trip.endDate!.difference(trip.startDate!).inDays;
-                                          final days = difference + 1; // Include both start and end day
-                                          final nights = difference;
-                                          daysText = '$days Days • $nights Nights';
-                                        }
-                                        
-                                        return Text(
-                                          daysText,
-                                      style: FlutterFlowTheme.of(context)
-                                          .bodyMedium
-                                          .override(
-                                            font: GoogleFonts.inter(
-                                              fontWeight:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodyMedium
-                                                      .fontWeight,
-                                              fontStyle:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodyMedium
-                                                      .fontStyle,
-                                            ),
-                                            color: Colors.white,
-                                            fontSize: 16.0,
-                                            letterSpacing: 0.0,
-                                            fontWeight:
-                                                FlutterFlowTheme.of(context)
-                                                    .bodyMedium
-                                                    .fontWeight,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .bodyMedium
-                                                    .fontStyle,
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
                               ],
+                            ),
+                          ),
+                        ),
+                      ],
                             ),
                           ),
                         ),
@@ -524,6 +655,100 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                                       ],
                                     ),
                                   ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+
+                        // Trip Title and Days
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            StreamBuilder<TripsRecord>(
+                              stream: TripsRecord.getDocument(widget.tripref!),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData) {
+                                  return Text(
+                                    'Loading...',
+                                    style: FlutterFlowTheme.of(context)
+                                        .headlineMedium
+                                        .override(
+                                          color: FlutterFlowTheme.of(context).primaryText,
+                                          letterSpacing: 0.0,
+                                        ),
+                                  );
+                                }
+                                final textTripsRecord = snapshot.data!;
+                                return Text(
+                                  valueOrDefault<String>(
+                                    textTripsRecord.title,
+                                    'Trip Name',
+                                  ),
+                                  style: FlutterFlowTheme.of(context)
+                                      .headlineMedium
+                                      .override(
+                                        font: GoogleFonts.poppins(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        color: FlutterFlowTheme.of(context).primaryText,
+                                        letterSpacing: 0.0,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                );
+                              },
+                            ),
+                            StreamBuilder<TripsRecord>(
+                              stream: TripsRecord.getDocument(widget.tripref!),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData) {
+                                  return Text(
+                                    'Loading...',
+                                    style: FlutterFlowTheme.of(context)
+                                        .bodyMedium
+                                        .override(
+                                          color: FlutterFlowTheme.of(context).secondaryText,
+                                          fontSize: 16.0,
+                                          letterSpacing: 0.0,
+                                        ),
+                                  );
+                                }
+                                final trip = snapshot.data!;
+                                
+                                // Calculate days from start and end dates
+                                String daysText = '5 Days • 4 Nights'; // Default fallback
+                                
+                                if (trip.hasStartDate() && trip.hasEndDate() && 
+                                    trip.startDate != null && trip.endDate != null) {
+                                  final difference = trip.endDate!.difference(trip.startDate!).inDays;
+                                  final days = difference + 1; // Include both start and end day
+                                  final nights = difference;
+                                  daysText = '$days Days • $nights Nights';
+                                }
+                                
+                                return Text(
+                                  daysText,
+                                  style: FlutterFlowTheme.of(context)
+                                      .bodyMedium
+                                      .override(
+                                        font: GoogleFonts.inter(
+                                          fontWeight: FlutterFlowTheme.of(context)
+                                              .bodyMedium
+                                              .fontWeight,
+                                          fontStyle: FlutterFlowTheme.of(context)
+                                              .bodyMedium
+                                              .fontStyle,
+                                        ),
+                                        color: FlutterFlowTheme.of(context).secondaryText,
+                                        fontSize: 16.0,
+                                        letterSpacing: 0.0,
+                                        fontWeight: FlutterFlowTheme.of(context)
+                                            .bodyMedium
+                                            .fontWeight,
+                                        fontStyle: FlutterFlowTheme.of(context)
+                                            .bodyMedium
+                                            .fontStyle,
+                                      ),
                                 );
                               },
                             ),
