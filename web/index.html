@@ -42,6 +42,10 @@
 
   <title> tripsbasket </title>
   <meta name="description" content="Built with FlutterFlow." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="dns-prefetch" href="https://firestore.googleapis.com">
+  <link rel="dns-prefetch" href="https://firebase.googleapis.com">
     
 
   <!-- Status Bar color in Safari browser (iOS) and PWA -->
@@ -109,7 +113,18 @@ setInterval(() => {
 }, 30000);
 </script>
   <script>
-    {{flutter_bootstrap_js}}
+    {{flutter_js}}
+    {{flutter_build_config}}
+    
+    _flutter.loader.load({
+      onEntrypointLoaded: function(engineInitializer) {
+        engineInitializer.initializeEngine({
+          renderer: "html"
+        }).then(function(appRunner) {
+          appRunner.runApp();
+        });
+      }
+    });
   </script>
 </body>
 </html>

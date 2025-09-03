@@ -7,7 +7,7 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import '/utils/agency_utils.dart';
 import '/components/image_upload_widget.dart';
 import '/components/multiple_image_upload_widget.dart';
-import '/components/pdf_upload_widget.dart';
+// import '/components/pdf_upload_widget.dart'; // Removed for performance
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -523,17 +523,14 @@ class _EditTripWidgetState extends State<EditTripWidget> {
                 initialImageUrls: _galleryImages,
               ),
               SizedBox(height: 16),
-              PdfUploadWidget(
-                agencyId: _trip?.agencyReference?.id ?? 'unknown',
-                tripId: _tripId,
-                initialPdfUrl: _uploadedPdfUrl,
-                onPdfUploaded: (url) {
-                  setState(() {
-                    _uploadedPdfUrl = url;
-                  });
-                },
-                label: 'Trip Itinerary PDF',
-                isRequired: false,
+              // PdfUploadWidget( // PDF disabled for performance
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text('PDF upload temporarily disabled for performance'),
               ),
               SizedBox(height: 16),
               _buildItinerarySection(),

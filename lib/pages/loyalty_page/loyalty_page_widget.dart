@@ -6,7 +6,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/utils/loyalty_utils.dart';
 import '/utils/manual_points_award.dart';
-import '/utils/debug_points.dart';
+// import '/utils/debug_points.dart'; // Removed for performance
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'loyalty_page_model.dart';
@@ -549,7 +549,7 @@ class _LoyaltyPageWidgetState extends State<LoyaltyPageWidget> {
                               const SizedBox(height: 12.0),
                               FFButtonWidget(
                                 onPressed: () async {
-                                  final result = await debugPointsAndBookings();
+                                  final result = 'Debug function removed for performance';
                                   showDialog(
                                     context: context,
                                     builder: (context) => AlertDialog(

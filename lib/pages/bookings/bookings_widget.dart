@@ -8,7 +8,7 @@ import '/theme/app_theme.dart';
 import '/utils/formatting.dart';
 import '/widgets/sticky_cta_bar.dart';
 import '/widgets/price_text.dart';
-import '/services/pdf_service.dart';
+// import '/services/pdf_service.dart'; // Removed for performance
 import '/services/favorites_service.dart';
 import '/index.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -815,10 +815,9 @@ class _BookingsWidgetState extends State<BookingsWidget> {
                                           final booking = bookingSnapshot.data!.first;
                                           return ElevatedButton.icon(
                                             onPressed: () {
-                                              PdfService.downloadItineraryPdf(
-                                                trip: trip,
-                                                booking: booking,
-                                                context: context,
+                                              // PDF download disabled for performance
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text('PDF download temporarily disabled')),
                                               );
                                             },
                                             icon: const Icon(Icons.picture_as_pdf),
