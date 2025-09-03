@@ -39,7 +39,14 @@
       "Bash(npm run build:*)",
       "Bash(npx tsc:*)",
       "Bash(grep:*)",
-      "Bash(del debug_agency_issue.dart)"
+      "Bash(del debug_agency_issue.dart)",
+      "Bash(start https://console.firebase.google.com/project/tripbasket-sctkxj/hosting/main)",
+      "Bash(start https://ap.www.namecheap.com/domains/domaincontrolpanel/tripsbasket.com/advancedns)",
+      "Bash(nslookup:*)",
+      "Bash(npm install:*)",
+      "Bash(node:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(GOOGLE_APPLICATION_CREDENTIALS=\"\" node cleanup_cart.js)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\maria\\OneDrive\\Desktop"

@@ -151,6 +151,22 @@ class BookingsRecord extends FirestoreRecord {
   double get remainingAmount => _remainingAmount ?? 0.0;
   bool hasRemainingAmount() => _remainingAmount != null;
 
+  // InstaPay specific fields
+  // "instapay_transaction_reference" field.
+  String? _instapayTransactionReference;
+  String? get instapayTransactionReference => _instapayTransactionReference;
+  bool hasInstaPayTransactionReference() => _instapayTransactionReference != null;
+
+  // "instapay_screenshot_url" field.
+  String? _instapayScreenshotUrl;
+  String? get instapayScreenshotUrl => _instapayScreenshotUrl;
+  bool hasInstapayScreenshotUrl() => _instapayScreenshotUrl != null;
+
+  // "instapay_paid_amount" field.
+  double? _instapayPaidAmount;
+  double? get instapayPaidAmount => _instapayPaidAmount;
+  bool hasInstapayPaidAmount() => _instapayPaidAmount != null;
+
   void _initializeFields() {
     _userReference = snapshotData['user_reference'] as DocumentReference?;
     _tripReference = snapshotData['trip_reference'] as DocumentReference?;
@@ -179,6 +195,10 @@ class BookingsRecord extends FirestoreRecord {
     _remainingAmount = castToType<double>(snapshotData['remaining_amount']);
     _unitPriceEGP = castToType<double>(snapshotData['unitPriceEGP']);
     _lineTotalEGP = castToType<double>(snapshotData['lineTotalEGP']);
+    // InstaPay fields
+    _instapayTransactionReference = snapshotData['instapay_transaction_reference'] as String?;
+    _instapayScreenshotUrl = snapshotData['instapay_screenshot_url'] as String?;
+    _instapayPaidAmount = castToType<double>(snapshotData['instapay_paid_amount']);
   }
 
   static CollectionReference get collection =>

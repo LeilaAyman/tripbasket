@@ -10,6 +10,9 @@ import '/services/paymob_service.dart';
 import '/backend/backend.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/utils/loyalty_utils.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'payment_model.dart';
 export 'payment_model.dart';
 
@@ -44,8 +47,16 @@ class _PaymentWidgetState extends State<PaymentWidget> {
   String? _paymentUrl;
   String? _errorMessage;
   String _selectedPaymentOption = 'full'; // 'full' or 'deposit'
+  String _selectedPaymentMethod = 'visa'; // 'visa' or 'instapay'
   double _depositAmount = 0.0;
   double _remainingAmount = 0.0;
+  
+  // InstaPay flow variables
+  bool _showInstaPayFlow = false;
+  bool _showTransactionForm = false;
+  String _transactionReference = '';
+  String? _screenshotUrl;
+  final TextEditingController _transactionController = TextEditingController();
 
   @override
   void initState() {
@@ -231,7 +242,7 @@ class _PaymentWidgetState extends State<PaymentWidget> {
         'lineTotalEGP': widget.totalAmount,
         'booking_date': getCurrentTimestamp,
         'payment_status': 'completed',
-        'payment_method': 'paymob',
+        'payment_method': 'visa',
         'booking_status': 'pending_agency_approval',
         'created_at': getCurrentTimestamp,
         'traveler_count': 1,
@@ -331,6 +342,214 @@ class _PaymentWidgetState extends State<PaymentWidget> {
     );
   }
 
+  void _handleInstaPayPayment() {
+    setState(() {
+      _showInstaPayFlow = true;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _openInstaPayLink() async {
+    const instaPayUrl = 'https://ipn.eg/S/mariam.omar9682/instapay/91tdlO';
+    
+    try {
+      final Uri url = Uri.parse(instaPayUrl);
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url);
+        
+        // Show the transaction form after opening the link
+        setState(() {
+          _showTransactionForm = true;
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open InstaPay link'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error opening InstaPay link: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _uploadScreenshot() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      XFile? image;
+      
+      if (kIsWeb) {
+        image = await picker.pickImage(source: ImageSource.gallery);
+      } else {
+        // Show options for camera or gallery on mobile
+        image = await showModalBottomSheet<XFile?>(
+          context: context,
+          builder: (context) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: Icon(Icons.camera_alt),
+                  title: Text('Take Photo'),
+                  onTap: () async {
+                    Navigator.pop(context, await picker.pickImage(source: ImageSource.camera));
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.photo_library),
+                  title: Text('Choose from Gallery'),
+                  onTap: () async {
+                    Navigator.pop(context, await picker.pickImage(source: ImageSource.gallery));
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      if (image != null) {
+        setState(() {
+          _isLoading = true;
+        });
+
+        // Upload to Firebase Storage
+        final bytes = await image.readAsBytes();
+        final fileName = 'screenshots/${DateTime.now().millisecondsSinceEpoch}_${currentUserUid}.jpg';
+        final ref = FirebaseStorage.instance.ref().child(fileName);
+        
+        await ref.putData(bytes);
+        final downloadURL = await ref.getDownloadURL();
+        
+        setState(() {
+          _screenshotUrl = downloadURL;
+          _isLoading = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Screenshot uploaded successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error uploading screenshot: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _submitInstaPayTransaction() async {
+    if (_transactionReference.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please enter transaction reference'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_screenshotUrl == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please upload payment screenshot'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isProcessingPayment = true;
+    });
+
+    try {
+      // Get current user document for comprehensive user information
+      final userDoc = currentUserDocument;
+      final paymentAmount = _selectedPaymentOption == 'full' ? widget.totalAmount : _depositAmount;
+      
+      // Create booking record with InstaPay details
+      await BookingsRecord.collection.add({
+        'user_reference': currentUserReference,
+        'trip_reference': widget.tripRecord.reference,
+        'agency_reference': widget.tripRecord.agencyReference,
+        'trip_title': widget.tripRecord.title,
+        'trip_price': widget.tripRecord.price,
+        'total_amount': widget.totalAmount,
+        'unitPriceEGP': widget.tripRecord.priceEGP,
+        'lineTotalEGP': widget.totalAmount,
+        'booking_date': getCurrentTimestamp,
+        'payment_status': 'pending_verification', // Different status for InstaPay
+        'payment_method': 'instapay',
+        'booking_status': 'pending_payment_verification',
+        'created_at': getCurrentTimestamp,
+        'traveler_count': 1,
+        'traveler_names': [],
+        'special_requests': '',
+        'payment_option': _selectedPaymentOption,
+        'deposit_amount': _selectedPaymentOption == 'deposit' ? _depositAmount : 0.0,
+        'remaining_amount': _selectedPaymentOption == 'deposit' ? _remainingAmount : 0.0,
+        // InstaPay specific fields
+        'instapay_transaction_reference': _transactionReference.trim(),
+        'instapay_screenshot_url': _screenshotUrl,
+        'instapay_paid_amount': paymentAmount,
+        // Customer information for agency approval
+        'customer_name': userDoc?.displayName?.isNotEmpty == true 
+            ? userDoc!.displayName 
+            : (userDoc?.name?.isNotEmpty == true ? userDoc!.name : currentUserEmail.split('@').first),
+        'customer_email': currentUserEmail,
+        'customer_phone': userDoc?.phoneNumber ?? '',
+        'customer_profile_photo': userDoc?.profilePhotoUrl ?? userDoc?.photoUrl ?? '',
+        'customer_verification_status': userDoc?.nationalIdStatus ?? 'unverified',
+        'customer_loyalty_points': userDoc?.loyaltyPoints ?? 0,
+      });
+
+      // Clear the cart after successful submission
+      await _clearUserCart();
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('InstaPay payment submitted! Your booking is pending verification.'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      // Navigate to bookings page
+      await Future.delayed(Duration(seconds: 2));
+      context.goNamed('mybookings');
+      
+    } catch (e) {
+      print('Error creating InstaPay booking: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error submitting payment: $e'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 5),
+        ),
+      );
+    } finally {
+      setState(() {
+        _isProcessingPayment = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -378,6 +597,10 @@ class _PaymentWidgetState extends State<PaymentWidget> {
   Widget _buildBody() {
     if (_showPaymentOptions) {
       return _buildPaymentOptionsScreen();
+    }
+    
+    if (_showInstaPayFlow) {
+      return _buildInstaPayFlow();
     }
     
     if (_isLoading) {
@@ -515,6 +738,22 @@ class _PaymentWidgetState extends State<PaymentWidget> {
           
           SizedBox(height: 32),
           
+          // Payment Methods
+          Text(
+            'Choose Payment Method',
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: FlutterFlowTheme.of(context).primaryText,
+            ),
+          ),
+          SizedBox(height: 16),
+          
+          // Payment Method Selection
+          _buildPaymentMethodButtons(),
+          
+          SizedBox(height: 24),
+          
           // Payment Options
           Text(
             'Choose Payment Option',
@@ -592,9 +831,11 @@ class _PaymentWidgetState extends State<PaymentWidget> {
           // Proceed Button
           FFButtonWidget(
             onPressed: _proceedToPayment,
-            text: _selectedPaymentOption == 'full' 
-                ? 'Pay EGP ${widget.totalAmount.toStringAsFixed(2)}'
-                : 'Pay Deposit EGP ${_depositAmount.toStringAsFixed(2)}',
+            text: _selectedPaymentMethod == 'instapay' 
+                ? 'Pay using InstaPay'
+                : (_selectedPaymentOption == 'full' 
+                    ? 'Pay EGP ${widget.totalAmount.toStringAsFixed(2)}'
+                    : 'Pay Deposit EGP ${_depositAmount.toStringAsFixed(2)}'),
             options: FFButtonOptions(
               width: double.infinity,
               height: 52,
@@ -699,12 +940,98 @@ class _PaymentWidgetState extends State<PaymentWidget> {
     );
   }
 
+  Widget _buildPaymentMethodButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildPaymentMethodCard(
+            'visa',
+            'Visa/Mastercard',
+            Icons.credit_card,
+            'Pay with credit/debit card',
+          ),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: _buildPaymentMethodCard(
+            'instapay',
+            'InstaPay',
+            Icons.mobile_friendly,
+            'Pay with InstaPay',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPaymentMethodCard(String method, String title, IconData icon, String description) {
+    final isSelected = _selectedPaymentMethod == method;
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedPaymentMethod = method;
+        });
+      },
+      child: Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? Color(0xFFD76B30).withOpacity(0.1) : FlutterFlowTheme.of(context).secondaryBackground,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? Color(0xFFD76B30) : FlutterFlowTheme.of(context).alternate,
+            width: 2,
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isSelected ? Color(0xFFD76B30) : FlutterFlowTheme.of(context).alternate,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? Colors.white : FlutterFlowTheme.of(context).secondaryText,
+                size: 24,
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              title,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: FlutterFlowTheme.of(context).primaryText,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              description,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                color: FlutterFlowTheme.of(context).secondaryText,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _proceedToPayment() {
     setState(() {
       _showPaymentOptions = false;
       _isLoading = true;
     });
-    _initializePayment();
+    
+    if (_selectedPaymentMethod == 'instapay') {
+      _handleInstaPayPayment();
+    } else {
+      _initializePayment();
+    }
   }
 
   Widget _buildLoadingState() {
@@ -1016,6 +1343,381 @@ class _PaymentWidgetState extends State<PaymentWidget> {
               borderRadius: BorderRadius.circular(24),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInstaPayFlow() {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Trip Summary
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: FlutterFlowTheme.of(context).secondaryBackground,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'InstaPay Payment',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: FlutterFlowTheme.of(context).primaryText,
+                  ),
+                ),
+                SizedBox(height: 16),
+                Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        widget.tripRecord.image.isNotEmpty 
+                            ? widget.tripRecord.image 
+                            : 'https://images.unsplash.com/photo-1519451241324-20b4ea2c4220',
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.tripRecord.title,
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: FlutterFlowTheme.of(context).primaryText,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            widget.tripRecord.location,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: FlutterFlowTheme.of(context).secondaryText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16),
+                Divider(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Amount to Pay:',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: FlutterFlowTheme.of(context).primaryText,
+                      ),
+                    ),
+                    Text(
+                      'EGP ${(_selectedPaymentOption == 'full' ? widget.totalAmount : _depositAmount).toStringAsFixed(2)}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFD76B30),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          SizedBox(height: 24),
+          
+          if (!_showTransactionForm) ...[
+            // Step 1: Open InstaPay Link
+            Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Color(0xFFD76B30).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Color(0xFFD76B30).withOpacity(0.3)),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.mobile_friendly,
+                    size: 48,
+                    color: Color(0xFFD76B30),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Step 1: Pay using InstaPay',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFD76B30),
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    'Click the button below to open the InstaPay link and complete your payment.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: FlutterFlowTheme.of(context).primaryText,
+                      height: 1.5,
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  FFButtonWidget(
+                    onPressed: _openInstaPayLink,
+                    text: 'Open InstaPay Link',
+                    options: FFButtonOptions(
+                      width: double.infinity,
+                      height: 48,
+                      padding: EdgeInsets.zero,
+                      iconPadding: EdgeInsets.zero,
+                      color: Color(0xFFD76B30),
+                      textStyle: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      elevation: 2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            SizedBox(height: 20),
+            
+            // Back Button
+            FFButtonWidget(
+              onPressed: () {
+                setState(() {
+                  _showInstaPayFlow = false;
+                  _showPaymentOptions = true;
+                });
+              },
+              text: 'Back to Payment Options',
+              options: FFButtonOptions(
+                width: double.infinity,
+                height: 48,
+                padding: EdgeInsets.zero,
+                iconPadding: EdgeInsets.zero,
+                color: Colors.grey[200],
+                textStyle: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                ),
+                borderRadius: BorderRadius.circular(8),
+                elevation: 0,
+              ),
+            ),
+          ],
+          
+          if (_showTransactionForm) ...[
+            // Step 2: Transaction Verification Form
+            Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: FlutterFlowTheme.of(context).secondaryBackground,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.verified_user, color: Colors.green, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Step 2: Verify Payment',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: FlutterFlowTheme.of(context).primaryText,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                  
+                  // Transaction Reference Input
+                  Text(
+                    'Transaction Reference',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: FlutterFlowTheme.of(context).primaryText,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  TextFormField(
+                    controller: _transactionController,
+                    onChanged: (value) {
+                      setState(() {
+                        _transactionReference = value;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Enter transaction reference number',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Color(0xFFD76B30)),
+                      ),
+                    ),
+                    style: GoogleFonts.poppins(fontSize: 16),
+                  ),
+                  
+                  SizedBox(height: 20),
+                  
+                  // Screenshot Upload
+                  Text(
+                    'Payment Screenshot',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: FlutterFlowTheme.of(context).primaryText,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  
+                  if (_screenshotUrl != null) ...[
+                    Container(
+                      width: double.infinity,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          _screenshotUrl!,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.green, size: 16),
+                        SizedBox(width: 6),
+                        Text(
+                          'Screenshot uploaded successfully',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.green,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12),
+                  ],
+                  
+                  FFButtonWidget(
+                    onPressed: _isLoading ? null : _uploadScreenshot,
+                    text: _screenshotUrl != null ? 'Change Screenshot' : 'Upload Screenshot',
+                    options: FFButtonOptions(
+                      width: double.infinity,
+                      height: 48,
+                      padding: EdgeInsets.zero,
+                      iconPadding: EdgeInsets.zero,
+                      color: _screenshotUrl != null ? Colors.grey[400] : Color(0xFFD76B30),
+                      textStyle: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      elevation: 1,
+                    ),
+                  ),
+                  
+                  SizedBox(height: 24),
+                  
+                  // Submit Button
+                  FFButtonWidget(
+                    onPressed: _isProcessingPayment ? null : _submitInstaPayTransaction,
+                    text: _isProcessingPayment ? 'Submitting...' : 'Submit Payment Verification',
+                    options: FFButtonOptions(
+                      width: double.infinity,
+                      height: 52,
+                      padding: EdgeInsets.zero,
+                      iconPadding: EdgeInsets.zero,
+                      color: Color(0xFFD76B30),
+                      textStyle: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      elevation: 2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            SizedBox(height: 16),
+            
+            // Note
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Your booking will be pending verification until the agency confirms your payment.',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: Colors.blue[800],
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

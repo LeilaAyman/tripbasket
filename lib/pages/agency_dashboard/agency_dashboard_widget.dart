@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/services.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/backend/backend.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -1680,6 +1681,9 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              const SizedBox(width: 16),
+              // Payment Method Indicator
+              _buildPaymentMethodChip(booking),
               const Spacer(),
               Icon(
                 Icons.calendar_today,
@@ -1881,6 +1885,306 @@ class _AgencyDashboardWidgetState extends State<AgencyDashboardWidget> {
         ),
       ),
     );
+  }
+
+  Widget _buildPaymentMethodChip(BookingsRecord booking) {
+    Color backgroundColor;
+    Color textColor;
+    IconData iconData;
+    String displayText;
+    
+    switch (booking.paymentMethod.toLowerCase()) {
+      case 'instapay':
+        backgroundColor = Colors.purple.shade100;
+        textColor = Colors.purple.shade800;
+        iconData = Icons.mobile_friendly;
+        displayText = 'InstaPay';
+        break;
+      case 'visa':
+      case 'paymob':
+        backgroundColor = Colors.blue.shade100;
+        textColor = Colors.blue.shade800;
+        iconData = Icons.credit_card;
+        displayText = 'Visa';
+        break;
+      default:
+        backgroundColor = Colors.grey.shade100;
+        textColor = Colors.grey.shade800;
+        iconData = Icons.payment;
+        displayText = booking.paymentMethod.isNotEmpty ? booking.paymentMethod.toUpperCase() : 'CASH';
+    }
+    
+    return GestureDetector(
+      onTap: booking.paymentMethod.toLowerCase() == 'instapay' 
+          ? () => _showInstaPayDetails(booking)
+          : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(12),
+          border: booking.paymentMethod.toLowerCase() == 'instapay' 
+              ? Border.all(color: Colors.purple.shade300, width: 1)
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              iconData,
+              size: 12,
+              color: textColor,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              displayText,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (booking.paymentMethod.toLowerCase() == 'instapay' && 
+                booking.paymentStatus == 'pending_verification') ...[
+              const SizedBox(width: 4),
+              Icon(
+                Icons.visibility,
+                size: 10,
+                color: textColor,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showInstaPayDetails(BookingsRecord booking) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.mobile_friendly, color: Colors.purple),
+              const SizedBox(width: 8),
+              Text('InstaPay Payment Details'),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Transaction Reference
+                Text(
+                  'Transaction Reference:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          booking.instapayTransactionReference ?? 'N/A',
+                          style: TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      if (booking.instapayTransactionReference?.isNotEmpty == true)
+                        IconButton(
+                          onPressed: () {
+                            Clipboard.setData(
+                              ClipboardData(text: booking.instapayTransactionReference!)
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Transaction reference copied!')),
+                            );
+                          },
+                          icon: Icon(Icons.copy, size: 16),
+                          constraints: BoxConstraints(),
+                          padding: EdgeInsets.zero,
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Payment Amount
+                Text(
+                  'Paid Amount:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'EGP ${booking.instapayPaidAmount?.toStringAsFixed(2) ?? booking.totalAmount.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.green[700],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Payment Screenshot
+                if (booking.instapayScreenshotUrl?.isNotEmpty == true) ...[
+                  Text(
+                    'Payment Screenshot:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    constraints: BoxConstraints(maxHeight: 300),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        booking.instapayScreenshotUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            height: 100,
+                            child: Center(
+                              child: Text('Image could not be loaded'),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                
+                // Payment Status
+                Row(
+                  children: [
+                    Text(
+                      'Payment Status: ',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: booking.paymentStatus == 'pending_verification' 
+                            ? Colors.orange.shade100 
+                            : Colors.green.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        booking.paymentStatus == 'pending_verification' 
+                            ? 'Pending Verification' 
+                            : booking.paymentStatus.toUpperCase(),
+                        style: TextStyle(
+                          color: booking.paymentStatus == 'pending_verification' 
+                              ? Colors.orange.shade800 
+                              : Colors.green.shade800,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            if (booking.paymentStatus == 'pending_verification') ...[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _approveInstaPayPayment(booking);
+                },
+                child: Text('Approve Payment', style: TextStyle(color: Colors.green)),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _rejectInstaPayPayment(booking);
+                },
+                child: Text('Reject Payment', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _approveInstaPayPayment(BookingsRecord booking) async {
+    try {
+      await booking.reference.update({
+        'payment_status': 'completed',
+        'booking_status': 'pending_agency_approval',
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('InstaPay payment approved successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error approving payment: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _rejectInstaPayPayment(BookingsRecord booking) async {
+    try {
+      await booking.reference.update({
+        'payment_status': 'rejected',
+        'booking_status': 'payment_rejected',
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('InstaPay payment rejected.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error rejecting payment: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _approveBooking(BookingsRecord booking) async {

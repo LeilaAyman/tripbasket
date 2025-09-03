@@ -439,7 +439,11 @@ class _CartWidgetState extends State<CartWidget> {
                 ),
                 FFButtonWidget(
                   onPressed: () async {
+                    print('🛒 Checkout button pressed');
+                    print('🛒 Cart items count: ${cartItems.length}');
+                    
                     if (cartItems.isEmpty) {
+                      print('❌ Cart is empty');
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: const Text('Your cart is empty. Add some trips first.'),
@@ -452,14 +456,35 @@ class _CartWidgetState extends State<CartWidget> {
 
                     // Navigate to payment with the first trip (simplified for demo)
                     final firstTrip = cartItems.first;
+                    print('🛒 First trip reference: ${firstTrip.tripReference?.id}');
+                    print('🛒 Grand total: $grandTotal');
+                    
                     if (firstTrip.tripReference != null) {
-                      final tripDoc = await firstTrip.tripReference!.get();
-                      final trip = TripsRecord.fromSnapshot(tripDoc);
-                      
-                      context.pushNamed('payment', queryParameters: {
-                        'tripRecord': trip.reference.id,
-                        'totalAmount': grandTotal.toString(),
-                      });
+                      print('✅ Navigating to payment...');
+                      try {
+                        context.pushNamed('payment', queryParameters: {
+                          'tripRecord': firstTrip.tripReference!.id,
+                          'totalAmount': grandTotal.toString(),
+                        });
+                        print('✅ Navigation call completed');
+                      } catch (e) {
+                        print('❌ Navigation error: $e');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Navigation error: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    } else {
+                      print('❌ Trip reference is null');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Error: Invalid trip data in cart.'),
+                          backgroundColor: Colors.red,
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
                     }
                   },
                   text: 'Proceed to Checkout',

@@ -4,11 +4,11 @@ import * as nodemailer from "nodemailer";
 
 admin.initializeApp();
 
-// Email configuration - you'll need to set these up in Firebase Functions config
+// Gmail configuration using app password - set these up in Firebase Functions config
 const gmailEmail = functions.config().gmail?.email;
 const gmailPassword = functions.config().gmail?.password;
 
-// Create reusable transporter object using Gmail SMTP
+// Create reusable transporter object using Gmail SMTP with app password
 const mailTransporter = gmailEmail && gmailPassword ? nodemailer.createTransporter({
   service: 'gmail',
   auth: {
@@ -391,6 +391,69 @@ export const removeExpiredBookingsManually = functions.https.onCall(async (data,
   } catch (error) {
     console.error("Error removing expired bookings manually:", error);
     throw new functions.https.HttpsError('internal', 'Failed to remove expired bookings');
+  }
+});
+
+// Clean up orphaned cart items that reference deleted trips
+export const cleanupOrphanedCartItems = functions.https.onCall(async (data, context) => {
+  try {
+    console.log('🧹 Starting cart cleanup...');
+    
+    // Get all cart items
+    const cartSnapshot = await admin.firestore().collection('cart').get();
+    console.log(`📦 Found ${cartSnapshot.docs.length} cart items`);
+    
+    let deletedCount = 0;
+    let validCount = 0;
+    const batch = admin.firestore().batch();
+    
+    for (const cartDoc of cartSnapshot.docs) {
+      const cartData = cartDoc.data();
+      const tripReference = cartData.tripReference;
+      
+      if (!tripReference) {
+        console.log(`❌ Cart item ${cartDoc.id} has null trip reference, deleting...`);
+        batch.delete(cartDoc.ref);
+        deletedCount++;
+        continue;
+      }
+      
+      // Check if the referenced trip still exists
+      try {
+        const tripDoc = await tripReference.get();
+        if (!tripDoc.exists) {
+          console.log(`❌ Trip ${tripReference.id} no longer exists, deleting cart item ${cartDoc.id}...`);
+          batch.delete(cartDoc.ref);
+          deletedCount++;
+        } else {
+          console.log(`✅ Cart item ${cartDoc.id} references valid trip ${tripReference.id}`);
+          validCount++;
+        }
+      } catch (e) {
+        console.log(`❌ Error checking trip ${tripReference.id}, deleting cart item ${cartDoc.id}: ${e}`);
+        batch.delete(cartDoc.ref);
+        deletedCount++;
+      }
+    }
+    
+    if (deletedCount > 0) {
+      await batch.commit();
+    }
+    
+    console.log('🎉 Cleanup completed!');
+    console.log(`✅ Valid cart items: ${validCount}`);
+    console.log(`❌ Deleted orphaned items: ${deletedCount}`);
+    
+    return {
+      success: true,
+      validCartItems: validCount,
+      deletedOrphanedItems: deletedCount,
+      message: `Cleanup completed! Found ${validCount} valid cart items and removed ${deletedCount} orphaned items.`
+    };
+    
+  } catch (error) {
+    console.error('💥 Error during cleanup:', error);
+    throw new functions.https.HttpsError('internal', 'Failed to cleanup cart items');
   }
 });
 
