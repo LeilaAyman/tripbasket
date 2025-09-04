@@ -88,7 +88,12 @@
       "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\web/**)",
       "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web/**)",
       "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\assets\\images\\optimized/**)",
-      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\assets\\images\\optimized/**)"
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\assets\\images\\optimized/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web\\assets/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web\\assets\\assets/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web\\assets\\assets\\images/**)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\maria\\OneDrive\\Desktop"
