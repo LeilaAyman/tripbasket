@@ -16,6 +16,7 @@ import 'flutter_flow/flutter_flow_util.dart';
 import 'flutter_flow/nav/nav.dart';
 import '/state/currency_provider.dart';
 import 'theme/app_theme.dart';
+import '/services/deferred_firebase_service.dart';
 import 'index.dart';
 
 void main() async {
@@ -78,9 +79,15 @@ class _MyAppState extends State<MyApp> {
         }
       });
     jwtTokenStream.listen((_) {});
+    
+    // Initialize non-critical Firebase services after app startup
     Future.delayed(
       Duration(milliseconds: 100),
-      () => _appStateNotifier.stopShowingSplashImage(),
+      () {
+        _appStateNotifier.stopShowingSplashImage();
+        // Start deferred Firebase services initialization
+        DeferredFirebaseService.initializeNonCriticalServices();
+      },
     );
   }
 

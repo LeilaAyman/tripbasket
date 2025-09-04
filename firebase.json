@@ -7,6 +7,7 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "compressionEnabled": true,
     "headers": [
       {
         "source": "/index.html",
@@ -32,8 +33,8 @@
         "source": "**/main.dart.js",
         "headers": [
           { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
-          { "key": "Content-Encoding", "value": "gzip" },
-          { "key": "Content-Type", "value": "application/javascript" }
+          { "key": "Content-Type", "value": "application/javascript" },
+          { "key": "Vary", "value": "Accept-Encoding" }
         ]
       },
       {
@@ -41,20 +42,40 @@
         "headers": [
           { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
           { "key": "Content-Encoding", "value": "gzip" },
-          { "key": "Content-Type", "value": "application/javascript" }
+          { "key": "Content-Type", "value": "application/javascript" },
+          { "key": "Vary", "value": "Accept-Encoding" }
+        ]
+      },
+      {
+        "source": "**/main.dart.js.br",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
+          { "key": "Content-Encoding", "value": "br" },
+          { "key": "Content-Type", "value": "application/javascript" },
+          { "key": "Vary", "value": "Accept-Encoding" }
         ]
       },
       {
         "source": "**/*.@(js|css)",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+          { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
+          { "key": "Vary", "value": "Accept-Encoding" }
         ]
       },
       {
         "source": "**/*.@(js.gz|css.gz)",
         "headers": [
           { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
-          { "key": "Content-Encoding", "value": "gzip" }
+          { "key": "Content-Encoding", "value": "gzip" },
+          { "key": "Vary", "value": "Accept-Encoding" }
+        ]
+      },
+      {
+        "source": "**/*.@(js.br|css.br)",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
+          { "key": "Content-Encoding", "value": "br" },
+          { "key": "Vary", "value": "Accept-Encoding" }
         ]
       },
       {

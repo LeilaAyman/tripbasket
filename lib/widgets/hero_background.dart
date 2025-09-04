@@ -32,6 +32,7 @@ class _HeroBackgroundState extends State<HeroBackground>
   late Timer _imageTimer;
   late List<FloatingDot> _dots;
   int _currentImageIndex = 0;
+  bool _imagesPreloaded = false;
 
   @override
   void initState() {
@@ -41,12 +42,17 @@ class _HeroBackgroundState extends State<HeroBackground>
       vsync: this,
     )..repeat();
 
+    // Preload all hero images for better performance
+    _preloadHeroImages();
+
     // Use Timer for image switching every 3 seconds
     _imageTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (mounted) {
+      if (mounted && _imagesPreloaded) {
         setState(() {
           _currentImageIndex = (_currentImageIndex + 1) % kHeroAssets.length;
-          print('Switching to image ${_currentImageIndex}: ${kHeroAssets[_currentImageIndex]}');
+          if (kDebugMode) {
+            print('Switching to image ${_currentImageIndex}: ${kHeroAssets[_currentImageIndex]}');
+          }
         });
       }
     });
@@ -59,6 +65,28 @@ class _HeroBackgroundState extends State<HeroBackground>
       speed: math.Random().nextDouble() * 0.5 + 0.2,
       opacity: math.Random().nextDouble() * 0.6 + 0.2,
     ));
+  }
+
+  Future<void> _preloadHeroImages() async {
+    try {
+      // Preload the first image immediately for LCP
+      if (kHeroAssets.isNotEmpty) {
+        await precacheImage(AssetImage(kHeroAssets[0]), context);
+        if (mounted) setState(() => _imagesPreloaded = true);
+      }
+      
+      // Preload remaining images in the background
+      for (int i = 1; i < kHeroAssets.length; i++) {
+        if (mounted) {
+          Future.microtask(() => precacheImage(AssetImage(kHeroAssets[i]), context));
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error preloading hero images: $e');
+      }
+      if (mounted) setState(() => _imagesPreloaded = true);
+    }
   }
 
   @override
@@ -80,18 +108,22 @@ class _HeroBackgroundState extends State<HeroBackground>
           Positioned.fill(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 800),
-              child: Image.asset(
-                kHeroAssets[_currentImageIndex],
-                key: ValueKey(_currentImageIndex),
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                errorBuilder: (context, error, stackTrace) {
-                  print('Error loading image: ${kHeroAssets[_currentImageIndex]}');
-                  print('Error details: $error');
-                  return _fallback();
-                },
-              ),
+              child: _imagesPreloaded && kHeroAssets.isNotEmpty
+                  ? Image.asset(
+                      kHeroAssets[_currentImageIndex],
+                      key: ValueKey(_currentImageIndex),
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      errorBuilder: (context, error, stackTrace) {
+                        if (kDebugMode) {
+                          print('Error loading image: ${kHeroAssets[_currentImageIndex]}');
+                          print('Error details: $error');
+                        }
+                        return _fallback();
+                      },
+                    )
+                  : _fallback(), // Show fallback while preloading
             ),
           ),
 

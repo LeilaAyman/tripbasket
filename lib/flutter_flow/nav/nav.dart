@@ -22,6 +22,7 @@ import '/pages/agency_dashboard/agency_dashboard_widget.dart';
 import '/pages/admin_dashboard/admin_dashboard_widget.dart';
 import '/pages/edit_profile/edit_profile_widget.dart';
 import '/ui/responsive/home_responsive.dart';
+import '/utils/deferred_routes.dart';
 
 export 'package:go_router/go_router.dart';
 export 'serialization_util.dart';
@@ -148,19 +149,19 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: ProfileWidget.routeName,
           path: ProfileWidget.routePath,
           requireAuth: true,
-          builder: (context, params) => ProfileWidget(),
+          builder: (context, params) => DeferredRoutes.profileRoute(),
         ),
         FFRoute(
           name: MybookingsWidget.routeName,
           path: MybookingsWidget.routePath,
           requireAuth: true,
-          builder: (context, params) => MybookingsWidget(),
+          builder: (context, params) => DeferredRoutes.myBookingsRoute(),
         ),
         FFRoute(
           name: CartWidget.routeName,
           path: CartWidget.routePath,
           requireAuth: true,
-          builder: (context, params) => CartWidget(),
+          builder: (context, params) => DeferredRoutes.cartRoute(),
         ),
         FFRoute(
           name: PaymentWidget.routeName,
@@ -181,9 +182,9 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
                 }
                 
                 final trip = TripsRecord.fromSnapshot(snapshot.data!);
-                return PaymentWidget(
-                  tripRecord: trip,
-                  totalAmount: double.tryParse(totalAmount ?? '0') ?? 0.0,
+                return DeferredRoutes.paymentRoute(
+                  trip,
+                  double.tryParse(totalAmount ?? '0') ?? 0.0,
                 );
               },
             );
@@ -192,7 +193,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: AdminUploadWidget.routeName,
           path: AdminUploadWidget.routePath,
-          builder: (context, params) => AdminUploadWidget(),
+          builder: (context, params) => DeferredRoutes.adminUploadRoute(),
         ),
         FFRoute(
           name: SearchResultsWidget.routeName,
@@ -245,13 +246,13 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: AgencyDashboardWidget.routeName,
           path: AgencyDashboardWidget.routePath,
-          builder: (context, params) => AgencyDashboardWidget(),
+          builder: (context, params) => DeferredRoutes.agencyDashboardRoute(),
         ),
         FFRoute(
           name: AdminDashboardWidget.routeName,
           path: AdminDashboardWidget.routePath,
           requireAuth: true,
-          builder: (context, params) => AdminDashboardWidget(),
+          builder: (context, params) => DeferredRoutes.adminDashboardRoute(),
         ),
         FFRoute(
           name: EditProfileWidget.routeName,
