@@ -1,26 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /admin/
-Disallow: /admin_*
-Disallow: /payment/
-Disallow: /book_trip/
-Disallow: /profile/
-Disallow: /mybookings/
-Disallow: /cart/
-Disallow: /national_id_upload/
-Disallow: /agency_dashboard/
-Disallow: /agency_csv_upload/
-
-# Allow important pages for SEO
-Allow: /
-Allow: /landing
-Allow: /search_results
-Allow: /agencies_list
-Allow: /agency_trips
-Allow: /reviews
-
-# Sitemap location
-Sitemap: https://tripbasket-sctkxj.web.app/sitemap.xml
-
-# Crawl delay for better server performance
-Crawl-delay: 1
+Disallow: /admin
+Sitemap: https://tripsbasket.com/sitemap.xml

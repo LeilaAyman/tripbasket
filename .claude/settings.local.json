@@ -67,7 +67,15 @@
       "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\lib\\flutter_flow\\nav/**)",
       "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\lib\\flutter_flow\\nav/**)",
       "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup/**)",
-      "Bash(tasklist:*)"
+      "Bash(tasklist:*)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\web/**)",
+      "Bash(./optimize_production_build.bat)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web/**)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\maria\\OneDrive\\Desktop"

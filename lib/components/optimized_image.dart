@@ -213,14 +213,17 @@ class HeroImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final constrainedWidth = screenWidth > 1920 ? 1920 : screenWidth;
+    
     return OptimizedImage(
       imageUrl: imageUrl,
-      width: MediaQuery.of(context).size.width,
+      width: constrainedWidth.toDouble(),
       height: 420,
       fit: BoxFit.cover,
-      enableLazyLoading: false, // Load immediately for hero
+      enableLazyLoading: false, // Load immediately for hero (LCP)
       placeholder: Container(
-        width: MediaQuery.of(context).size.width,
+        width: constrainedWidth.toDouble(),
         height: 420,
         decoration: BoxDecoration(
           gradient: LinearGradient(

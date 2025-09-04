@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <!--
     If you are serving your web app in a path other than the root, change the
     href value below to reflect the base path you are serving from.
@@ -26,22 +27,29 @@
 
   
 
-  <meta name="robots" content="noindex" />
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png" />
 
-  <!-- Open Graph & SEO tags -->
-  <meta property="og:title" content="tripsbasket" />
-  <meta property="og:description" content="Built with FlutterFlow." />
-  <meta property="og:image" content="https://storage.googleapis.com/flutterflow-prod-hosting/og_splash_gradient.png" /> 
-  <meta name="twitter:title" content="tripsbasket" />
-  <meta name="twitter:description" content="Built with FlutterFlow." />
-  <meta name="twitter:image" content="https://storage.googleapis.com/flutterflow-prod-hosting/og_splash_gradient.png" />
-  <meta name="twitter:card" content="summary_large_image" />
-
-  <title> tripsbasket </title>
-  <meta name="description" content="Built with FlutterFlow." />
+  <!-- SEO & Open Graph tags -->
+  <title>TripBasket - Discover Amazing Travel Destinations</title>
+  <meta name="description" content="Explore top travel destinations around the world with TripBasket. Book trips, discover hidden gems, and create unforgettable memories with trusted travel agencies.">
+  <meta name="keywords" content="travel, trips, destinations, booking, travel agency, vacation, tourism">
+  <meta name="author" content="TripBasket">
+  
+  <!-- Open Graph tags -->
+  <meta property="og:title" content="TripBasket - Discover Amazing Travel Destinations">
+  <meta property="og:description" content="Explore top travel destinations around the world with TripBasket. Book trips, discover hidden gems, and create unforgettable memories.">
+  <meta property="og:image" content="/assets/images/optimized/200611101955-01-egypt-dahab.webp">
+  <meta property="og:url" content="https://tripsbasket.com">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="TripBasket">
+  
+  <!-- Twitter Card tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="TripBasket - Discover Amazing Travel Destinations">
+  <meta name="twitter:description" content="Explore top travel destinations around the world with TripBasket.">
+  <meta name="twitter:image" content="/assets/images/optimized/200611101955-01-egypt-dahab.webp">
   <!-- Critical resource preconnects -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -55,6 +63,12 @@
   <link rel="dns-prefetch" href="https://storage.googleapis.com">
   <link rel="dns-prefetch" href="https://apis.google.com">
   <link rel="dns-prefetch" href="https://accounts.google.com">
+  
+  <!-- Hero image preload for LCP optimization -->
+  <link rel="preload" as="image" href="/assets/images/optimized/200611101955-01-egypt-dahab.webp" fetchpriority="high">
+  
+  <!-- Preload critical CSS/JS for better FCP -->
+  <link rel="preload" as="style" href="/flutter.js">
     
 
   <!-- Status Bar color in Safari browser (iOS) and PWA -->

@@ -8,6 +8,17 @@
       "**/node_modules/**"
     ],
     "compressionEnabled": true,
+    "http2PushLinks": [
+      {
+        "source": "/",
+        "headers": [
+          {
+            "key": "Link",
+            "value": "</flutter.js>; rel=preload; as=script, </main.dart.js>; rel=preload; as=script"
+          }
+        ]
+      }
+    ],
     "headers": [
       {
         "source": "/index.html",
