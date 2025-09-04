@@ -64,12 +64,205 @@
   <link rel="dns-prefetch" href="https://apis.google.com">
   <link rel="dns-prefetch" href="https://accounts.google.com">
   
-  <!-- Hero image preload for LCP optimization -->
-  <link rel="preload" as="image" href="/assets/images/optimized/200611101955-01-egypt-dahab.webp" fetchpriority="high">
+  <!-- Hero image preload for LCP optimization - ensure LCP detection -->
+  <link rel="preload" as="image" href="/assets/images/optimized/200611101955-01-egypt-dahab_lg.webp" fetchpriority="high">
+  <link rel="preload" as="image" href="/assets/images/optimized/200611101955-01-egypt-dahab_md.webp" media="(max-width: 768px)" fetchpriority="high">
+  <link rel="preload" as="image" href="/assets/images/optimized/200611101955-01-egypt-dahab_sm.webp" media="(max-width: 480px)" fetchpriority="high">
   
   <!-- Preload critical CSS/JS for better FCP -->
   <link rel="preload" as="style" href="/flutter.js">
+  
+  <!-- Critical CSS inlined for faster FCP -->
+  <style>
+    /* Reset and base styles for immediate rendering */
+    * { box-sizing: border-box; }
+    html { line-height: 1.15; -webkit-text-size-adjust: 100%; }
+    body { 
+      margin: 0; 
+      padding: 0; 
+      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+      font-size: 14px;
+      line-height: 1.6;
+      background: #f1f4f8;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
     
+    /* Flutter web specific optimizations */
+    flt-glass-pane, flt-scene-host { 
+      pointer-events: none; 
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      will-change: transform;
+    }
+    flt-semantics-host { 
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      transform: translate3d(0,0,0);
+      contain: layout style paint;
+    }
+    
+    /* Above-the-fold critical styles - Static Hero for LCP */
+    .static-hero {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      z-index: 10;
+      background-image: url('/assets/images/optimized/200611101955-01-egypt-dahab_lg.webp');
+      background-size: cover;
+      background-position: center center;
+      background-repeat: no-repeat;
+      contain: layout style paint;
+    }
+    
+    /* Responsive hero images */
+    @media (max-width: 768px) {
+      .static-hero {
+        background-image: url('/assets/images/optimized/200611101955-01-egypt-dahab_md.webp');
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .static-hero {
+        background-image: url('/assets/images/optimized/200611101955-01-egypt-dahab_sm.webp');
+      }
+    }
+    
+    /* Hero overlay */
+    .static-hero::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.4) 0%,
+        rgba(0, 0, 0, 0.2) 50%,
+        rgba(0, 0, 0, 0.4) 100%
+      );
+    }
+    
+    /* Smooth transition when Flutter takes over */
+    .static-hero {
+      transition: opacity 0.8s ease-out, visibility 0.8s ease-out;
+    }
+    
+    .flutter-loaded .static-hero {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    
+    /* Loading indicator on static hero */
+    .static-hero-loading {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 14px;
+      text-align: center;
+      z-index: 20;
+      font-weight: 500;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+    
+    .flutter-loaded .static-hero-loading {
+      display: none;
+    }
+    
+    /* Flutter hero container */
+    .hero-container {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      contain: layout style paint;
+    }
+    
+    /* Loading states */
+    .loading {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 16px;
+      color: #333;
+      z-index: 1000;
+    }
+    
+    /* Navigation placeholder */
+    .nav-placeholder {
+      height: 64px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+    }
+    
+    /* Prevent layout shift during font loading */
+    .font-loading {
+      font-display: swap;
+      visibility: hidden;
+    }
+    .font-loaded .font-loading {
+      visibility: visible;
+    }
+    
+    /* Performance critical optimizations */
+    *, *::before, *::after {
+      -webkit-box-sizing: border-box;
+      box-sizing: border-box;
+    }
+    
+    /* Critical performance CSS */
+    flt-renderer, flt-clip, flt-opacity, flt-offset, flt-transform {
+      contain: layout style paint;
+    }
+    
+    /* Eliminate Flutter loading flash */
+    flutter-view {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    /* Optimize font rendering */
+    body, input, textarea, button {
+      font-feature-settings: 'kern' 1;
+      -webkit-font-feature-settings: 'kern' 1;
+      text-rendering: optimizeSpeed;
+    }
+    
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+      body { font-size: 12px; }
+      .hero-container { min-height: 80vh; }
+      .nav-placeholder { height: 56px; }
+      /* Reduce visual complexity on mobile */
+      .static-hero::after {
+        background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.3) 100%);
+      }
+    }
+    
+    /* High DPI optimizations */
+    @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+      body { -webkit-font-smoothing: subpixel-antialiased; }
+    }
+  </style>
 
   <!-- Status Bar color in Safari browser (iOS) and PWA -->
   <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1f4f8">
@@ -79,10 +272,10 @@
   
 </head>
 <body>
-  
-  
-  
-  
+  <!-- Static Hero for LCP - renders immediately before Flutter -->
+  <div class="static-hero" id="static-hero">
+    <div class="static-hero-loading">Loading TripBasket...</div>
+  </div>
   
   <script>
 // Force cache clear and reload
@@ -139,12 +332,85 @@ setInterval(() => {
     {{flutter_js}}
     {{flutter_build_config}}
     
+    // Performance monitoring
+    let firebaseLoaded = false;
+    let userInteracted = false;
+    
+    // Aggressively lazy-load Firebase modules only when needed
+    const loadFirebaseSDKs = async () => {
+      if (firebaseLoaded) return;
+      firebaseLoaded = true;
+      
+      console.log('Loading Firebase modules...');
+      
+      // Load Firebase modules sequentially to reduce initial bundle blocking
+      const firebaseModules = [
+        'https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js',
+        'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js', 
+        'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js',
+        'https://www.gstatic.com/firebasejs/10.7.0/firebase-analytics-compat.js',
+        'https://www.gstatic.com/firebasejs/10.7.0/firebase-performance-compat.js'
+      ];
+      
+      for (const moduleUrl of firebaseModules) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = moduleUrl;
+          script.defer = true;
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+      
+      console.log('Firebase modules loaded');
+    };
+    
+    // Listen for meaningful user interactions (not passive)
+    const meaningfulEvents = ['click', 'touchstart'];
+    const onMeaningfulInteraction = () => {
+      if (!userInteracted) {
+        userInteracted = true;
+        // Use requestIdleCallback for non-blocking Firebase load
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(() => loadFirebaseSDKs());
+        } else {
+          setTimeout(() => loadFirebaseSDKs(), 0);
+        }
+        meaningfulEvents.forEach(event => 
+          document.removeEventListener(event, onMeaningfulInteraction, true)
+        );
+      }
+    };
+    
+    // Add meaningful interaction listeners only
+    meaningfulEvents.forEach(event => 
+      document.addEventListener(event, onMeaningfulInteraction, true)
+    );
+    
+    // Load Flutter app immediately
     _flutter.loader.load({
       onEntrypointLoaded: function(engineInitializer) {
         engineInitializer.initializeEngine({
-          renderer: "html"
+          renderer: "html",
+          // Enable optimizations
+          useColorEmoji: true
         }).then(function(appRunner) {
           appRunner.runApp();
+          
+          // Hide static hero when Flutter is ready
+          setTimeout(() => {
+            document.body.classList.add('flutter-loaded');
+            console.log('Flutter loaded, hiding static hero for LCP');
+          }, 1000);
+          
+          // Aggressive fallback: only load Firebase after 5 seconds or if really needed
+          setTimeout(() => {
+            if (!userInteracted) {
+              console.log('No interaction detected, deferring Firebase load...');
+              // Don't load Firebase unless absolutely necessary
+            }
+          }, 5000);
         });
       }
     });

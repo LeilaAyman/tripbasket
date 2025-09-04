@@ -75,7 +75,20 @@
       "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web/**)",
       "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web/**)",
       "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web/**)",
-      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web/**)"
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\web/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup/**)",
+      "Bash(powershell:*)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\lib/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\lib\\widgets/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\lib\\utils/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\assets\\images\\optimized/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\web/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\assets\\images\\optimized/**)",
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\assets\\images\\optimized/**)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\maria\\OneDrive\\Desktop"

@@ -8,6 +8,7 @@
       "**/node_modules/**"
     ],
     "compressionEnabled": true,
+    "http2": "push",
     "http2PushLinks": [
       {
         "source": "/",
@@ -67,9 +68,23 @@
         ]
       },
       {
-        "source": "**/*.@(js|css)",
+        "source": "**/*.js",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
+          { "key": "Cache-Control", "value": "public,max-age=31536000,immutable" },
+          { "key": "Vary", "value": "Accept-Encoding" }
+        ]
+      },
+      {
+        "source": "**/*.css",
+        "headers": [
+          { "key": "Cache-Control", "value": "public,max-age=31536000,immutable" },
+          { "key": "Vary", "value": "Accept-Encoding" }
+        ]
+      },
+      {
+        "source": "**/*.@(woff2|webp)",
+        "headers": [
+          { "key": "Cache-Control", "value": "public,max-age=31536000,immutable" },
           { "key": "Vary", "value": "Accept-Encoding" }
         ]
       },
@@ -82,11 +97,38 @@
         ]
       },
       {
-        "source": "**/*.@(js.br|css.br)",
+        "source": "**/*.js.br",
+        "headers": [
+          { "key": "Cache-Control", "value": "public,max-age=31536000,immutable" },
+          { "key": "Content-Encoding", "value": "br" },
+          { "key": "Content-Type", "value": "application/javascript" },
+          { "key": "Vary", "value": "Accept-Encoding" }
+        ]
+      },
+      {
+        "source": "**/*.css.br",
+        "headers": [
+          { "key": "Cache-Control", "value": "public,max-age=31536000,immutable" },
+          { "key": "Content-Encoding", "value": "br" },
+          { "key": "Content-Type", "value": "text/css" },
+          { "key": "Vary", "value": "Accept-Encoding" }
+        ]
+      },
+      {
+        "source": "**/*.@(woff2.br|webp.br|json.br|html.br)",
+        "headers": [
+          { "key": "Cache-Control", "value": "public,max-age=31536000,immutable" },
+          { "key": "Content-Encoding", "value": "br" },
+          { "key": "Vary", "value": "Accept-Encoding" }
+        ]
+      },
+      {
+        "source": "**/*.webp.br",
         "headers": [
           { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
           { "key": "Content-Encoding", "value": "br" },
-          { "key": "Vary", "value": "Accept-Encoding" }
+          { "key": "Content-Type", "value": "image/webp" },
+          { "key": "Vary", "value": "Accept" }
         ]
       },
       {

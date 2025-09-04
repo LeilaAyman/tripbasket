@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '/utils/image_optimization_helper.dart';
+import '/widgets/responsive_image.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -104,17 +105,18 @@ class _HeroBackgroundState extends State<HeroBackground>
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Background Image
+          // Background Image with responsive loading
           Positioned.fill(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 800),
               child: _imagesPreloaded && kHeroAssets.isNotEmpty
-                  ? Image.asset(
-                      kHeroAssets[_currentImageIndex],
+                  ? ResponsiveImage(
                       key: ValueKey(_currentImageIndex),
+                      basePath: kHeroAssets[_currentImageIndex],
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
+                      isLCP: _currentImageIndex == 0, // Mark first image as LCP
                       errorBuilder: (context, error, stackTrace) {
                         if (kDebugMode) {
                           print('Error loading image: ${kHeroAssets[_currentImageIndex]}');

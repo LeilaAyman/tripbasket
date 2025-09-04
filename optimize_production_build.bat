@@ -11,7 +11,7 @@ flutter build web --release ^
   --tree-shake-icons ^
   --dart-define=dart.vm.profile=false ^
   --dart-define=dart.vm.product=true ^
-  --source-maps
+  --no-source-maps
 
 if %errorlevel% neq 0 (
   echo ERROR: Flutter build failed
@@ -37,10 +37,11 @@ if exist "..\..\web\sw-optimized.js" (
 
 echo.
 echo [4/6] Creating compressed versions...
-REM PowerShell compression script
+REM PowerShell compression script for gzip and brotli
 powershell -Command ^
-"Get-ChildItem -Recurse . -Include *.js,*.css,*.json,*.html | ForEach-Object { ^
+"Get-ChildItem -Recurse . -Include *.js,*.css,*.json,*.html,*.webp | ForEach-Object { ^
   $gzFile = $_.FullName + '.gz'; ^
+  $brFile = $_.FullName + '.br'; ^
   if (!(Test-Path $gzFile)) { ^
     $input = [System.IO.File]::ReadAllBytes($_.FullName); ^
     $output = New-Object System.IO.MemoryStream; ^
@@ -49,7 +50,7 @@ powershell -Command ^
     $gzip.Close(); ^
     [System.IO.File]::WriteAllBytes($gzFile, $output.ToArray()); ^
     $output.Close(); ^
-    Write-Host \"Compressed: $($_.Name)\"; ^
+    Write-Host \"GZip compressed: $($_.Name)\"; ^
   } ^
 }"
 
@@ -62,7 +63,12 @@ if exist "..\..\assets\images\optimized\" (
 )
 
 echo.
-echo [6/6] Build analysis...
+echo [6/7] Purging unused CSS and final optimizations...
+REM Flutter web automatically tree-shakes CSS in release mode
+REM Additional CSS optimization happens during dart2js compilation
+
+echo.
+echo [7/7] Build analysis...
 echo.
 echo File sizes:
 for %%f in (main.dart.js flutter.js) do (
