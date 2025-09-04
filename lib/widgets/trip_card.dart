@@ -7,11 +7,9 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/widgets/price_text.dart';
 import '/services/favorites_service.dart';
-import '/components/interactive_trip_rating.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
-import '/components/write_review_dialog.dart';
 
 class TripCard extends StatefulWidget {
   final TripsRecord trip;
@@ -177,48 +175,6 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
     }
   }
 
-  Future<ReviewsRecord?> _getUserExistingReview() async {
-    if (currentUserReference == null) return null;
-    
-    try {
-      final reviewsQuery = await FirebaseFirestore.instance
-          .collection('reviews')
-          .where('trip_reference', isEqualTo: widget.trip.reference)
-          .where('user_reference', isEqualTo: currentUserReference)
-          .limit(1)
-          .get();
-      
-      if (reviewsQuery.docs.isNotEmpty) {
-        return ReviewsRecord.fromSnapshot(reviewsQuery.docs.first);
-      }
-    } catch (e) {
-      print('Error checking existing review: $e');
-    }
-    
-    return null;
-  }
-
-  void _showWriteReviewDialog() async {
-    if (currentUserReference == null) return;
-    
-    // Check if user has already reviewed this trip
-    final existingReview = await _getUserExistingReview();
-    
-    if (mounted) {
-      final result = await showDialog<bool>(
-        context: context,
-        builder: (context) => WriteReviewDialog(
-          tripRecord: widget.trip,
-          existingReview: existingReview,
-        ),
-      );
-      
-      if (result == true && mounted) {
-        // Review was successfully submitted/updated
-        setState(() {}); // Refresh the widget
-      }
-    }
-  }
 
 
   void _onHover(bool isHovered) {
@@ -618,9 +574,18 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
             ),
           ),
         OutlinedButton(
-          onPressed: () => context.pushNamed('reviews', queryParameters: {
-            'tripId': widget.trip.reference.id,
-          }),
+          onPressed: () {
+            // Navigate to Reviews page showing agency reviews for this trip's agency
+            if (_agencyData != null) {
+              context.pushNamed('reviews', queryParameters: {
+                'agencyId': widget.trip.agencyReference?.id ?? '',
+                'fromTrip': widget.trip.reference.id,
+              });
+            } else {
+              // Fallback to general reviews if no agency data
+              context.pushNamed('reviews');
+            }
+          },
           style: OutlinedButton.styleFrom(
             side: BorderSide(color: Theme.of(context).colorScheme.outline),
             shape: RoundedRectangleBorder(
@@ -631,31 +596,9 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
           child: Text(
-            'Reviews',
+            'View Reviews',
             style: TextStyle(fontSize: 12),
           ),
-        ),
-        FutureBuilder<ReviewsRecord?>(
-          future: _getUserExistingReview(),
-          builder: (context, snapshot) {
-            final hasReview = snapshot.data != null;
-            return OutlinedButton(
-              onPressed: () => _showWriteReviewDialog(),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: Theme.of(context).colorScheme.outline),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                hasReview ? 'Edit' : 'Write',
-                style: TextStyle(fontSize: 12),
-              ),
-            );
-          },
         ),
       ],
     );
@@ -945,11 +888,40 @@ class _TripCardState extends State<TripCard> with SingleTickerProviderStateMixin
                     ),
                     Padding(
                       padding: EdgeInsetsDirectional.fromSTEB(0.0, 8.0, 0.0, 0.0),
-                      child: InteractiveTripRating(
-                        tripRecord: widget.trip,
-                        onRatingChanged: (rating) {
-                          print('Rating changed to: \$rating');
-                        },
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                // Navigate to Reviews page showing agency reviews for this trip's agency
+                                if (_agencyData != null) {
+                                  context.pushNamed('reviews', queryParameters: {
+                                    'agencyId': widget.trip.agencyReference?.id ?? '',
+                                    'fromTrip': widget.trip.reference.id,
+                                  });
+                                } else {
+                                  // Fallback to general reviews if no agency data
+                                  context.pushNamed('reviews');
+                                }
+                              },
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: FlutterFlowTheme.of(context).primary),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              ),
+                              child: Text(
+                                'View Reviews',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: FlutterFlowTheme.of(context).primary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

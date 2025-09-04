@@ -2,6 +2,12 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import * as nodemailer from "nodemailer";
 
+// Import image optimization functions
+const imageOptimization = require('../imageOptimization');
+export const optimizeUploadedImage = imageOptimization.optimizeUploadedImage;
+export const optimizeExistingImages = imageOptimization.optimizeExistingImages;
+export const getOptimizationStats = imageOptimization.getOptimizationStats;
+
 admin.initializeApp();
 
 // Gmail configuration using app password - set these up in Firebase Functions config
@@ -9,7 +15,7 @@ const gmailEmail = functions.config().gmail?.email;
 const gmailPassword = functions.config().gmail?.password;
 
 // Create reusable transporter object using Gmail SMTP with app password
-const mailTransporter = gmailEmail && gmailPassword ? nodemailer.createTransporter({
+const mailTransporter = gmailEmail && gmailPassword ? nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: gmailEmail,

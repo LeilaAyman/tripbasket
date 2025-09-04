@@ -22,11 +22,103 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteUserCompletely = exports.removeExpiredBookingsManually = exports.removeExpiredBookings = exports.awardPointsManually = exports.onBookingUpdate_awardPoints = exports.onBookingCreate_awardPoints = void 0;
+exports.deleteUserCompletely = exports.cleanupOrphanedCartItems = exports.removeExpiredBookingsManually = exports.removeExpiredBookings = exports.awardPointsManually = exports.onBookingUpdate_awardPoints = exports.onBookingCreate_awardPoints = exports.send2FAEmail = exports.getOptimizationStats = exports.optimizeExistingImages = exports.optimizeUploadedImage = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
+const nodemailer = __importStar(require("nodemailer"));
+// Import image optimization functions
+const imageOptimization = require('../imageOptimization');
+exports.optimizeUploadedImage = imageOptimization.optimizeUploadedImage;
+exports.optimizeExistingImages = imageOptimization.optimizeExistingImages;
+exports.getOptimizationStats = imageOptimization.getOptimizationStats;
 admin.initializeApp();
+// Gmail configuration using app password - set these up in Firebase Functions config
+const gmailEmail = (_a = functions.config().gmail) === null || _a === void 0 ? void 0 : _a.email;
+const gmailPassword = (_b = functions.config().gmail) === null || _b === void 0 ? void 0 : _b.password;
+// Create reusable transporter object using Gmail SMTP with app password
+const mailTransporter = gmailEmail && gmailPassword ? nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: gmailEmail,
+        pass: gmailPassword
+    }
+}) : null;
+// Send verification email for 2FA
+exports.send2FAEmail = functions.https.onCall(async (data, context) => {
+    try {
+        // Note: Removed authentication check since this is used for 2FA during login process
+        const { email, code } = data;
+        if (!email || !code) {
+            throw new functions.https.HttpsError('invalid-argument', 'Email and code are required');
+        }
+        // Check if email configuration is available
+        if (!mailTransporter) {
+            console.log(`⚠️ Email not configured, code for ${email}: ${code}`);
+            // For development - show in a more user-friendly way
+            return {
+                success: true,
+                message: 'Email service not configured. Check console for verification code.',
+                developmentCode: code // Only for development
+            };
+        }
+        // Compose email
+        const mailOptions = {
+            from: gmailEmail,
+            to: email,
+            subject: 'TripBasket - Two-Factor Authentication Code',
+            html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #D76B30, #F2D83B); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0;">TripBasket</h1>
+            <p style="color: white; margin: 10px 0 0 0;">Your Travel Verification Code</p>
+          </div>
+          
+          <div style="padding: 30px; background: #f9f9f9;">
+            <h2 style="color: #333;">Security Verification Required</h2>
+            <p style="color: #666; line-height: 1.6;">
+              We received a request to verify your account. Please use the verification code below:
+            </p>
+            
+            <div style="background: white; border: 2px solid #D76B30; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
+              <h1 style="color: #D76B30; font-size: 32px; letter-spacing: 4px; margin: 0;">${code}</h1>
+            </div>
+            
+            <p style="color: #666; line-height: 1.6;">
+              This code will expire in <strong>10 minutes</strong> for security purposes.
+            </p>
+            
+            <p style="color: #666; line-height: 1.6;">
+              If you didn't request this verification, please ignore this email or contact our support team.
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+            
+            <p style="color: #999; font-size: 12px; text-align: center;">
+              This email was sent by TripBasket Security System<br>
+              Please do not reply to this email.
+            </p>
+          </div>
+        </div>
+      `
+        };
+        // Send email
+        await mailTransporter.sendMail(mailOptions);
+        console.log(`✅ 2FA email sent successfully to ${email}`);
+        return {
+            success: true,
+            message: 'Verification code sent successfully'
+        };
+    }
+    catch (error) {
+        console.error('❌ Error sending 2FA email:', error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError('internal', 'Failed to send verification email');
+    }
+});
 // Award 100 loyalty points when a booking is created with completed payment
 exports.onBookingCreate_awardPoints = functions.firestore
     .document("bookings/{bookingId}")
@@ -278,6 +370,62 @@ exports.removeExpiredBookingsManually = functions.https.onCall(async (data, cont
     catch (error) {
         console.error("Error removing expired bookings manually:", error);
         throw new functions.https.HttpsError('internal', 'Failed to remove expired bookings');
+    }
+});
+// Clean up orphaned cart items that reference deleted trips
+exports.cleanupOrphanedCartItems = functions.https.onCall(async (data, context) => {
+    try {
+        console.log('🧹 Starting cart cleanup...');
+        // Get all cart items
+        const cartSnapshot = await admin.firestore().collection('cart').get();
+        console.log(`📦 Found ${cartSnapshot.docs.length} cart items`);
+        let deletedCount = 0;
+        let validCount = 0;
+        const batch = admin.firestore().batch();
+        for (const cartDoc of cartSnapshot.docs) {
+            const cartData = cartDoc.data();
+            const tripReference = cartData.tripReference;
+            if (!tripReference) {
+                console.log(`❌ Cart item ${cartDoc.id} has null trip reference, deleting...`);
+                batch.delete(cartDoc.ref);
+                deletedCount++;
+                continue;
+            }
+            // Check if the referenced trip still exists
+            try {
+                const tripDoc = await tripReference.get();
+                if (!tripDoc.exists) {
+                    console.log(`❌ Trip ${tripReference.id} no longer exists, deleting cart item ${cartDoc.id}...`);
+                    batch.delete(cartDoc.ref);
+                    deletedCount++;
+                }
+                else {
+                    console.log(`✅ Cart item ${cartDoc.id} references valid trip ${tripReference.id}`);
+                    validCount++;
+                }
+            }
+            catch (e) {
+                console.log(`❌ Error checking trip ${tripReference.id}, deleting cart item ${cartDoc.id}: ${e}`);
+                batch.delete(cartDoc.ref);
+                deletedCount++;
+            }
+        }
+        if (deletedCount > 0) {
+            await batch.commit();
+        }
+        console.log('🎉 Cleanup completed!');
+        console.log(`✅ Valid cart items: ${validCount}`);
+        console.log(`❌ Deleted orphaned items: ${deletedCount}`);
+        return {
+            success: true,
+            validCartItems: validCount,
+            deletedOrphanedItems: deletedCount,
+            message: `Cleanup completed! Found ${validCount} valid cart items and removed ${deletedCount} orphaned items.`
+        };
+    }
+    catch (error) {
+        console.error('💥 Error during cleanup:', error);
+        throw new functions.https.HttpsError('internal', 'Failed to cleanup cart items');
     }
 });
 // Admin function to completely delete a user (both Auth and Firestore)

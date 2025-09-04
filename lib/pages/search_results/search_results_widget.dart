@@ -28,6 +28,7 @@ class SearchResultsWidget extends StatefulWidget {
     this.month,
     this.travelers,
     this.budget,
+    this.showAll,
   });
 
   final String? searchQuery;
@@ -35,6 +36,7 @@ class SearchResultsWidget extends StatefulWidget {
   final String? month;
   final String? travelers;
   final String? budget;
+  final String? showAll;
 
   static String routeName = 'searchResults';
   static String routePath = '/searchResults';
@@ -253,7 +255,7 @@ class _SearchResultsWidgetState extends State<SearchResultsWidget>
             },
           ),
           title: Text(
-            'Search Results',
+            widget.showAll == 'true' ? 'All Destinations' : 'Search Results',
             style: GoogleFonts.poppins(
               color: Colors.white,
               fontSize: 22.0,

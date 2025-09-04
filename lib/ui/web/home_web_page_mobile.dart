@@ -1755,13 +1755,6 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
                 ),
                 const SizedBox(height: 16),
                 _buildMobileContactMethod(
-                  Icons.phone_outlined,
-                  'Call Us',
-                  '+1 (555) 123-TRIP',
-                  () => _makePhoneCall(),
-                ),
-                const SizedBox(height: 16),
-                _buildMobileContactMethod(
                   Icons.email_outlined,
                   'Email Support',
                   'info@tripsbasket.com',
@@ -1833,21 +1826,6 @@ class _HomeWebPageMobileState extends State<HomeWebPageMobile>
     );
   }
 
-  void _makePhoneCall() async {
-    final url = Uri.parse('tel:+15551234TRIP');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not make phone call'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
 
   void _sendEmail() async {
     final url = Uri.parse('mailto:info@tripsbasket.com');

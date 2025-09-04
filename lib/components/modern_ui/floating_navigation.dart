@@ -294,7 +294,7 @@ class _FloatingNavigationState extends State<FloatingNavigation>
   Widget _buildNavigationLinks() {
     final links = [
       ('Home', 'home'),
-      ('Destinations', 'destinations'),
+      ('Destinations', 'searchResults'),
       ('Reviews', 'reviews'),
       ('Agencies', 'agenciesList'),
     ];
@@ -307,7 +307,16 @@ class _FloatingNavigationState extends State<FloatingNavigation>
             text: link.$1,
             type: PremiumButtonType.ghost,
             size: PremiumButtonSize.small,
-            onPressed: () => context.pushNamed(link.$2),
+            onPressed: () {
+              if (link.$2 == 'searchResults') {
+                // Navigate to search results showing all destinations
+                context.pushNamed(link.$2, queryParameters: {
+                  'showAll': 'true',
+                });
+              } else {
+                context.pushNamed(link.$2);
+              }
+            },
           ),
         );
       }).toList(),

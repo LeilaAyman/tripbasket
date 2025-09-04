@@ -1,12 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '/utils/image_optimization_helper.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
-const List<String> kHeroAssets = [
+const List<String> _kHeroAssetsOriginal = [
   'assets/images/200611101955-01-egypt-dahab.jpg',
 ];
+
+// Get optimized versions of hero assets
+List<String> get kHeroAssets => ImageOptimizationHelper.getOptimizedPaths(_kHeroAssetsOriginal);
 
 class HeroBackground extends StatefulWidget {
   final double height;

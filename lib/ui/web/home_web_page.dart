@@ -2318,15 +2318,6 @@ class _HomeWebPageState extends State<HomeWebPage>
                         ),
                         const SizedBox(height: 20),
                         _buildContactMethod(
-                          Icons.phone_outlined,
-                          'Call Us',
-                          '+1 (555) 123-TRIP',
-                          'Mon-Sun 8AM-10PM EST',
-                          const [Color(0xFF2196F3), Color(0xFF42A5F5)],
-                          () => _makePhoneCall(),
-                        ),
-                        const SizedBox(height: 20),
-                        _buildContactMethod(
                           Icons.email_outlined,
                           'Email Support',
                           'info@tripsbasket.com',
@@ -2696,12 +2687,6 @@ class _HomeWebPageState extends State<HomeWebPage>
     );
   }
 
-  void _makePhoneCall() async {
-    final url = Uri.parse('tel:+15551234TRIP');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    }
-  }
 
   void _sendEmail() async {
     final url = Uri.parse('mailto:info@tripsbasket.com?subject=Support Request');

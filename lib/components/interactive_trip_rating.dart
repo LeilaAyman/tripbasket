@@ -6,7 +6,6 @@ import '/backend/backend.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/components/write_review_dialog.dart';
 
 class InteractiveTripRating extends StatefulWidget {
   const InteractiveTripRating({
@@ -103,109 +102,6 @@ class _InteractiveTripRatingState extends State<InteractiveTripRating>
     }
   }
 
-  Future<void> _submitRating(double rating) async {
-    if (!loggedIn) {
-      // Show login prompt
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please sign in to rate this trip'),
-          backgroundColor: FlutterFlowTheme.of(context).error,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    try {
-      _animationController.forward().then((_) {
-        _animationController.reverse();
-      });
-
-      // Get current user data
-      final userData = await UsersRecord.getDocumentOnce(currentUserReference!);
-
-      // Check if user already has a review
-      final existingReviews = await queryReviewsRecordOnce(
-        queryBuilder: (q) => q
-            .where('trip_reference', isEqualTo: widget.tripRecord.reference)
-            .where('user_reference', isEqualTo: currentUserReference),
-        singleRecord: true,
-      );
-
-      if (existingReviews.isNotEmpty) {
-        // Update existing review
-        await existingReviews.first.reference.update({
-          'rating': rating,
-        });
-      } else {
-        // Create new review
-        final reviewData = createReviewsRecordData(
-          tripReference: widget.tripRecord.reference,
-          userReference: currentUserReference,
-          userName: userData.displayName.isNotEmpty ? userData.displayName : userData.name,
-          userPhoto: userData.photoUrl,
-          rating: rating,
-          createdAt: DateTime.now(),
-          helpfulCount: 0,
-          tripTitle: widget.tripRecord.title,
-        );
-
-        await ReviewsRecord.collection.add(reviewData);
-      }
-
-      // Update trip's average rating
-      await _updateTripAverageRating();
-
-      setState(() {
-        _currentRating = rating;
-        _hasUserRated = true;
-      });
-
-      widget.onRatingChanged?.call(rating);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_hasUserRated ? 'Rating updated!' : 'Thank you for rating!'),
-          backgroundColor: FlutterFlowTheme.of(context).primary,
-          duration: Duration(seconds: 2),
-        ),
-      );
-
-      // Reload data to get updated average
-      _loadReviewData();
-    } catch (e) {
-      print('Error submitting rating: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error submitting rating. Please try again.'),
-          backgroundColor: FlutterFlowTheme.of(context).error,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-  }
-
-  Future<void> _updateTripAverageRating() async {
-    try {
-      final reviews = await queryReviewsRecordOnce(
-        queryBuilder: (q) => q.where('trip_reference', isEqualTo: widget.tripRecord.reference),
-      );
-
-      double averageRating = 0.0;
-      if (reviews.isNotEmpty) {
-        final totalRating = reviews.fold<double>(0.0, (sum, review) => sum + review.rating);
-        averageRating = totalRating / reviews.length;
-      }
-
-      await widget.tripRecord.reference.update({
-        'rating': averageRating,
-        'rating_avg': averageRating,
-        'rating_count': reviews.length,
-      });
-    } catch (e) {
-      print('Error updating trip average rating: $e');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -237,43 +133,20 @@ class _InteractiveTripRatingState extends State<InteractiveTripRating>
             // First row: Stars and rating info
             Row(
               children: [
-                // Interactive rating stars
-                AnimatedBuilder(
-                  animation: _scaleAnimation,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _scaleAnimation.value,
-                      child: RatingBar.builder(
-                        initialRating: _reviewCount > 0 ? _averageRating : 0.0,
-                        minRating: 1,
-                        direction: Axis.horizontal,
-                        allowHalfRating: true,
-                        itemCount: 5,
-                        itemPadding: EdgeInsets.symmetric(horizontal: 1.0),
-                        itemBuilder: (context, _) => Icon(
-                          Icons.star,
-                          color: Color(0xFFF2D83B), // Bright yellow stars
-                        ),
-                        unratedColor: FlutterFlowTheme.of(context).secondaryText.withOpacity(0.3),
-                        onRatingUpdate: _submitRating,
-                        tapOnlyMode: false,
-                        glow: true,
-                        glowColor: Color(0xFFF2D83B).withOpacity(0.3),
-                        itemSize: 18.0,
-                      ),
-                    );
-                  },
+                // Display-only rating stars
+                RatingBarIndicator(
+                  rating: _reviewCount > 0 ? _averageRating : 0.0,
+                  itemBuilder: (context, _) => Icon(
+                    Icons.star,
+                    color: Color(0xFFF2D83B), // Bright yellow stars
+                  ),
+                  unratedColor: FlutterFlowTheme.of(context).secondaryText.withOpacity(0.3),
+                  direction: Axis.horizontal,
+                  itemCount: 5,
+                  itemPadding: EdgeInsets.symmetric(horizontal: 1.0),
+                  itemSize: 18.0,
                 ),
                 
-                // Tap to rate indicator (only show if user hasn't rated and is logged in)
-                if (loggedIn && !_hasUserRated && _averageRating == 0) ...[
-                  SizedBox(width: 4),
-                  Icon(
-                    Icons.touch_app,
-                    size: 12,
-                    color: FlutterFlowTheme.of(context).primary.withOpacity(0.6),
-                  ),
-                ],
                 
                 SizedBox(width: 8),
                 
@@ -308,107 +181,52 @@ class _InteractiveTripRatingState extends State<InteractiveTripRating>
               ],
             ),
             
-            // Second row: Action buttons (only if needed)
-            if ((widget.showReviewsButton && _reviewCount > 0) || loggedIn) ...[
+            // Second row: View Reviews button only
+            if (widget.showReviewsButton && _reviewCount > 0) ...[
               SizedBox(height: 6),
               Row(
                 children: [
-                  // View Reviews button
-                  if (widget.showReviewsButton && _reviewCount > 0)
-                    InkWell(
-                      onTap: widget.onViewReviews ?? () => _showReviewsDialog(),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: FlutterFlowTheme.of(context).primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: FlutterFlowTheme.of(context).primary.withOpacity(0.3),
-                            width: 1,
-                          ),
+                  // View Reviews button - navigates to dedicated Reviews page
+                  InkWell(
+                    onTap: widget.onViewReviews ?? () => _showReviewsDialog(),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: FlutterFlowTheme.of(context).primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: FlutterFlowTheme.of(context).primary.withOpacity(0.3),
+                          width: 1,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.rate_review,
-                              size: 12,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.rate_review,
+                            size: 12,
+                            color: FlutterFlowTheme.of(context).primary,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'View Reviews',
+                            style: GoogleFonts.poppins(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.0,
                               color: FlutterFlowTheme.of(context).primary,
                             ),
-                            SizedBox(width: 4),
-                            Text(
-                              'Review',
-                              style: GoogleFonts.poppins(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                                letterSpacing: 0.0,
-                                color: FlutterFlowTheme.of(context).primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  
-                  // Write Review button
-                  if (loggedIn) ...[
-                    if (widget.showReviewsButton && _reviewCount > 0)
-                      SizedBox(width: 8),
-                    InkWell(
-                      onTap: () => _showWriteReviewDialog(),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Color(0xFFF2D83B).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Color(0xFFF2D83B).withOpacity(0.5),
-                            width: 1,
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.edit,
-                              size: 12,
-                              color: Color(0xFFD76B30),
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              _hasUserRated ? 'Edit' : 'Write',
-                              style: GoogleFonts.poppins(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.0,
-                                color: Color(0xFFD76B30),
-                              ),
-                            ),
-                          ],
-                        ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ],
               ),
             ],
           ],
         ),
         
-        // User rating indicator
-        if (loggedIn && _hasUserRated)
-          Padding(
-            padding: EdgeInsets.only(top: 4),
-            child: Text(
-              'Your rating: ${_currentRating.toStringAsFixed(1)}',
-              style: GoogleFonts.poppins(
-                fontSize: 9,
-                fontStyle: FontStyle.italic,
-                letterSpacing: 0.0,
-                color: FlutterFlowTheme.of(context).primary,
-              ),
-            ),
-          ),
       ],
     );
   }
@@ -422,36 +240,6 @@ class _InteractiveTripRatingState extends State<InteractiveTripRating>
     );
   }
 
-  void _showWriteReviewDialog() async {
-    // Get user's existing review if any
-    ReviewsRecord? existingReview;
-    if (_hasUserRated) {
-      final userReviews = await queryReviewsRecordOnce(
-        queryBuilder: (q) => q
-            .where('trip_reference', isEqualTo: widget.tripRecord.reference)
-            .where('user_reference', isEqualTo: currentUserReference),
-        singleRecord: true,
-      );
-      if (userReviews.isNotEmpty) {
-        existingReview = userReviews.first;
-      }
-    }
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return WriteReviewDialog(
-          tripRecord: widget.tripRecord,
-          existingReview: existingReview,
-        );
-      },
-    );
-
-    // Reload data if review was submitted/updated
-    if (result == true) {
-      _loadReviewData();
-    }
-  }
 }
 
 class TripReviewsDialog extends StatelessWidget {

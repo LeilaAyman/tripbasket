@@ -597,6 +597,208 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
     }
   }
 
+  Widget _buildTripsList(List<TripsRecord> listViewTripsRecordList) {
+    return Column(
+      children: [
+        ListView.builder(
+          padding: EdgeInsets.zero,
+          primary: false,
+          shrinkWrap: true,
+          scrollDirection: Axis.vertical,
+          itemCount: listViewTripsRecordList.length,
+          itemBuilder: (context, listViewIndex) {
+            final listViewTripsRecord = listViewTripsRecordList[listViewIndex];
+            return Padding(
+              padding: EdgeInsetsDirectional.fromSTEB(16.0, 8.0, 16.0, 8.0),
+              child: InkWell(
+                onTap: () {
+                  context.pushNamed(
+                    'bookings',
+                    queryParameters: {
+                      'tripref': listViewTripsRecord.reference.id,
+                    },
+                  );
+                },
+                borderRadius: BorderRadius.circular(12.0),
+                child: Container(
+                  width: 270.0,
+                  margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                  decoration: BoxDecoration(
+                    color: FlutterFlowTheme.of(context).secondaryBackground,
+                    boxShadow: [
+                      BoxShadow(
+                        blurRadius: 8.0,
+                        color: Color(0x230F1113),
+                        offset: Offset(0.0, 4.0),
+                      )
+                    ],
+                    borderRadius: BorderRadius.circular(12.0),
+                    border: Border.all(
+                      color: FlutterFlowTheme.of(context).primaryBackground,
+                      width: 1.0,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.max,
+                    children: [
+                      Hero(
+                        tag: 'tripImage_${listViewTripsRecord.reference.id}',
+                        transitionOnUserGestures: true,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(0.0),
+                            bottomRight: Radius.circular(0.0),
+                            topLeft: Radius.circular(12.0),
+                            topRight: Radius.circular(12.0),
+                          ),
+                          child: Stack(
+                            children: [
+                              Image.network(
+                                listViewTripsRecord.image.isNotEmpty 
+                                    ? listViewTripsRecord.image
+                                    : 'https://images.unsplash.com/photo-1528114039593-4366cc08227d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8OHx8aXRhbHl8ZW58MHx8MHx8&auto=format&fit=crop&w=900&q=60',
+                                width: double.infinity,
+                                height: 200.0,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: double.infinity,
+                                    height: 200.0,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Color(0xFFD76B30).withOpacity(0.3),
+                                          Color(0xFFF2D83B).withOpacity(0.3),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.image_not_supported_rounded,
+                                      color: Colors.grey[600],
+                                      size: 40,
+                                    ),
+                                  );
+                                },
+                              ),
+                              if (loggedIn && currentUserReference != null)
+                                Positioned(
+                                  top: 12,
+                                  right: 12,
+                                  child: _favoriteButton(listViewTripsRecord),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsetsDirectional.fromSTEB(16.0, 12.0, 16.0, 12.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.max,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.max,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    listViewTripsRecord.title,
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.black,
+                                      fontSize: 16.0,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.0,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsetsDirectional.fromSTEB(0.0, 8.0, 0.0, 0.0),
+                                    child: InteractiveTripRating(
+                                      tripRecord: listViewTripsRecord,
+                                      initialRating: listViewTripsRecord.rating,
+                                      showReviewsButton: true,
+                                      onRatingChanged: (rating) {
+                                        print('Rating changed to: $rating');
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: 16.0),
+                            Container(
+                              constraints: BoxConstraints(maxWidth: 150),
+                              height: 32.0,
+                              decoration: BoxDecoration(
+                                color: Color(0xFFD76B30),
+                                borderRadius: BorderRadius.circular(12.0),
+                              ),
+                              alignment: AlignmentDirectional(0.0, 0.0),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 8.0),
+                                child: PriceText(
+                                  listViewTripsRecord.price,
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white,
+                                    letterSpacing: 0.0,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        // Add "View All Destinations" button
+        if (listViewTripsRecordList.length >= 6)
+          Padding(
+            padding: EdgeInsetsDirectional.fromSTEB(16.0, 16.0, 16.0, 24.0),
+            child: SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton(
+                onPressed: () {
+                  context.pushNamed('searchResults', queryParameters: {
+                    'showAll': 'true',
+                  });
+                },
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Color(0xFFD76B30), width: 2),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.explore, color: Color(0xFFD76B30)),
+                    SizedBox(width: 8),
+                    Text(
+                      'View All Destinations',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFD76B30),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildPreviewModeBanner() {
     return Container(
       width: double.infinity,
@@ -1048,6 +1250,76 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                           ),
                         ),
                         
+                        // Top Destinations Section - Moved here after search bar
+                        Padding(
+                          padding: EdgeInsetsDirectional.fromSTEB(16.0, 16.0, 16.0, 0.0),
+                          child: Text(
+                            'Top Destinations',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 24.0,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.0,
+                            ),
+                          ).animateOnPageLoad(animationsMap['textOnPageLoadAnimation4']!),
+                        ),
+                        Padding(
+                          padding: EdgeInsetsDirectional.fromSTEB(16.0, 4.0, 16.0, 0.0),
+                          child: Text(
+                            'Our most popular featured destinations',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white70,
+                              letterSpacing: 0.0,
+                            ),
+                          ).animateOnPageLoad(animationsMap['textOnPageLoadAnimation5']!),
+                        ),
+                        Padding(
+                          padding: EdgeInsetsDirectional.fromSTEB(0.0, 16.0, 0.0, 24.0),
+                          child: StreamBuilder<List<TripsRecord>>(
+                            stream: queryTripsRecord(
+                              queryBuilder: (tripsRecord) => tripsRecord
+                                  .where('is_featured', isEqualTo: true)
+                                  .orderBy('priority', descending: true)
+                                  .limit(6),
+                            ),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                return Center(
+                                  child: SizedBox(
+                                    width: 50.0,
+                                    height: 50.0,
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Color(0xFFD76B30),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                              
+                              List<TripsRecord> listViewTripsRecordList = snapshot.data!;
+                              
+                              // If no featured trips found, fallback to first 6 trips
+                              if (listViewTripsRecordList.isEmpty) {
+                                return StreamBuilder<List<TripsRecord>>(
+                                  stream: queryTripsRecord(
+                                    queryBuilder: (tripsRecord) => tripsRecord.limit(6),
+                                  ),
+                                  builder: (context, fallbackSnapshot) {
+                                    if (!fallbackSnapshot.hasData) {
+                                      return Center(child: CircularProgressIndicator());
+                                    }
+                                    listViewTripsRecordList = fallbackSnapshot.data!;
+                                    return _buildTripsList(listViewTripsRecordList);
+                                  },
+                                );
+                              }
+
+                              return _buildTripsList(listViewTripsRecordList);
+                            },
+                          ),
+                        ),
+                        
                         Padding(
                           padding: EdgeInsetsDirectional.fromSTEB(0.0, 32.0, 0.0, 0.0),
                           child: Container(
@@ -1079,7 +1351,7 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                                     Padding(
                                       padding: EdgeInsetsDirectional.fromSTEB(16.0, 16.0, 16.0, 0.0),
                                       child: Text(
-                                        'Experience top destinations',
+                                        'Hey TripBasket',
                                         style: GoogleFonts.poppins(
                                           color: FlutterFlowTheme.of(context).primaryText,
                                           fontSize: 24.0,
@@ -1362,32 +1634,37 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                                         ),
                                       ),
                                     ),
+                                    // Reviews section with trip names
                                     Padding(
                                       padding: EdgeInsetsDirectional.fromSTEB(16.0, 16.0, 16.0, 0.0),
                                       child: Text(
-                                        'Featured trips',
+                                        'Customer Reviews',
                                         style: GoogleFonts.poppins(
                                           color: Colors.black,
                                           fontSize: 24.0,
                                           fontWeight: FontWeight.w600,
                                           letterSpacing: 0.0,
                                         ),
-                                      ).animateOnPageLoad(animationsMap['textOnPageLoadAnimation4']!),
+                                      ),
                                     ),
                                     Padding(
-                                      padding: EdgeInsetsDirectional.fromSTEB(16.0, 4.0, 16.0, 0.0),
+                                      padding: EdgeInsetsDirectional.fromSTEB(16.0, 4.0, 16.0, 16.0),
                                       child: Text(
-                                        '10 spots to catch some zzz\'s',
+                                        'What our customers say about their trips',
                                         style: GoogleFonts.poppins(
                                           color: Colors.black,
                                           letterSpacing: 0.0,
                                         ),
-                                      ).animateOnPageLoad(animationsMap['textOnPageLoadAnimation5']!),
+                                      ),
                                     ),
                                     Padding(
                                       padding: EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 24.0),
-                                      child: StreamBuilder<List<TripsRecord>>(
-                                        stream: queryTripsRecord(),
+                                      child: StreamBuilder<List<ReviewsRecord>>(
+                                        stream: queryReviewsRecord(
+                                          queryBuilder: (reviewsRecord) => reviewsRecord
+                                              .orderBy('created_at', descending: true)
+                                              .limit(5),
+                                        ),
                                         builder: (context, snapshot) {
                                           if (!snapshot.hasData) {
                                             return Center(
@@ -1402,165 +1679,128 @@ class _HomeWidgetState extends State<HomeWidget> with TickerProviderStateMixin {
                                               ),
                                             );
                                           }
-                                          List<TripsRecord> listViewTripsRecordList = snapshot.data!;
+                                          
+                                          List<ReviewsRecord> reviewsList = snapshot.data!;
+                                          
+                                          if (reviewsList.isEmpty) {
+                                            return Center(
+                                              child: Text(
+                                                'No reviews yet',
+                                                style: GoogleFonts.poppins(
+                                                  color: Colors.grey,
+                                                  fontSize: 16.0,
+                                                ),
+                                              ),
+                                            );
+                                          }
 
-                                          return ListView.builder(
-                                            padding: EdgeInsets.zero,
-                                            primary: false,
-                                            shrinkWrap: true,
-                                            scrollDirection: Axis.vertical,
-                                            itemCount: listViewTripsRecordList.length,
-                                            itemBuilder: (context, listViewIndex) {
-                                              final listViewTripsRecord = listViewTripsRecordList[listViewIndex];
+                                          return Column(
+                                            children: reviewsList.map((review) {
                                               return Padding(
-                                                padding: EdgeInsetsDirectional.fromSTEB(16.0, 8.0, 16.0, 8.0),
-                                                child: InkWell(
-                                                  onTap: () {
-                                                    context.pushNamed(
-                                                      'bookings',
-                                                      queryParameters: {
-                                                        'tripref': listViewTripsRecord.reference.id,
-                                                      },
-                                                    );
-                                                  },
-                                                  borderRadius: BorderRadius.circular(12.0),
-                                                  child: Container(
-                                                  width: 270.0,
-                                                  margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                                                padding: EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 16.0),
+                                                child: Container(
+                                                  width: double.infinity,
+                                                  padding: EdgeInsets.all(16.0),
                                                   decoration: BoxDecoration(
-                                                    color: FlutterFlowTheme.of(context).secondaryBackground,
+                                                    color: Colors.white,
+                                                    borderRadius: BorderRadius.circular(12.0),
                                                     boxShadow: [
                                                       BoxShadow(
-                                                        blurRadius: 8.0,
-                                                        color: Color(0x230F1113),
-                                                        offset: Offset(0.0, 4.0),
-                                                      )
+                                                        color: Colors.black.withOpacity(0.1),
+                                                        blurRadius: 8,
+                                                        offset: Offset(0, 2),
+                                                      ),
                                                     ],
-                                                    borderRadius: BorderRadius.circular(12.0),
-                                                    border: Border.all(
-                                                      color: FlutterFlowTheme.of(context).primaryBackground,
-                                                      width: 1.0,
-                                                    ),
                                                   ),
                                                   child: Column(
-                                                    mainAxisSize: MainAxisSize.max,
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
                                                     children: [
-                                                      Hero(
-                                                        tag: 'tripImage_${listViewTripsRecord.reference.id}',
-                                                        transitionOnUserGestures: true,
-                                                        child: ClipRRect(
-                                                          borderRadius: BorderRadius.only(
-                                                            bottomLeft: Radius.circular(0.0),
-                                                            bottomRight: Radius.circular(0.0),
-                                                            topLeft: Radius.circular(12.0),
-                                                            topRight: Radius.circular(12.0),
-                                                          ),
-                                                          child: Stack(
-                                                            children: [
-                                                              Image.network(
-                                                                listViewTripsRecord.image.isNotEmpty 
-                                                                    ? listViewTripsRecord.image
-                                                                    : 'https://images.unsplash.com/photo-1528114039593-4366cc08227d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8OHx8aXRhbHl8ZW58MHx8MHx8&auto=format&fit=crop&w=900&q=60',
-                                                                width: double.infinity,
-                                                                height: 200.0,
-                                                                fit: BoxFit.cover,
-                                                                errorBuilder: (context, error, stackTrace) {
-                                                                  return Container(
-                                                                    width: double.infinity,
-                                                                    height: 200.0,
-                                                                    decoration: BoxDecoration(
-                                                                      gradient: LinearGradient(
-                                                                        colors: [
-                                                                          Color(0xFFD76B30).withOpacity(0.3),
-                                                                          Color(0xFFF2D83B).withOpacity(0.3),
-                                                                        ],
-                                                                        begin: Alignment.topLeft,
-                                                                        end: Alignment.bottomRight,
-                                                                      ),
-                                                                    ),
-                                                                    child: Icon(
-                                                                      Icons.image_not_supported_rounded,
-                                                                      color: Colors.grey[600],
-                                                                      size: 40,
-                                                                    ),
-                                                                  );
-                                                                },
-                                                              ),
-                                                              if (loggedIn && currentUserReference != null)
-                                                                Positioned(
-                                                                  top: 12,
-                                                                  right: 12,
-                                                                  child: _favoriteButton(listViewTripsRecord),
-                                                                ),
-                                                            ],
-                                                          ),
-                                                        ),
+                                                      // Trip name for this review
+                                                      StreamBuilder<TripsRecord?>(
+                                                        stream: review.tripReference != null ? TripsRecord.getDocument(review.tripReference!) : null,
+                                                        builder: (context, tripSnapshot) {
+                                                          String tripName = 'Unknown Trip';
+                                                          if (tripSnapshot.hasData && tripSnapshot.data != null) {
+                                                            tripName = tripSnapshot.data!.title;
+                                                          }
+                                                          // Use tripTitle if available as fallback
+                                                          if (tripName == 'Unknown Trip' && review.tripTitle.isNotEmpty) {
+                                                            tripName = review.tripTitle;
+                                                          }
+                                                          return Text(
+                                                            'Review for: $tripName',
+                                                            style: GoogleFonts.poppins(
+                                                              fontSize: 14.0,
+                                                              fontWeight: FontWeight.w600,
+                                                              color: Color(0xFFD76B30),
+                                                            ),
+                                                          );
+                                                        },
                                                       ),
-                                                      Padding(
-                                                        padding: EdgeInsetsDirectional.fromSTEB(16.0, 12.0, 16.0, 12.0),
-                                                        child: Row(
-                                                          mainAxisSize: MainAxisSize.max,
-                                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                                          children: [
-                                                            Expanded(
-                                                              child: Column(
-                                                                mainAxisSize: MainAxisSize.max,
-                                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                                children: [
-                                                                  Text(
-                                                                    listViewTripsRecord.title,
-                                                                    style: GoogleFonts.poppins(
-                                                                      color: Colors.black,
-                                                                      fontSize: 16.0,
-                                                                      fontWeight: FontWeight.w600,
-                                                                      letterSpacing: 0.0,
-                                                                    ),
-                                                                  ),
-                                                                  Padding(
-                                                                    padding: EdgeInsetsDirectional.fromSTEB(0.0, 8.0, 0.0, 0.0),
-                                                                    child: InteractiveTripRating(
-                                                                      tripRecord: listViewTripsRecord,
-                                                                      initialRating: listViewTripsRecord.rating,
-                                                                      showReviewsButton: true,
-                                                                      onRatingChanged: (rating) {
-                                                                        print('Rating changed to: $rating');
-                                                                      },
-                                                                    ),
-                                                                  ),
-                                                                ],
-                                                              ),
+                                                      SizedBox(height: 8.0),
+                                                      // Rating
+                                                      Row(
+                                                        children: [
+                                                          RatingBarIndicator(
+                                                            itemBuilder: (context, index) => Icon(
+                                                              Icons.star,
+                                                              color: Color(0xFFF2D83B),
                                                             ),
-                                                            SizedBox(width: 16.0),
-                                                            Container(
-                                                              constraints: BoxConstraints(maxWidth: 150),
-                                                              height: 32.0,
-                                                              decoration: BoxDecoration(
-                                                                color: Color(0xFFD76B30),
-                                                                borderRadius: BorderRadius.circular(12.0),
-                                                              ),
-                                                              alignment: AlignmentDirectional(0.0, 0.0),
-                                                              child: Padding(
-                                                                padding: EdgeInsets.symmetric(horizontal: 8.0),
-                                                                child: PriceText(
-                                                                  listViewTripsRecord.price,
-                                                                  style: GoogleFonts.poppins(
-                                                                    color: Colors.white,
-                                                                    letterSpacing: 0.0,
-                                                                    fontWeight: FontWeight.w600,
-                                                                  ),
-                                                                ),
-                                                              ),
+                                                            direction: Axis.horizontal,
+                                                            rating: review.rating,
+                                                            unratedColor: Colors.grey[300],
+                                                            itemCount: 5,
+                                                            itemSize: 16.0,
+                                                          ),
+                                                          SizedBox(width: 8.0),
+                                                          Text(
+                                                            review.rating.toString(),
+                                                            style: GoogleFonts.poppins(
+                                                              fontSize: 14.0,
+                                                              fontWeight: FontWeight.w500,
                                                             ),
-                                                          ],
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      SizedBox(height: 8.0),
+                                                      // Review text
+                                                      Text(
+                                                        review.comment,
+                                                        style: GoogleFonts.poppins(
+                                                          fontSize: 14.0,
+                                                          color: Colors.black87,
+                                                          letterSpacing: 0.0,
                                                         ),
+                                                        maxLines: 3,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                      SizedBox(height: 8.0),
+                                                      // Reviewer name and date
+                                                      Row(
+                                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                        children: [
+                                                          Text(
+                                                            review.userName.isNotEmpty ? review.userName : 'Anonymous',
+                                                            style: GoogleFonts.poppins(
+                                                              fontSize: 12.0,
+                                                              fontWeight: FontWeight.w500,
+                                                              color: Colors.grey[600],
+                                                            ),
+                                                          ),
+                                                          Text(
+                                                            dateTimeFormat('relative', review.createdAt),
+                                                            style: GoogleFonts.poppins(
+                                                              fontSize: 12.0,
+                                                              color: Colors.grey[600],
+                                                            ),
+                                                          ),
+                                                        ],
                                                       ),
                                                     ],
-                                                  ),
                                                   ),
                                                 ),
                                               );
-                                            },
+                                            }).toList(),
                                           );
                                         },
                                       ),

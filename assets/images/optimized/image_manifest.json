@@ -1,0 +1,50 @@
+{
+  "200611101955-01-egypt-dahab.webp": {
+    "type": "gallery",
+    "original_size": 178396,
+    "variants": [
+      {
+        "size": "300x200",
+        "path": "optimized\\200611101955-01-egypt-dahab_sm.webp",
+        "file_size": 7048,
+        "compression_ratio": 96.0
+      },
+      {
+        "size": "600x400",
+        "path": "optimized\\200611101955-01-egypt-dahab_md.webp",
+        "file_size": 26000,
+        "compression_ratio": 85.4
+      },
+      {
+        "size": "1200x800",
+        "path": "optimized\\200611101955-01-egypt-dahab_lg.webp",
+        "file_size": 100186,
+        "compression_ratio": 43.8
+      }
+    ]
+  },
+  "Farsha_Cafe4.webp": {
+    "type": "gallery",
+    "original_size": 140096,
+    "variants": [
+      {
+        "size": "300x200",
+        "path": "optimized\\Farsha_Cafe4_sm.webp",
+        "file_size": 9152,
+        "compression_ratio": 93.5
+      },
+      {
+        "size": "600x400",
+        "path": "optimized\\Farsha_Cafe4_md.webp",
+        "file_size": 26176,
+        "compression_ratio": 81.3
+      },
+      {
+        "size": "1200x800",
+        "path": "optimized\\Farsha_Cafe4_lg.webp",
+        "file_size": 63842,
+        "compression_ratio": 54.4
+      }
+    ]
+  }
+}

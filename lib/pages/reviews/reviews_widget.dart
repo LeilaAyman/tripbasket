@@ -8,8 +8,6 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
-import '/components/write_review_dialog.dart';
-import '/components/write_agency_review_dialog.dart';
 import '/index.dart';
 import 'reviews_model.dart';
 export 'reviews_model.dart';
@@ -36,8 +34,15 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
   String _sortBy = 'newest'; // 'newest', 'oldest', 'highest_rated'
   
   String? get tripId => GoRouterState.of(context).uri.queryParameters['tripId'];
+  String? get agencyId => GoRouterState.of(context).uri.queryParameters['agencyId'];
+  String? get fromTripId => GoRouterState.of(context).uri.queryParameters['fromTrip'];
+  
   DocumentReference? get tripReference => tripId != null 
     ? FirebaseFirestore.instance.collection('trips').doc(tripId!) 
+    : null;
+    
+  DocumentReference? get agencyReference => agencyId != null 
+    ? FirebaseFirestore.instance.collection('agencies').doc(agencyId!) 
     : null;
 
   @override
@@ -81,14 +86,26 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
               context.pop();
             },
           ),
-          title: Text(
-            'Reviews',
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 22.0,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.0,
-            ),
+          title: StreamBuilder<AgenciesRecord?>(
+            stream: agencyReference != null ? AgenciesRecord.getDocument(agencyReference!) : null,
+            builder: (context, snapshot) {
+              String title = 'Reviews';
+              if (snapshot.hasData && snapshot.data != null) {
+                title = '${snapshot.data!.name} Reviews';
+              } else if (fromTripId != null) {
+                title = 'Agency Reviews';
+              }
+              
+              return Text(
+                title,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 22.0,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.0,
+                ),
+              );
+            },
           ),
           bottom: TabBar(
             controller: _tabController,
@@ -105,12 +122,12 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
             ),
             tabs: [
               Tab(
-                icon: Icon(Icons.flight_takeoff),
-                text: 'Trip Reviews',
-              ),
-              Tab(
                 icon: Icon(Icons.business),
                 text: 'Agency Reviews',
+              ),
+              Tab(
+                icon: Icon(Icons.flight_takeoff),
+                text: 'Trip Reviews',
               ),
             ],
           ),
@@ -120,10 +137,10 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
         body: TabBarView(
           controller: _tabController,
           children: [
-            // Trip Reviews Tab
-            _buildTripReviewsTab(),
-            // Agency Reviews Tab
+            // Agency Reviews Tab (now first)
             _buildAgencyReviewsTab(),
+            // Trip Reviews Tab (now second)
+            _buildTripReviewsTab(),
           ],
         ),
       ),
@@ -172,7 +189,7 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
                 return _buildEmptyState(
                   icon: Icons.rate_review,
                   title: title,
-                  subtitle: subtitle,
+                  subtitle: 'Trip reviews are only available after booking completion.\n\nFor now, check out agency reviews in the other tab.',
                   buttonText: _selectedRatingFilter != null ? 'Clear Filters' : 'Browse Trips',
                   onButtonPressed: _selectedRatingFilter != null 
                     ? () => setState(() { 
@@ -381,8 +398,11 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
   }
 
   Widget _buildAgencyReviewsTab() {
-    if (tripReference == null) {
-      // If no trip is selected, show all agency reviews with filters
+    // If we have an agency reference (directly or from trip), show agency reviews
+    if (agencyReference != null || fromTripId != null) {
+      return _buildSpecificAgencyReviews();
+    } else {
+      // Show all agency reviews
       return Column(
         children: [
           // Filter and Sort Controls
@@ -450,10 +470,18 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
           ),
         ],
       );
-    } else {
-      // Trip is selected, show only reviews for the agency linked to this trip
+    }
+  }
+
+  Widget _buildSpecificAgencyReviews() {
+    // Get agency reference - either direct or from trip
+    if (agencyReference != null) {
+      return _buildAgencyReviewsForReference(agencyReference!);
+    } else if (fromTripId != null) {
+      // Trip is selected, get the trip to find its agency
+      final tripRef = FirebaseFirestore.instance.collection('trips').doc(fromTripId!);
       return StreamBuilder<TripsRecord>(
-        stream: TripsRecord.getDocument(tripReference!),
+        stream: TripsRecord.getDocument(tripRef),
         builder: (context, tripSnapshot) {
           if (tripSnapshot.connectionState == ConnectionState.waiting) {
             return Center(
@@ -474,92 +502,104 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
           }
 
           final trip = tripSnapshot.data!;
-          return Column(
-            children: [
-              // Filter and Sort Controls
-              _buildFilterSortControls(),
-              
-              // Reviews List
-              Expanded(
-                child: StreamBuilder<List<AgencyReviewsRecord>>(
-                  stream: queryAgencyReviewsRecord(
-                    queryBuilder: (q) {
-                      var query = q.where('agency_reference', isEqualTo: trip.agencyReference);
-                      
-                      // Apply rating filter - simplified to avoid index conflicts
-                      if (_selectedRatingFilter != null) {
-                        double minRating = _selectedRatingFilter!;
-                        double maxRating = _selectedRatingFilter! + 0.99;
-                        query = query
-                            .where('rating', isGreaterThanOrEqualTo: minRating)
-                            .where('rating', isLessThanOrEqualTo: maxRating);
-                      }
-                      
-                      // Single orderBy to avoid index conflicts
-                      return query.orderBy('created_at', descending: true);
-                    },
-                  ),
-                  builder: (context, reviewSnapshot) {
-                    if (reviewSnapshot.connectionState == ConnectionState.waiting) {
-                      return Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD76B30)),
-                        ),
-                      );
-                    }
-
-                    if (reviewSnapshot.hasError) {
-                      return _buildEmptyState(
-                        icon: Icons.error_outline,
-                        title: 'Error Loading Reviews',
-                        subtitle: 'Unable to load agency reviews. Please try again.',
-                        buttonText: 'Refresh',
-                        onButtonPressed: () => setState(() {}),
-                      );
-                    }
-
-                    if (!reviewSnapshot.hasData || reviewSnapshot.data!.isEmpty) {
-                      String title = 'No Reviews for This Agency';
-                      String subtitle = 'No reviews available for this agency.';
-                      
-                      // Check if filters are applied
-                      if (_selectedRatingFilter != null) {
-                        title = 'No Reviews Match Your Filter';
-                        subtitle = 'Try adjusting your rating filter or clear all filters.';
-                      }
-                      
-                      return _buildEmptyState(
-                        icon: Icons.business,
-                        title: title,
-                        subtitle: subtitle,
-                        buttonText: _selectedRatingFilter != null ? 'Clear Filters' : 'Browse Agencies',
-                        onButtonPressed: _selectedRatingFilter != null 
-                          ? () => setState(() { 
-                              _selectedRatingFilter = null; 
-                              _sortBy = 'newest';
-                            })
-                          : () => context.pushNamed('agenciesList'),
-                      );
-                    }
-
-                    final reviews = _applyAgencySorting(reviewSnapshot.data!);
-                    return ListView.separated(
-                      padding: EdgeInsets.all(16),
-                      itemCount: reviews.length,
-                      separatorBuilder: (context, index) => SizedBox(height: 16),
-                      itemBuilder: (context, index) {
-                        final review = reviews[index];
-                        return _buildModernAgencyReviewCard(review);
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          );
+          return _buildAgencyReviewsForReference(trip.agencyReference!);
         },
       );
     }
+    
+    return _buildEmptyState(
+      icon: Icons.error,
+      title: 'No Agency Found',
+      subtitle: 'Unable to determine which agency to show reviews for.',
+      buttonText: 'Go Back',
+      onButtonPressed: () => context.pop(),
+    );
+  }
+
+  Widget _buildAgencyReviewsForReference(DocumentReference agencyRef) {
+    return Column(
+      children: [
+        // Filter and Sort Controls
+        _buildFilterSortControls(),
+        
+        // Reviews List
+        Expanded(
+          child: StreamBuilder<List<AgencyReviewsRecord>>(
+            stream: queryAgencyReviewsRecord(
+              queryBuilder: (q) {
+                var query = q.where('agency_reference', isEqualTo: agencyRef);
+                
+                // Apply rating filter - simplified to avoid index conflicts
+                if (_selectedRatingFilter != null) {
+                  double minRating = _selectedRatingFilter!;
+                  double maxRating = _selectedRatingFilter! + 0.99;
+                  query = query
+                      .where('rating', isGreaterThanOrEqualTo: minRating)
+                      .where('rating', isLessThanOrEqualTo: maxRating);
+                }
+                
+                // Single orderBy to avoid index conflicts
+                return query.orderBy('created_at', descending: true);
+              },
+            ),
+            builder: (context, reviewSnapshot) {
+              if (reviewSnapshot.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD76B30)),
+                  ),
+                );
+              }
+
+              if (reviewSnapshot.hasError) {
+                return _buildEmptyState(
+                  icon: Icons.error_outline,
+                  title: 'Error Loading Reviews',
+                  subtitle: 'Unable to load agency reviews. Please try again.',
+                  buttonText: 'Refresh',
+                  onButtonPressed: () => setState(() {}),
+                );
+              }
+
+              if (!reviewSnapshot.hasData || reviewSnapshot.data!.isEmpty) {
+                String title = 'No Reviews for This Agency';
+                String subtitle = 'No reviews available for this agency.';
+                
+                // Check if filters are applied
+                if (_selectedRatingFilter != null) {
+                  title = 'No Reviews Match Your Filter';
+                  subtitle = 'Try adjusting your rating filter or clear all filters.';
+                }
+                
+                return _buildEmptyState(
+                  icon: Icons.business,
+                  title: title,
+                  subtitle: subtitle,
+                  buttonText: _selectedRatingFilter != null ? 'Clear Filters' : 'Browse Agencies',
+                  onButtonPressed: _selectedRatingFilter != null 
+                    ? () => setState(() { 
+                        _selectedRatingFilter = null; 
+                        _sortBy = 'newest';
+                      })
+                    : () => context.pushNamed('agenciesList'),
+                );
+              }
+
+              final reviews = _applyAgencySorting(reviewSnapshot.data!);
+              return ListView.separated(
+                padding: EdgeInsets.all(16),
+                itemCount: reviews.length,
+                separatorBuilder: (context, index) => SizedBox(height: 16),
+                itemBuilder: (context, index) {
+                  final review = reviews[index];
+                  return _buildModernAgencyReviewCard(review);
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   Stream<List<AgencyReviewsRecord>> _buildFilteredAgencyReviewsStream() {

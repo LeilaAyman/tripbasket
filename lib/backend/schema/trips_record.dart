@@ -122,6 +122,16 @@ class TripsRecord extends FirestoreRecord {
   String get itineraryPdf => _itineraryPdf ?? '';
   bool hasItineraryPdf() => _itineraryPdf != null;
 
+  // "is_featured" field.
+  bool? _isFeatured;
+  bool get isFeatured => _isFeatured ?? false;
+  bool hasIsFeatured() => _isFeatured != null;
+
+  // "priority" field.
+  int? _priority;
+  int get priority => _priority ?? 0;
+  bool hasPriority() => _priority != null;
+
   void _initializeFields() {
     _specifications = snapshotData['specifications'] as String?;
     _itenarary = getDataList(snapshotData['itenarary']);
@@ -143,6 +153,8 @@ class TripsRecord extends FirestoreRecord {
     _ratingCount = castToType<int>(snapshotData['rating_count']);
     _paymentInstructions = snapshotData['payment_instructions'] as String?;
     _itineraryPdf = snapshotData['itinerary_pdf'] as String?;
+    _isFeatured = snapshotData['is_featured'] as bool?;
+    _priority = castToType<int>(snapshotData['priority']);
   }
 
   static CollectionReference get collection =>
@@ -202,6 +214,8 @@ Map<String, dynamic> createTripsRecordData({
   int? ratingCount,
   String? paymentInstructions,
   String? itineraryPdf,
+  bool? isFeatured,
+  int? priority,
 }) {
   final firestoreData = mapToFirestore(
     <String, dynamic>{
@@ -228,6 +242,8 @@ Map<String, dynamic> createTripsRecordData({
       'rating_count': ratingCount,
       'payment_instructions': paymentInstructions,
       'itinerary_pdf': itineraryPdf,
+      'is_featured': isFeatured,
+      'priority': priority,
     }.withoutNulls,
   );
 
@@ -259,7 +275,9 @@ class TripsRecordDocumentEquality implements Equality<TripsRecord> {
         e1?.ratingAvg == e2?.ratingAvg &&
         e1?.ratingCount == e2?.ratingCount &&
         e1?.paymentInstructions == e2?.paymentInstructions &&
-        e1?.itineraryPdf == e2?.itineraryPdf;
+        e1?.itineraryPdf == e2?.itineraryPdf &&
+        e1?.isFeatured == e2?.isFeatured &&
+        e1?.priority == e2?.priority;
   }
 
   @override
@@ -283,7 +301,9 @@ class TripsRecordDocumentEquality implements Equality<TripsRecord> {
         e?.ratingAvg,
         e?.ratingCount,
         e?.paymentInstructions,
-        e?.itineraryPdf
+        e?.itineraryPdf,
+        e?.isFeatured,
+        e?.priority
       ]);
 
   @override
