@@ -2200,25 +2200,41 @@ class _RegisterDialogState extends State<_RegisterDialog> {
       );
 
       if (user != null && mounted) {
-        // Update user profile with additional info
-        await currentUserDocument?.reference.update({
-          'display_name': _nameController.text.trim(),
-          'name': _nameController.text.trim(),
-          'phone_number': _phoneController.text.trim(),
-          'role': [_selectedRole],
-          'loyaltyPoints': 0,
-        });
+        // Check if user's email is verified
+        if (currentUser?.emailVerified ?? false) {
+          // Update user profile with additional info (only for verified users)
+          await currentUserDocument?.reference.update({
+            'display_name': _nameController.text.trim(),
+            'name': _nameController.text.trim(),
+            'phone_number': _phoneController.text.trim(),
+            'role': [_selectedRole],
+            'loyaltyPoints': 0,
+          });
 
-        Navigator.of(context).pop(); // Close dialog
-        
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Account created successfully! Welcome to TripsBasket!', style: GoogleFonts.poppins()),
-            backgroundColor: const Color(0xFFD76B30),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+          Navigator.of(context).pop(); // Close dialog
+          
+          // Show success message for verified users
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Account created successfully! Welcome to TripsBasket!', style: GoogleFonts.poppins()),
+              backgroundColor: const Color(0xFFD76B30),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else {
+          // Account created but email not verified
+          Navigator.of(context).pop(); // Close dialog
+          
+          // Show verification message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Account created! Please verify your email before signing in.', style: GoogleFonts.poppins()),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 8),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {

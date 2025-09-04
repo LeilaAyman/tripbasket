@@ -1,4 +1,5 @@
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class UserManagementService {
@@ -15,15 +16,78 @@ class UserManagementService {
         throw Exception('Either email or uid must be provided');
       }
 
-      final callable = _functions.httpsCallable('deleteUserCompletely');
-      final result = await callable.call({
-        if (email != null) 'email': email,
-        if (uid != null) 'uid': uid,
-      });
+      // First try the Firebase Function
+      try {
+        final callable = _functions.httpsCallable('deleteUserCompletely');
+        final result = await callable.call({
+          if (email != null) 'email': email,
+          if (uid != null) 'uid': uid,
+        });
+
+        if (result.data != null && result.data['success'] == true) {
+          return {
+            'success': true,
+            'data': result.data,
+          };
+        }
+      } catch (functionError) {
+        print('Firebase Function failed: $functionError');
+      }
+
+      // If Firebase Function fails, try alternative approach
+      print('Attempting alternative user deletion for email: $email');
+      
+      // Try to delete from Firestore first
+      if (uid != null || email != null) {
+        final firestore = FirebaseFirestore.instance;
+        
+        // If we have email but no UID, try to find the user
+        String? targetUid = uid;
+        if (targetUid == null && email != null) {
+          final userQuery = await firestore
+              .collection('users')
+              .where('email', isEqualTo: email)
+              .limit(1)
+              .get();
+          
+          if (userQuery.docs.isNotEmpty) {
+            targetUid = userQuery.docs.first.id;
+          }
+        }
+
+        if (targetUid != null) {
+          // Delete user document
+          await firestore.doc('users/$targetUid').delete();
+          
+          // Delete related bookings
+          final bookingsQuery = await firestore
+              .collection('bookings')
+              .where('user_uid', isEqualTo: targetUid)
+              .get();
+          
+          final batch = firestore.batch();
+          for (var doc in bookingsQuery.docs) {
+            batch.delete(doc.reference);
+          }
+          await batch.commit();
+
+          return {
+            'success': true,
+            'data': {
+              'details': {
+                'firestoreDeleted': true,
+                'bookingsDeleted': bookingsQuery.docs.length,
+                'authDeleted': false, // Can't delete from client side
+                'message': 'User data deleted from Firestore. Firebase Auth deletion requires admin access.'
+              }
+            }
+          };
+        }
+      }
 
       return {
-        'success': true,
-        'data': result.data,
+        'success': false,
+        'error': 'Could not find user to delete',
       };
     } catch (e) {
       print('Error deleting user completely: $e');

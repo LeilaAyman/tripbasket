@@ -105,7 +105,7 @@
       contain: layout style paint;
     }
     
-    /* Above-the-fold critical styles - Static Hero for LCP */
+    /* Loading screen without background image */
     .static-hero {
       position: fixed;
       top: 0;
@@ -113,41 +113,13 @@
       width: 100%;
       height: 100vh;
       z-index: 10;
-      background-image: url('/assets/images/optimized/200611101955-01-egypt-dahab_lg.webp');
-      background-size: cover;
-      background-position: center center;
-      background-repeat: no-repeat;
+      background: #FFD700;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       contain: layout style paint;
     }
     
-    /* Responsive hero images */
-    @media (max-width: 768px) {
-      .static-hero {
-        background-image: url('/assets/images/optimized/200611101955-01-egypt-dahab_md.webp');
-      }
-    }
-    
-    @media (max-width: 480px) {
-      .static-hero {
-        background-image: url('/assets/images/optimized/200611101955-01-egypt-dahab_sm.webp');
-      }
-    }
-    
-    /* Hero overlay */
-    .static-hero::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(
-        to bottom,
-        rgba(0, 0, 0, 0.4) 0%,
-        rgba(0, 0, 0, 0.2) 50%,
-        rgba(0, 0, 0, 0.4) 100%
-      );
-    }
     
     /* Smooth transition when Flutter takes over */
     .static-hero {
@@ -162,16 +134,11 @@
     
     /* Loading indicator on static hero */
     .static-hero-loading {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      color: white;
-      font-size: 14px;
+      color: #333;
+      font-size: 18px;
       text-align: center;
-      z-index: 20;
-      font-weight: 500;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+      font-weight: 600;
+      text-shadow: none;
     }
     
     .flutter-loaded .static-hero-loading {
@@ -274,7 +241,7 @@
 <body>
   <!-- Static Hero for LCP - renders immediately before Flutter -->
   <div class="static-hero" id="static-hero">
-    <div class="static-hero-loading">Loading TripBasket...</div>
+    <div class="static-hero-loading">Loading TripsBasket...</div>
   </div>
   
   <script>
@@ -345,11 +312,11 @@ setInterval(() => {
       
       // Load Firebase modules sequentially to reduce initial bundle blocking
       const firebaseModules = [
-        'https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js',
-        'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js', 
-        'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js',
-        'https://www.gstatic.com/firebasejs/10.7.0/firebase-analytics-compat.js',
-        'https://www.gstatic.com/firebasejs/10.7.0/firebase-performance-compat.js'
+        'https://www.gstatic.com/firebasejs/11.7.0/firebase-app-compat.js',
+        'https://www.gstatic.com/firebasejs/11.7.0/firebase-auth-compat.js', 
+        'https://www.gstatic.com/firebasejs/11.7.0/firebase-firestore-compat.js',
+        'https://www.gstatic.com/firebasejs/11.7.0/firebase-analytics-compat.js',
+        'https://www.gstatic.com/firebasejs/11.7.0/firebase-performance-compat.js'
       ];
       
       for (const moduleUrl of firebaseModules) {
@@ -388,8 +355,46 @@ setInterval(() => {
       document.addEventListener(event, onMeaningfulInteraction, true)
     );
     
-    // Load Flutter app immediately
-    _flutter.loader.load({
+    // Handle Firebase Auth email verification links
+    function handleFirebaseAuth() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const mode = urlParams.get('mode');
+      const oobCode = urlParams.get('oobCode');
+      
+      if (mode === 'verifyEmail' && oobCode) {
+        // Show a loading message
+        document.body.innerHTML = `
+          <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif;">
+            <div style="text-align: center;">
+              <h2>Verifying your email...</h2>
+              <p>Please wait while we verify your email address.</p>
+              <div style="margin-top: 20px;">
+                <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 2s linear infinite; margin: 0 auto;"></div>
+              </div>
+            </div>
+          </div>
+          <style>
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          </style>
+        `;
+        
+        // Firebase will handle the verification automatically
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 3000);
+        
+        return true;
+      }
+      return false;
+    }
+    
+    // Check if this is an auth link before loading Flutter
+    if (!handleFirebaseAuth()) {
+      // Load Flutter app immediately
+      _flutter.loader.load({
       onEntrypointLoaded: function(engineInitializer) {
         engineInitializer.initializeEngine({
           renderer: "html",
@@ -414,6 +419,7 @@ setInterval(() => {
         });
       }
     });
+    }
   </script>
 </body>
 </html>

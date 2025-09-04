@@ -200,6 +200,10 @@
     ],
     "rewrites": [
       {
+        "source": "/__/auth/**",
+        "destination": "/index.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
