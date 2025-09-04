@@ -1,124 +1,202 @@
-// TripBasket Optimized Service Worker
-const CACHE_NAME = 'tripbasket-v2025-01-04';
-const STATIC_CACHE = 'tripbasket-static-v1';
-const DYNAMIC_CACHE = 'tripbasket-dynamic-v1';
+// Ultra-Performance Service Worker for TripBasket
+// Targets: TBT < 500ms, Speed Index < 5s
+const CACHE_NAME = 'tripbasket-v2.0-perf';
+const ASSETS_CACHE = 'tripbasket-assets-v2.0';
 
-// Critical resources to cache immediately
-const CRITICAL_ASSETS = [
+// Critical resources for immediate caching
+const CRITICAL_RESOURCES = [
   '/',
-  '/flutter.js',
   '/main.dart.js',
-  '/assets/AssetManifest.json',
-  '/assets/FontManifest.json',
-  '/assets/images/optimized/200611101955-01-egypt-dahab.webp',
-  '/manifest.json'
+  '/flutter.js',
+  '/runtime.js', // Split bundle
+  '/vendor.js',  // Split bundle
+  '/app.js',     // Split bundle
+  '/manifest.json',
+  '/favicon.png'
 ];
 
-// Resources to cache on demand
-const CACHE_PATTERNS = [
-  /\/assets\/images\/optimized\/.+\.webp$/,
-  /\/assets\/fonts\/.+\.(woff2|woff|ttf)$/,
-  /\/assets\/.+\.json$/
+// Asset patterns for performance-first caching
+const ASSET_PATTERNS = [
+  /\.(?:js|css|woff2|webp)$/,
+  /\/assets\/images\/optimized\//,
+  /\/icons\//
 ];
 
-// Install event - cache critical assets
+// Performance-optimized install
 self.addEventListener('install', event => {
-  console.log('[SW] Installing service worker');
+  console.log('🚀 SW: Installing performance-optimized service worker');
+  
   event.waitUntil(
-    caches.open(STATIC_CACHE)
-      .then(cache => {
-        console.log('[SW] Caching critical assets');
-        return cache.addAll(CRITICAL_ASSETS);
-      })
-      .then(() => self.skipWaiting())
+    Promise.all([
+      // Cache critical resources immediately
+      caches.open(CACHE_NAME).then(cache => {
+        console.log('🎯 SW: Caching critical resources');
+        return cache.addAll(CRITICAL_RESOURCES.map(url => new Request(url, {
+          cache: 'reload' // Always get fresh versions during install
+        })));
+      }),
+      
+      // Open assets cache
+      caches.open(ASSETS_CACHE)
+    ]).then(() => {
+      console.log('✅ SW: Installation complete');
+      // Skip waiting for immediate activation
+      return self.skipWaiting();
+    }).catch(err => {
+      console.error('❌ SW: Installation failed', err);
+    })
   );
 });
 
-// Activate event - clean old caches
+// Aggressive cache cleanup on activate
 self.addEventListener('activate', event => {
-  console.log('[SW] Activating service worker');
+  console.log('🔄 SW: Activating and cleaning old caches');
+  
   event.waitUntil(
-    caches.keys()
-      .then(cacheNames => {
-        return Promise.all(
-          cacheNames
-            .filter(cacheName => 
-              cacheName !== STATIC_CACHE && 
-              cacheName !== DYNAMIC_CACHE
-            )
-            .map(cacheName => {
-              console.log('[SW] Deleting old cache:', cacheName);
-              return caches.delete(cacheName);
-            })
-        );
-      })
-      .then(() => self.clients.claim())
+    Promise.all([
+      // Clean up old caches
+      caches.keys().then(cacheNames => {
+        const deletions = cacheNames
+          .filter(name => name.startsWith('tripbasket-') && !name.includes('v2.0'))
+          .map(name => {
+            console.log(`🗑️ SW: Deleting old cache: ${name}`);
+            return caches.delete(name);
+          });
+        return Promise.all(deletions);
+      }),
+      
+      // Take control of all clients immediately
+      self.clients.claim()
+    ]).then(() => {
+      console.log('✅ SW: Activation complete, all clients claimed');
+    })
   );
 });
 
-// Fetch event - serve from cache with fallback
+// Ultra-fast fetch strategy
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
   
   // Skip non-GET requests
-  if (request.method !== 'GET') {
+  if (request.method !== 'GET') return;
+  
+  // Skip Firebase APIs and external resources during critical loading
+  if (url.hostname !== self.location.hostname) {
+    // Only cache Google Fonts and Firebase JS
+    if (url.hostname.includes('gstatic.com') || url.hostname.includes('googleapis.com')) {
+      event.respondWith(networkFirstWithFallback(request));
+    }
     return;
   }
   
-  // Skip Firebase and external API requests
-  if (url.origin !== location.origin) {
+  // Critical resources: Cache-first with network fallback
+  if (CRITICAL_RESOURCES.includes(url.pathname) || url.pathname === '/') {
+    event.respondWith(cacheFirstStrategy(request));
     return;
   }
   
-  event.respondWith(
-    caches.match(request)
-      .then(response => {
-        // Return cached version if available
-        if (response) {
-          console.log('[SW] Serving from cache:', request.url);
-          return response;
-        }
-        
-        // Fetch and cache for supported resources
-        return fetch(request)
-          .then(response => {
-            // Only cache successful responses
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-            
-            // Check if resource should be cached
-            const shouldCache = CACHE_PATTERNS.some(pattern => 
-              pattern.test(request.url)
-            ) || CRITICAL_ASSETS.includes(url.pathname);
-            
-            if (shouldCache) {
-              const responseToCache = response.clone();
-              caches.open(DYNAMIC_CACHE)
-                .then(cache => {
-                  console.log('[SW] Caching resource:', request.url);
-                  cache.put(request, responseToCache);
-                });
-            }
-            
-            return response;
-          })
-          .catch(() => {
-            // Fallback for offline scenarios
-            if (url.pathname === '/') {
-              return caches.match('/');
-            }
-            
-            // Return offline page or placeholder
-            return new Response(
-              '<html><body><h1>Offline</h1><p>Please check your connection.</p></body></html>',
-              { headers: { 'Content-Type': 'text/html' } }
-            );
-          });
-      })
-  );
+  // Split bundle files: Cache-first
+  if (url.pathname.endsWith('.js') && (
+    url.pathname.includes('runtime.js') || 
+    url.pathname.includes('vendor.js') || 
+    url.pathname.includes('app.js')
+  )) {
+    event.respondWith(cacheFirstStrategy(request));
+    return;
+  }
+  
+  // Assets: Cache-first with long TTL
+  if (ASSET_PATTERNS.some(pattern => pattern.test(url.pathname))) {
+    event.respondWith(cacheFirstStrategy(request, ASSETS_CACHE));
+    return;
+  }
+  
+  // Everything else: Network-first for freshness
+  event.respondWith(networkFirstWithFallback(request));
 });
+
+// Cache-first strategy for maximum performance
+async function cacheFirstStrategy(request, cacheName = CACHE_NAME) {
+  try {
+    const cache = await caches.open(cacheName);
+    const cached = await cache.match(request);
+    
+    if (cached) {
+      // Serve cached version immediately
+      console.log(`⚡ SW: Cache hit for ${request.url}`);
+      
+      // Background update for critical resources
+      if (CRITICAL_RESOURCES.includes(new URL(request.url).pathname)) {
+        updateCacheInBackground(request, cache);
+      }
+      
+      return cached;
+    }
+    
+    // Not in cache, fetch from network
+    console.log(`🌐 SW: Cache miss, fetching ${request.url}`);
+    const response = await fetch(request);
+    
+    if (response.status === 200) {
+      // Cache successful responses
+      cache.put(request, response.clone());
+    }
+    
+    return response;
+  } catch (error) {
+    console.error(`❌ SW: Cache-first failed for ${request.url}`, error);
+    
+    // Fallback for critical resources
+    if (request.url.includes('.js') || request.url.includes('.css')) {
+      return new Response('// Offline fallback', { 
+        headers: { 'Content-Type': 'application/javascript' }
+      });
+    }
+    
+    throw error;
+  }
+}
+
+// Network-first with cache fallback
+async function networkFirstWithFallback(request) {
+  try {
+    const response = await fetch(request);
+    
+    if (response.status === 200) {
+      // Cache successful responses for assets
+      if (ASSET_PATTERNS.some(pattern => pattern.test(request.url))) {
+        const cache = await caches.open(ASSETS_CACHE);
+        cache.put(request, response.clone());
+      }
+    }
+    
+    return response;
+  } catch (error) {
+    console.log(`🔄 SW: Network failed, trying cache for ${request.url}`);
+    
+    // Try cache as fallback
+    const cached = await caches.match(request);
+    if (cached) {
+      return cached;
+    }
+    
+    throw error;
+  }
+}
+
+// Background cache update for critical resources
+async function updateCacheInBackground(request, cache) {
+  try {
+    const response = await fetch(request, { cache: 'reload' });
+    if (response.status === 200) {
+      await cache.put(request, response);
+      console.log(`🔄 SW: Background updated cache for ${request.url}`);
+    }
+  } catch (error) {
+    console.log(`⚠️ SW: Background update failed for ${request.url}`);
+  }
+}
 
 // Background sync for critical updates
 self.addEventListener('sync', event => {

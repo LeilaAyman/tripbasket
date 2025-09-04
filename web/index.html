@@ -72,163 +72,30 @@
   <!-- Preload critical CSS/JS for better FCP -->
   <link rel="preload" as="style" href="/flutter.js">
   
-  <!-- Critical CSS inlined for faster FCP -->
+  <!-- Ultra-critical CSS inlined for performance -->
   <style>
-    /* Reset and base styles for immediate rendering */
-    * { box-sizing: border-box; }
-    html { line-height: 1.15; -webkit-text-size-adjust: 100%; }
-    body { 
-      margin: 0; 
-      padding: 0; 
-      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
-      font-size: 14px;
-      line-height: 1.6;
-      background: #f1f4f8;
-      overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
+    /* Minimal critical CSS for fastest FCP */
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{line-height:1.15;-webkit-text-size-adjust:100%}
+    body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;background:#f1f4f8;overflow-x:hidden;-webkit-font-smoothing:antialiased}
     
-    /* Flutter web specific optimizations */
-    flt-glass-pane, flt-scene-host { 
-      pointer-events: none; 
-      position: absolute; 
-      top: 0; 
-      left: 0; 
-      will-change: transform;
-    }
-    flt-semantics-host { 
-      position: absolute; 
-      top: 0; 
-      left: 0; 
-      transform: translate3d(0,0,0);
-      contain: layout style paint;
-    }
+    /* Flutter performance optimizations */
+    flt-glass-pane,flt-scene-host{pointer-events:none;position:absolute;top:0;left:0;will-change:transform}
+    flt-semantics-host{position:absolute;top:0;left:0;transform:translate3d(0,0,0);contain:layout style paint}
+    flt-renderer,flt-clip,flt-opacity,flt-offset,flt-transform{contain:layout style paint}
+    flutter-view{position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden}
     
-    /* Loading screen without background image */
-    .static-hero {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100vh;
-      z-index: 10;
-      background: #FFD700;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      contain: layout style paint;
-    }
+    /* Lazy image loading support */
+    img[loading="lazy"]{opacity:0;transition:opacity 0.3s}
+    img[loading="lazy"].loaded{opacity:1}
     
+    /* Performance-critical styles only */
+    .loading{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:16px;color:#333;z-index:1000}
     
-    /* Smooth transition when Flutter takes over */
-    .static-hero {
-      transition: opacity 0.8s ease-out, visibility 0.8s ease-out;
-    }
+    /* Removed loading screen styles */
     
-    .flutter-loaded .static-hero {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-    }
-    
-    /* Loading indicator on static hero */
-    .static-hero-loading {
-      color: #333;
-      font-size: 18px;
-      text-align: center;
-      font-weight: 600;
-      text-shadow: none;
-    }
-    
-    .flutter-loaded .static-hero-loading {
-      display: none;
-    }
-    
-    /* Flutter hero container */
-    .hero-container {
-      position: relative;
-      width: 100%;
-      min-height: 100vh;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      contain: layout style paint;
-    }
-    
-    /* Loading states */
-    .loading {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 16px;
-      color: #333;
-      z-index: 1000;
-    }
-    
-    /* Navigation placeholder */
-    .nav-placeholder {
-      height: 64px;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 100;
-    }
-    
-    /* Prevent layout shift during font loading */
-    .font-loading {
-      font-display: swap;
-      visibility: hidden;
-    }
-    .font-loaded .font-loading {
-      visibility: visible;
-    }
-    
-    /* Performance critical optimizations */
-    *, *::before, *::after {
-      -webkit-box-sizing: border-box;
-      box-sizing: border-box;
-    }
-    
-    /* Critical performance CSS */
-    flt-renderer, flt-clip, flt-opacity, flt-offset, flt-transform {
-      contain: layout style paint;
-    }
-    
-    /* Eliminate Flutter loading flash */
-    flutter-view {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-    }
-    
-    /* Optimize font rendering */
-    body, input, textarea, button {
-      font-feature-settings: 'kern' 1;
-      -webkit-font-feature-settings: 'kern' 1;
-      text-rendering: optimizeSpeed;
-    }
-    
-    /* Mobile optimizations */
-    @media (max-width: 768px) {
-      body { font-size: 12px; }
-      .hero-container { min-height: 80vh; }
-      .nav-placeholder { height: 56px; }
-      /* Reduce visual complexity on mobile */
-      .static-hero::after {
-        background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.3) 100%);
-      }
-    }
-    
-    /* High DPI optimizations */
-    @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-      body { -webkit-font-smoothing: subpixel-antialiased; }
-    }
+    /* Mobile-first responsive */
+    @media (max-width:768px){body{font-size:12px}}
   </style>
 
   <!-- Status Bar color in Safari browser (iOS) and PWA -->
@@ -239,9 +106,9 @@
   
 </head>
 <body>
-  <!-- Static Hero for LCP - renders immediately before Flutter -->
-  <div class="static-hero" id="static-hero">
-    <div class="static-hero-loading">Loading TripsBasket...</div>
+  <!-- Minimal loading indicator -->
+  <div id="loading-indicator" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px; color: #666;">
+    Loading...
   </div>
   
   <script>
@@ -299,61 +166,181 @@ setInterval(() => {
     {{flutter_js}}
     {{flutter_build_config}}
     
-    // Performance monitoring
+    // Ultra-aggressive performance optimization
     let firebaseLoaded = false;
     let userInteracted = false;
+    let loadingQueue = new Map();
     
-    // Aggressively lazy-load Firebase modules only when needed
-    const loadFirebaseSDKs = async () => {
+    // Performance-first module loading
+    const loadModule = (name, url, priority = 'low') => {
+      if (loadingQueue.has(name)) return loadingQueue.get(name);
+      
+      const promise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = url;
+        
+        // Use performance-optimized loading based on priority
+        if (priority === 'high') {
+          script.async = false;
+          script.defer = false;
+        } else {
+          script.async = true;
+          script.defer = true;
+        }
+        
+        script.onload = () => {
+          console.log(`✓ Loaded ${name} (${priority} priority)`);
+          resolve();
+        };
+        script.onerror = () => {
+          console.warn(`✗ Failed to load ${name}`);
+          reject();
+        };
+        
+        // Add to document when main thread is idle
+        if ('requestIdleCallback' in window && priority !== 'high') {
+          requestIdleCallback(() => document.head.appendChild(script));
+        } else {
+          document.head.appendChild(script);
+        }
+      });
+      
+      loadingQueue.set(name, promise);
+      return promise;
+    };
+    
+    // Firebase modules with on-demand loading
+    const firebaseModules = {
+      app: 'https://www.gstatic.com/firebasejs/11.7.0/firebase-app-compat.js',
+      auth: 'https://www.gstatic.com/firebasejs/11.7.0/firebase-auth-compat.js',
+      firestore: 'https://www.gstatic.com/firebasejs/11.7.0/firebase-firestore-compat.js',
+      analytics: 'https://www.gstatic.com/firebasejs/11.7.0/firebase-analytics-compat.js',
+      performance: 'https://www.gstatic.com/firebasejs/11.7.0/firebase-performance-compat.js'
+    };
+    
+    // Expose global Firebase loaders for Flutter app
+    window.loadFirebaseAuth = async () => {
+      await loadModule('app', firebaseModules.app, 'high');
+      return loadModule('auth', firebaseModules.auth, 'high');
+    };
+    
+    window.loadFirebaseFirestore = async () => {
+      await loadModule('app', firebaseModules.app, 'high');  
+      return loadModule('firestore', firebaseModules.firestore, 'high');
+    };
+    
+    window.loadFirebaseAnalytics = async () => {
+      await loadModule('app', firebaseModules.app, 'low');
+      return loadModule('analytics', firebaseModules.analytics, 'low');
+    };
+    
+    // Only load Firebase when actually needed - never preemptively
+    const loadCriticalFirebase = async () => {
       if (firebaseLoaded) return;
       firebaseLoaded = true;
       
-      console.log('Loading Firebase modules...');
+      console.log('🔥 Loading critical Firebase modules...');
       
-      // Load Firebase modules sequentially to reduce initial bundle blocking
-      const firebaseModules = [
-        'https://www.gstatic.com/firebasejs/11.7.0/firebase-app-compat.js',
-        'https://www.gstatic.com/firebasejs/11.7.0/firebase-auth-compat.js', 
-        'https://www.gstatic.com/firebasejs/11.7.0/firebase-firestore-compat.js',
-        'https://www.gstatic.com/firebasejs/11.7.0/firebase-analytics-compat.js',
-        'https://www.gstatic.com/firebasejs/11.7.0/firebase-performance-compat.js'
-      ];
+      // Load only app module initially
+      await loadModule('app', firebaseModules.app, 'high');
       
-      for (const moduleUrl of firebaseModules) {
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = moduleUrl;
-          script.defer = true;
-          script.onload = resolve;
-          script.onerror = reject;
-          document.head.appendChild(script);
-        });
-      }
-      
-      console.log('Firebase modules loaded');
+      console.log('✓ Critical Firebase loaded');
     };
     
-    // Listen for meaningful user interactions (not passive)
-    const meaningfulEvents = ['click', 'touchstart'];
-    const onMeaningfulInteraction = () => {
+    // Ultra-restrictive interaction detection
+    const criticalInteractions = ['click', 'touchend', 'keydown'];
+    const onCriticalInteraction = (e) => {
       if (!userInteracted) {
         userInteracted = true;
-        // Use requestIdleCallback for non-blocking Firebase load
-        if ('requestIdleCallback' in window) {
-          requestIdleCallback(() => loadFirebaseSDKs());
+        console.log('🎯 User interaction detected, loading Firebase...');
+        
+        // Use scheduler if available for better performance
+        if ('scheduler' in window && 'postTask' in window.scheduler) {
+          window.scheduler.postTask(() => loadCriticalFirebase(), { priority: 'background' });
+        } else if ('requestIdleCallback' in window) {
+          requestIdleCallback(() => loadCriticalFirebase(), { timeout: 5000 });
         } else {
-          setTimeout(() => loadFirebaseSDKs(), 0);
+          setTimeout(() => loadCriticalFirebase(), 100);
         }
-        meaningfulEvents.forEach(event => 
-          document.removeEventListener(event, onMeaningfulInteraction, true)
+        
+        // Remove listeners immediately
+        criticalInteractions.forEach(event => 
+          document.removeEventListener(event, onCriticalInteraction, { passive: true, capture: true })
         );
       }
     };
     
-    // Add meaningful interaction listeners only
-    meaningfulEvents.forEach(event => 
-      document.addEventListener(event, onMeaningfulInteraction, true)
+    // Add interaction listeners with passive: true for better performance
+    criticalInteractions.forEach(event => 
+      document.addEventListener(event, onCriticalInteraction, { passive: true, capture: true })
     );
+    
+    // Ultra-performance lazy loading implementation
+    function initializeLazyLoading() {
+      // Use native lazy loading if supported, otherwise polyfill
+      if ('loading' in HTMLImageElement.prototype) {
+        console.log('🖼️ Using native lazy loading');
+        
+        // Apply lazy loading to all images
+        document.querySelectorAll('img:not([loading])').forEach(img => {
+          img.loading = 'lazy';
+          img.classList.add('lazy-native');
+        });
+      } else {
+        console.log('🖼️ Using Intersection Observer lazy loading');
+        
+        // Intersection Observer polyfill
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const img = entry.target;
+              
+              // Load image
+              if (img.dataset.src) {
+                img.src = img.dataset.src;
+                img.classList.add('loaded');
+                delete img.dataset.src;
+              }
+              
+              // Stop observing this image
+              observer.unobserve(img);
+            }
+          });
+        }, {
+          // Load images when they're 100px from viewport
+          rootMargin: '100px 0px',
+          threshold: 0.1
+        });
+        
+        // Observe all images with data-src
+        document.querySelectorAll('img[data-src]').forEach(img => {
+          imageObserver.observe(img);
+        });
+      }
+      
+      // Responsive WebP image optimization
+      const webpSupported = supportsWebP();
+      if (webpSupported) {
+        console.log('🎨 WebP format supported, optimizing images');
+        
+        // Replace image sources with WebP versions where available
+        document.querySelectorAll('img[data-webp]').forEach(img => {
+          const webpSrc = img.dataset.webp;
+          if (webpSrc) {
+            img.src = webpSrc;
+            img.classList.add('webp-optimized');
+          }
+        });
+      }
+    }
+    
+    // WebP support detection
+    function supportsWebP() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1;
+      canvas.height = 1;
+      return canvas.toDataURL('image/webp').indexOf('webp') !== -1;
+    }
     
     // Handle Firebase Auth email verification links
     function handleFirebaseAuth() {
@@ -393,29 +380,25 @@ setInterval(() => {
     
     // Check if this is an auth link before loading Flutter
     if (!handleFirebaseAuth()) {
-      // Load Flutter app immediately
+      // Load Flutter app with standard configuration
       _flutter.loader.load({
       onEntrypointLoaded: function(engineInitializer) {
         engineInitializer.initializeEngine({
           renderer: "html",
-          // Enable optimizations
           useColorEmoji: true
         }).then(function(appRunner) {
           appRunner.runApp();
           
-          // Hide static hero when Flutter is ready
-          setTimeout(() => {
-            document.body.classList.add('flutter-loaded');
-            console.log('Flutter loaded, hiding static hero for LCP');
-          }, 1000);
+          // Hide loading indicator when Flutter loads
+          const loadingIndicator = document.getElementById('loading-indicator');
+          if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+          }
           
-          // Aggressive fallback: only load Firebase after 5 seconds or if really needed
-          setTimeout(() => {
-            if (!userInteracted) {
-              console.log('No interaction detected, deferring Firebase load...');
-              // Don't load Firebase unless absolutely necessary
-            }
-          }, 5000);
+          console.log('✅ Flutter app loaded');
+          
+          // Initialize lazy loading for all images
+          initializeLazyLoading();
         });
       }
     });

@@ -93,7 +93,9 @@
       "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web/**)",
       "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web\\assets/**)",
       "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web\\assets\\assets/**)",
-      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web\\assets\\assets\\images/**)"
+      "Read(/C:\\Users\\maria\\Downloads\\tripbasket - new backup\\build\\web\\assets\\assets\\images/**)",
+      "Bash(.build_performance_optimized.bat)",
+      "Bash(./build_performance_optimized.bat)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\maria\\OneDrive\\Desktop"
