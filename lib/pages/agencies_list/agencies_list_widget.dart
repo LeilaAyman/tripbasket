@@ -154,17 +154,162 @@ class _AgenciesListWidgetState extends State<AgenciesListWidget>
                 child: StreamBuilder<List<AgenciesRecord>>(
                   stream: queryAgenciesRecord(),
                   builder: (context, snapshot) {
+                    // Debug logging
+                    print('🔍 Agencies StreamBuilder - Connection state: ${snapshot.connectionState}');
+                    print('🔍 Has data: ${snapshot.hasData}');
+                    print('🔍 Has error: ${snapshot.hasError}');
+                    if (snapshot.hasError) {
+                      print('❌ Error: ${snapshot.error}');
+                    }
+                    if (snapshot.hasData) {
+                      print('📊 Agencies loaded: ${snapshot.data!.length}');
+                    }
+                    
                     // Loading state
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 50.0,
+                              height: 50.0,
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Color(0xFFD76B30),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 16.0),
+                            Text(
+                              'Loading travel agencies...',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16.0,
+                                color: Colors.grey[600],
+                                letterSpacing: 0.0,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    
+                    // Error state
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 80.0,
+                              color: Colors.red[400],
+                            ),
+                            SizedBox(height: 16.0),
+                            Text(
+                              'Failed to Load Agencies',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18.0,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.red[600],
+                                letterSpacing: 0.0,
+                              ),
+                            ),
+                            Padding(
+                              padding: EdgeInsetsDirectional.fromSTEB(
+                                  32.0, 8.0, 32.0, 16.0),
+                              child: Text(
+                                'Unable to connect to the database. Please check your internet connection and try again.',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14.0,
+                                  color: Colors.grey[600],
+                                  letterSpacing: 0.0,
+                                ),
+                              ),
+                            ),
+                            FFButtonWidget(
+                              onPressed: () {
+                                setState(() {
+                                  // Force rebuild to retry
+                                });
+                              },
+                              text: 'Retry',
+                              options: FFButtonOptions(
+                                height: 40,
+                                padding: EdgeInsetsDirectional.fromSTEB(24, 0, 24, 0),
+                                iconPadding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
+                                color: Color(0xFFD76B30),
+                                textStyle: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                elevation: 2,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    
+                    // No data but not loading
                     if (!snapshot.hasData) {
                       return Center(
-                        child: SizedBox(
-                          width: 50.0,
-                          height: 50.0,
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Color(0xFFD76B30),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.cloud_off,
+                              size: 80.0,
+                              color: Colors.grey[400],
                             ),
-                          ),
+                            SizedBox(height: 16.0),
+                            Text(
+                              'Connection Issue',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18.0,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey[600],
+                                letterSpacing: 0.0,
+                              ),
+                            ),
+                            Padding(
+                              padding: EdgeInsetsDirectional.fromSTEB(
+                                  32.0, 8.0, 32.0, 16.0),
+                              child: Text(
+                                'Unable to load agencies. Please check your internet connection.',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14.0,
+                                  color: Colors.grey[500],
+                                  letterSpacing: 0.0,
+                                ),
+                              ),
+                            ),
+                            FFButtonWidget(
+                              onPressed: () {
+                                setState(() {
+                                  // Force rebuild to retry
+                                });
+                              },
+                              text: 'Try Again',
+                              options: FFButtonOptions(
+                                height: 40,
+                                padding: EdgeInsetsDirectional.fromSTEB(24, 0, 24, 0),
+                                iconPadding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
+                                color: Color(0xFFD76B30),
+                                textStyle: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                elevation: 2,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     }

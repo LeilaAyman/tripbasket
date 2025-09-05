@@ -39,6 +39,7 @@ class _AgencyTripsWidgetState extends State<AgencyTripsWidget>
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
   final animationsMap = <String, AnimationInfo>{};
+  
 
   @override
   void initState() {
@@ -117,7 +118,7 @@ class _AgencyTripsWidgetState extends State<AgencyTripsWidget>
         body: SafeArea(
           top: true,
           child: StreamBuilder<AgenciesRecord>(
-            stream: AgenciesRecord.getDocument(widget.agencyRef!),
+            stream: widget.agencyRef != null ? AgenciesRecord.getDocument(widget.agencyRef!) : null,
             builder: (context, snapshot) {
               // Loading state
               if (!snapshot.hasData) {
@@ -242,10 +243,9 @@ class _AgencyTripsWidgetState extends State<AgencyTripsWidget>
                                 ),
                                 Spacer(),
                                 StreamBuilder<List<TripsRecord>>(
-                                  stream: queryTripsRecord(
-                                    queryBuilder: (tripsQuery) => tripsQuery
-                                        .where('agency_reference', isEqualTo: agency.reference),
-                                  ),
+                                  stream: widget.agencyRef != null ? queryTripsRecord(
+                                    queryBuilder: (q) => q.where('agency_reference', isEqualTo: widget.agencyRef),
+                                  ) : null,
                                   builder: (context, tripsSnapshot) {
                                     if (!tripsSnapshot.hasData) {
                                       return Text(
@@ -281,12 +281,9 @@ class _AgencyTripsWidgetState extends State<AgencyTripsWidget>
                   // Trips List
                   SliverToBoxAdapter(
                     child: StreamBuilder<List<TripsRecord>>(
-                      stream: queryTripsRecord(
-                        queryBuilder: (tripsRecord) => tripsRecord.where(
-                          'agency_reference',
-                          isEqualTo: widget.agencyRef,
-                        ),
-                      ),
+                      stream: widget.agencyRef != null ? queryTripsRecord(
+                        queryBuilder: (q) => q.where('agency_reference', isEqualTo: widget.agencyRef),
+                      ) : null,
                       builder: (context, snapshot) {
                         // Loading state
                         if (!snapshot.hasData) {

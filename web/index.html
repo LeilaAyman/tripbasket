@@ -72,6 +72,11 @@
   <!-- Preload critical CSS/JS for better FCP -->
   <link rel="preload" as="style" href="/flutter.js">
   
+  <!-- FORCE PRELOAD Firebase 10.12.5 before Flutter loads -->
+  <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" crossorigin>
+  <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js" crossorigin>
+  <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" crossorigin>
+  
   <!-- Ultra-critical CSS inlined for performance -->
   <style>
     /* Minimal critical CSS for fastest FCP */
@@ -104,6 +109,131 @@
 
   <link rel="manifest" href="manifest.json">
   
+  <!-- Firebase 11.x Protection (Ultra-Comprehensive) -->
+  <script>
+    // ULTRA-COMPREHENSIVE Firebase 11.x blocker with strict mode
+    (function() {
+      'use strict';
+      
+      const blockFirebase11 = (url) => {
+        if (typeof url === 'string' && (url.includes('firebasejs/11.') || url.includes('firebase/11.') || url.includes('/11.') && url.includes('firebase'))) {
+          console.error('🚫 ULTRA-BLOCKED Firebase 11.x URL:', url);
+          const blocked = url.replace(/firebasejs\/11\.[0-9]+\.[0-9]+/g, 'firebasejs/10.12.5')
+                           .replace(/firebase\/11\.[0-9]+\.[0-9]+/g, 'firebase/10.12.5')
+                           .replace(/\/11\.[0-9]+\.[0-9]+\//g, '/10.12.5/');
+          console.log('✅ Force-redirected to Firebase 10.12.5:', blocked);
+          return blocked;
+        }
+        return url;
+      };
+
+      // Override fetch for ALL requests with error catching
+      const originalFetch = window.fetch;
+      window.fetch = function(url, options) {
+        try {
+          if (typeof url === 'string') {
+            url = blockFirebase11(url);
+          } else if (url && url.url) {
+            url.url = blockFirebase11(url.url);
+          }
+        } catch (e) {
+          console.error('Fetch override error:', e);
+        }
+        return originalFetch.call(this, url, options);
+      };
+
+      // Override XMLHttpRequest
+      const originalXHROpen = XMLHttpRequest.prototype.open;
+      XMLHttpRequest.prototype.open = function(method, url, ...args) {
+        url = blockFirebase11(url);
+        return originalXHROpen.call(this, method, url, ...args);
+      };
+
+      // Override dynamic script injection with comprehensive blocking
+      const originalCreateElement = document.createElement;
+      document.createElement = function(tagName) {
+        const element = originalCreateElement.call(this, tagName);
+        if (tagName.toLowerCase() === 'script') {
+          const originalSetAttribute = element.setAttribute;
+          element.setAttribute = function(name, value) {
+            if (name === 'src') {
+              value = blockFirebase11(value);
+            }
+            return originalSetAttribute.call(this, name, value);
+          };
+          
+          // Override src property directly
+          Object.defineProperty(element, 'src', {
+            set: function(value) {
+              this.setAttribute('src', blockFirebase11(value));
+            },
+            get: function() {
+              return this.getAttribute('src');
+            }
+          });
+        }
+        return element;
+      };
+
+      // Override appendChild to catch dynamic script additions
+      const originalAppendChild = Node.prototype.appendChild;
+      Node.prototype.appendChild = function(child) {
+        if (child && child.tagName === 'SCRIPT' && child.src) {
+          child.src = blockFirebase11(child.src);
+        }
+        return originalAppendChild.call(this, child);
+      };
+
+      // Monitor DOM mutations to catch any Firebase 11.x scripts
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.tagName === 'SCRIPT' && node.src && node.src.includes('11.')) {
+              console.error('🚫 BLOCKED script via mutation observer:', node.src);
+              node.src = blockFirebase11(node.src);
+            }
+          });
+        });
+      });
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+
+      // Block any existing Firebase 11.x from window
+      const clearFirebase11 = () => {
+        try {
+          if (window.firebase && window.firebase.SDK_VERSION && window.firebase.SDK_VERSION.startsWith('11.')) {
+            console.error('🚫 Removing existing Firebase 11.x from window');
+            delete window.firebase;
+            delete window.firestore;
+            delete window.auth;
+          }
+          
+          // Clear any Firebase 11.x from global scope
+          Object.keys(window).forEach(key => {
+            if (key.includes('firebase') || key.includes('firestore')) {
+              try {
+                const obj = window[key];
+                if (obj && obj.SDK_VERSION && obj.SDK_VERSION.startsWith('11.')) {
+                  console.error(`🚫 Removing Firebase 11.x object: ${key}`);
+                  delete window[key];
+                }
+              } catch (e) {
+                // Ignore access errors
+              }
+            }
+          });
+        } catch (e) {
+          console.error('Error clearing Firebase 11.x:', e);
+        }
+      };
+
+      // Clear on load and periodically
+      clearFirebase11();
+      setInterval(clearFirebase11, 1000);
+
+      console.error('🔒 ULTRA-COMPREHENSIVE Firebase 11.x protection enabled with strict blocking');
+    })();
+  </script>
+  
 </head>
 <body>
   <!-- Minimal loading indicator -->
@@ -126,41 +256,16 @@ if (window.location.search.includes('refresh=true')) {
   window.location.href = window.location.pathname;
 }
 
-// Service worker with aggressive update handling
+// Simple service worker registration (no aggressive updates)
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/flutter_service_worker.js')
     .then(reg => {
-      // Force update check
-      reg.update();
-      
-      if (reg.waiting) {
-        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-        window.location.reload(true);
-      }
-      
-      reg.onupdatefound = () => {
-        const newWorker = reg.installing;
-        newWorker.onstatechange = () => {
-          if (newWorker.state === 'installed') {
-            if (navigator.serviceWorker.controller) {
-              // New content is available, force reload
-              newWorker.postMessage({ type: 'SKIP_WAITING' });
-              setTimeout(() => window.location.reload(true), 100);
-            }
-          }
-        };
-      };
+      console.log('Service worker registered');
+    })
+    .catch(err => {
+      console.log('Service worker registration failed:', err);
     });
 }
-
-// Check for updates every 30 seconds
-setInterval(() => {
-  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-    navigator.serviceWorker.getRegistration().then(reg => {
-      if (reg) reg.update();
-    });
-  }
-}, 30000);
 </script>
   <script>
     {{flutter_js}}
@@ -209,13 +314,13 @@ setInterval(() => {
       return promise;
     };
     
-    // Firebase modules with on-demand loading
+    // Firebase modules with on-demand loading (using stable version 10.12.5 to fix assertion errors)
     const firebaseModules = {
-      app: 'https://www.gstatic.com/firebasejs/11.7.0/firebase-app-compat.js',
-      auth: 'https://www.gstatic.com/firebasejs/11.7.0/firebase-auth-compat.js',
-      firestore: 'https://www.gstatic.com/firebasejs/11.7.0/firebase-firestore-compat.js',
-      analytics: 'https://www.gstatic.com/firebasejs/11.7.0/firebase-analytics-compat.js',
-      performance: 'https://www.gstatic.com/firebasejs/11.7.0/firebase-performance-compat.js'
+      app: 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js',
+      auth: 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js',
+      firestore: 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js',
+      analytics: 'https://www.gstatic.com/firebasejs/10.12.5/firebase-analytics-compat.js',
+      performance: 'https://www.gstatic.com/firebasejs/10.12.5/firebase-performance-compat.js'
     };
     
     // Expose global Firebase loaders for Flutter app
@@ -234,46 +339,28 @@ setInterval(() => {
       return loadModule('analytics', firebaseModules.analytics, 'low');
     };
     
-    // Only load Firebase when actually needed - never preemptively
+    // Load Firebase immediately on page load for better reliability
     const loadCriticalFirebase = async () => {
       if (firebaseLoaded) return;
       firebaseLoaded = true;
       
       console.log('🔥 Loading critical Firebase modules...');
       
-      // Load only app module initially
+      // Load Firebase modules immediately
       await loadModule('app', firebaseModules.app, 'high');
+      await loadModule('firestore', firebaseModules.firestore, 'high');
+      await loadModule('auth', firebaseModules.auth, 'high');
       
       console.log('✓ Critical Firebase loaded');
     };
     
-    // Ultra-restrictive interaction detection
-    const criticalInteractions = ['click', 'touchend', 'keydown'];
-    const onCriticalInteraction = (e) => {
-      if (!userInteracted) {
-        userInteracted = true;
-        console.log('🎯 User interaction detected, loading Firebase...');
-        
-        // Use scheduler if available for better performance
-        if ('scheduler' in window && 'postTask' in window.scheduler) {
-          window.scheduler.postTask(() => loadCriticalFirebase(), { priority: 'background' });
-        } else if ('requestIdleCallback' in window) {
-          requestIdleCallback(() => loadCriticalFirebase(), { timeout: 5000 });
-        } else {
-          setTimeout(() => loadCriticalFirebase(), 100);
-        }
-        
-        // Remove listeners immediately
-        criticalInteractions.forEach(event => 
-          document.removeEventListener(event, onCriticalInteraction, { passive: true, capture: true })
-        );
-      }
-    };
-    
-    // Add interaction listeners with passive: true for better performance
-    criticalInteractions.forEach(event => 
-      document.addEventListener(event, onCriticalInteraction, { passive: true, capture: true })
-    );
+    // Load Firebase immediately when page loads
+    console.log('🚀 Page loaded, initializing Firebase immediately...');
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => loadCriticalFirebase(), { timeout: 1000 });
+    } else {
+      setTimeout(() => loadCriticalFirebase(), 100);
+    }
     
     // Ultra-performance lazy loading implementation
     function initializeLazyLoading() {

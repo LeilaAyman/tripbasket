@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import '/backend/backend.dart';
@@ -33,6 +34,7 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
   double? _selectedRatingFilter; // null for 'All', or 1.0-5.0 for specific ratings
   String _sortBy = 'newest'; // 'newest', 'oldest', 'highest_rated'
   
+  
   String? get tripId => GoRouterState.of(context).uri.queryParameters['tripId'];
   String? get agencyId => GoRouterState.of(context).uri.queryParameters['agencyId'];
   String? get fromTripId => GoRouterState.of(context).uri.queryParameters['fromTrip'];
@@ -51,6 +53,7 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
     _model = createModel(context, () => ReviewsModel());
     _tabController = TabController(length: 2, vsync: this);
   }
+  
 
   @override
   void dispose() {
@@ -83,7 +86,19 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
               size: 30.0,
             ),
             onPressed: () async {
-              context.pop();
+              // Check if we have query parameters and navigate appropriately
+              if (agencyId != null || fromTripId != null) {
+                // If we're viewing specific agency reviews, go back to agency browser
+                context.pushReplacementNamed('reviews');
+              } else {
+                // Otherwise, pop normally
+                if (Navigator.of(context).canPop()) {
+                  context.pop();
+                } else {
+                  // If can't pop, go to home
+                  context.pushReplacementNamed('home');
+                }
+              }
             },
           ),
           title: StreamBuilder<AgenciesRecord?>(
@@ -120,31 +135,61 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
               fontSize: 16,
               fontWeight: FontWeight.normal,
             ),
-            tabs: [
-              Tab(
-                icon: Icon(Icons.business),
-                text: 'Agency Reviews',
-              ),
-              Tab(
-                icon: Icon(Icons.flight_takeoff),
-                text: 'Trip Reviews',
-              ),
-            ],
+            tabs: _buildTabs(),
           ),
           centerTitle: false,
           elevation: 2.0,
         ),
         body: TabBarView(
           controller: _tabController,
-          children: [
-            // Agency Reviews Tab (now first)
-            _buildAgencyReviewsTab(),
-            // Trip Reviews Tab (now second)
-            _buildTripReviewsTab(),
-          ],
+          children: _buildTabViews(),
         ),
       ),
     );
+  }
+
+  List<Tab> _buildTabs() {
+    if (agencyId != null || fromTripId != null) {
+      // When viewing specific agency, show different tabs
+      return [
+        Tab(
+          icon: Icon(Icons.business_center),
+          text: 'Agency Reviews',
+        ),
+        Tab(
+          icon: Icon(Icons.flight_takeoff),
+          text: 'Trip Reviews',
+        ),
+      ];
+    } else {
+      // When browsing, show agency browser and all trip reviews
+      return [
+        Tab(
+          icon: Icon(Icons.business),
+          text: 'Browse Agencies',
+        ),
+        Tab(
+          icon: Icon(Icons.flight_takeoff),
+          text: 'All Trip Reviews',
+        ),
+      ];
+    }
+  }
+
+  List<Widget> _buildTabViews() {
+    if (agencyId != null || fromTripId != null) {
+      // When viewing specific agency, show agency reviews and agency trip reviews
+      return [
+        _buildSpecificAgencyReviews(), // Agency reviews for this agency
+        _buildAgencyTripReviews(),     // Trip reviews for this agency's trips
+      ];
+    } else {
+      // When browsing, show agency browser and all trip reviews
+      return [
+        _buildAgencyBrowser(),  // Agency browser
+        _buildTripReviewsTab(), // All trip reviews
+      ];
+    }
   }
 
   Widget _buildTripReviewsTab() {
@@ -219,7 +264,7 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
 
   Widget _buildFilterSortControls() {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
@@ -227,66 +272,66 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
         ),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Rating Filter
+          // Rating Filter - Wrapped to prevent overflow
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Filter by Rating:',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+              SizedBox(
+                width: 110,
+                child: Text(
+                  'Filter by Rating:',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
                 ),
               ),
-              SizedBox(width: 16),
+              SizedBox(width: 8),
               Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildRatingFilterChip('All', null),
-                      SizedBox(width: 8),
-                      _buildRatingFilterChip('5★', 5.0),
-                      SizedBox(width: 8),
-                      _buildRatingFilterChip('4★', 4.0),
-                      SizedBox(width: 8),
-                      _buildRatingFilterChip('3★', 3.0),
-                      SizedBox(width: 8),
-                      _buildRatingFilterChip('2★', 2.0),
-                      SizedBox(width: 8),
-                      _buildRatingFilterChip('1★', 1.0),
-                    ],
-                  ),
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    _buildRatingFilterChip('All', null),
+                    _buildRatingFilterChip('5★', 5.0),
+                    _buildRatingFilterChip('4★', 4.0),
+                    _buildRatingFilterChip('3★', 3.0),
+                    _buildRatingFilterChip('2★', 2.0),
+                    _buildRatingFilterChip('1★', 1.0),
+                  ],
                 ),
               ),
             ],
           ),
-          SizedBox(height: 12),
-          // Sort Options
+          SizedBox(height: 8),
+          // Sort Options - Wrapped to prevent overflow
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Sort by:',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+              SizedBox(
+                width: 110,
+                child: Text(
+                  'Sort by:',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
                 ),
               ),
-              SizedBox(width: 16),
+              SizedBox(width: 8),
               Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildSortChip('Newest', 'newest'),
-                      SizedBox(width: 8),
-                      _buildSortChip('Oldest', 'oldest'),
-                      SizedBox(width: 8),
-                      _buildSortChip('Highest Rated', 'highest_rated'),
-                    ],
-                  ),
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    _buildSortChip('Newest', 'newest'),
+                    _buildSortChip('Oldest', 'oldest'),
+                    _buildSortChip('Highest Rated', 'highest_rated'),
+                  ],
                 ),
               ),
             ],
@@ -305,10 +350,10 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
         });
       },
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? Color(0xFFD76B30) : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? Color(0xFFD76B30) : Colors.grey.shade300,
           ),
@@ -316,7 +361,7 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
         child: Text(
           label,
           style: GoogleFonts.poppins(
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: FontWeight.w500,
             color: isSelected ? Colors.white : Colors.black87,
           ),
@@ -334,10 +379,10 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
         });
       },
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? Color(0xFFD76B30) : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? Color(0xFFD76B30) : Colors.grey.shade300,
           ),
@@ -345,7 +390,7 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
         child: Text(
           label,
           style: GoogleFonts.poppins(
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: FontWeight.w500,
             color: isSelected ? Colors.white : Colors.black87,
           ),
@@ -402,83 +447,301 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
     if (agencyReference != null || fromTripId != null) {
       return _buildSpecificAgencyReviews();
     } else {
-      // Show all agency reviews
-      return Column(
-        children: [
-          // Filter and Sort Controls
-          _buildFilterSortControls(),
-          
-          // Reviews List
-          Expanded(
-            child: StreamBuilder<List<AgencyReviewsRecord>>(
-              stream: _buildFilteredAgencyReviewsStream(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD76B30)),
+      // Show agency browser - list of agencies with reviews
+      return _buildAgencyBrowser();
+    }
+  }
+
+  Widget _buildAgencyBrowser() {
+    return Column(
+      children: [
+        // Header
+        Container(
+          padding: EdgeInsets.all(16),
+          color: Colors.grey.shade50,
+          child: Row(
+            children: [
+              Icon(
+                Icons.business,
+                color: Color(0xFFD76B30),
+                size: 24,
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Browse Agencies',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
                     ),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  return _buildEmptyState(
-                    icon: Icons.error_outline,
-                    title: 'Error Loading Reviews',
-                    subtitle: 'Unable to load agency reviews. Please try again.',
-                    buttonText: 'Refresh',
-                    onButtonPressed: () => setState(() {}),
-                  );
-                }
-
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  String title = 'No Agency Reviews Yet';
-                  String subtitle = 'No agency reviews available.';
-                  
-                  // Check if filters are applied
-                  if (_selectedRatingFilter != null) {
-                    title = 'No Reviews Match Your Filter';
-                    subtitle = 'Try adjusting your rating filter or clear all filters.';
-                  }
-                  
-                  return _buildEmptyState(
-                    icon: Icons.business,
-                    title: title,
-                    subtitle: subtitle,
-                    buttonText: _selectedRatingFilter != null ? 'Clear Filters' : 'Browse Agencies',
-                    onButtonPressed: _selectedRatingFilter != null 
-                      ? () => setState(() { 
-                          _selectedRatingFilter = null; 
-                          _sortBy = 'newest';
-                        })
-                      : () => context.pushNamed('agenciesList'),
-                  );
-                }
-
-                final reviews = _applyAgencySorting(snapshot.data!);
-                return ListView.separated(
-                  padding: EdgeInsets.all(16),
-                  itemCount: reviews.length,
-                  separatorBuilder: (context, index) => SizedBox(height: 16),
-                  itemBuilder: (context, index) {
-                    final review = reviews[index];
-                    return _buildModernAgencyReviewCard(review);
-                  },
-                );
-              },
-            ),
+                    Text(
+                      'Select an agency to view its reviews',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      );
+        ),
+        
+        // Agency List
+        Expanded(
+          child: StreamBuilder<List<AgenciesRecord>>(
+            stream: queryAgenciesRecord(
+              queryBuilder: (q) => q.orderBy('name'),
+            ),
+            builder: (context, snapshot) {
+              // Debug logging
+              if (kDebugMode) {
+                print('🏢 Agency Browser - Connection State: ${snapshot.connectionState}');
+                print('🏢 Agency Browser - Has Data: ${snapshot.hasData}');
+                print('🏢 Agency Browser - Data Length: ${snapshot.hasData ? snapshot.data!.length : 'null'}');
+                if (snapshot.hasError) {
+                  print('🏢 Agency Browser - Error: ${snapshot.error}');
+                }
+              }
+
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD76B30)),
+                  ),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return _buildEmptyState(
+                  icon: Icons.error_outline,
+                  title: 'Error Loading Agencies',
+                  subtitle: 'Unable to load agencies. Please try again.\nError: ${snapshot.error}',
+                  buttonText: 'Refresh',
+                  onButtonPressed: () => setState(() {}),
+                );
+              }
+
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return _buildEmptyState(
+                  icon: Icons.business,
+                  title: 'No Agencies Found',
+                  subtitle: 'No agencies available to browse.',
+                  buttonText: 'Browse Trips',
+                  onButtonPressed: () => context.pushNamed('home'),
+                );
+              }
+
+              final agencies = snapshot.data!;
+              if (kDebugMode) {
+                print('🏢 Agency Browser - Building ${agencies.length} agency cards');
+                for (var agency in agencies) {
+                  print('🏢 Agency: ${agency.name}');
+                }
+              }
+              
+              return ListView.separated(
+                padding: EdgeInsets.all(16),
+                itemCount: agencies.length,
+                separatorBuilder: (context, index) => SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final agency = agencies[index];
+                  return _buildAgencyBrowserCard(agency);
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAgencyBrowserCard(AgenciesRecord agency) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          // Navigate to agency reviews
+          context.pushNamed(
+            'reviews',
+            queryParameters: {
+              'agencyId': agency.reference.id,
+            },
+          );
+        },
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Agency Logo/Avatar
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Color(0xFFD76B30).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: agency.hasLogo() && agency.logo.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        agency.logo,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => _buildAgencyInitials(agency.name),
+                      ),
+                    )
+                  : _buildAgencyInitials(agency.name),
+              ),
+              SizedBox(width: 16),
+              
+              // Agency Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      agency.name,
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    if (agency.hasLocation())
+                      Text(
+                        agency.location,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    SizedBox(height: 8),
+                    
+                    // Rating and Review Count
+                    FutureBuilder<int>(
+                      future: _getAgencyReviewCount(agency.reference),
+                      builder: (context, reviewCountSnapshot) {
+                        final reviewCount = reviewCountSnapshot.data ?? 0;
+                        return Row(
+                          children: [
+                            if (agency.hasRating() && agency.rating > 0) ...[
+                              RatingBarIndicator(
+                                rating: agency.rating,
+                                itemBuilder: (context, index) => Icon(
+                                  Icons.star,
+                                  color: Colors.amber,
+                                ),
+                                itemCount: 5,
+                                itemSize: 18.0,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                agency.rating.toStringAsFixed(1),
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              SizedBox(width: 12),
+                            ],
+                            Text(
+                              reviewCount > 0 
+                                ? '$reviewCount review${reviewCount == 1 ? '' : 's'}'
+                                : 'No reviews yet',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Arrow Icon
+              Icon(
+                Icons.chevron_right,
+                color: Colors.grey.shade400,
+                size: 24,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAgencyInitials(String name) {
+    final initials = name.isNotEmpty 
+      ? name.split(' ').take(2).map((word) => word.isNotEmpty ? word[0] : '').join().toUpperCase()
+      : 'A';
+    
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        color: Color(0xFFD76B30),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: GoogleFonts.poppins(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<int> _getAgencyReviewCount(DocumentReference agencyRef) async {
+    try {
+      final reviewsSnapshot = await FirebaseFirestore.instance
+          .collection('agency_reviews')
+          .where('agency_reference', isEqualTo: agencyRef)
+          .get();
+      return reviewsSnapshot.docs.length;
+    } catch (e) {
+      return 0;
     }
   }
 
   Widget _buildSpecificAgencyReviews() {
+    // Debug logging
+    if (kDebugMode) {
+      print('🏢 Building specific agency reviews');
+      print('🏢 agencyId: $agencyId');
+      print('🏢 fromTripId: $fromTripId');
+      print('🏢 agencyReference: $agencyReference');
+    }
+
     // Get agency reference - either direct or from trip
     if (agencyReference != null) {
+      if (kDebugMode) {
+        print('🏢 Using direct agency reference: ${agencyReference!.path}');
+      }
       return _buildAgencyReviewsForReference(agencyReference!);
     } else if (fromTripId != null) {
       // Trip is selected, get the trip to find its agency
+      if (kDebugMode) {
+        print('🏢 Getting agency from trip: $fromTripId');
+      }
       final tripRef = FirebaseFirestore.instance.collection('trips').doc(fromTripId!);
       return StreamBuilder<TripsRecord>(
         stream: TripsRecord.getDocument(tripRef),
@@ -502,6 +765,9 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
           }
 
           final trip = tripSnapshot.data!;
+          if (kDebugMode) {
+            print('🏢 Found agency reference from trip: ${trip.agencyReference!.path}');
+          }
           return _buildAgencyReviewsForReference(trip.agencyReference!);
         },
       );
@@ -543,6 +809,17 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
               },
             ),
             builder: (context, reviewSnapshot) {
+              // Debug logging
+              if (kDebugMode) {
+                print('🔍 Agency Reviews Query - Connection State: ${reviewSnapshot.connectionState}');
+                print('🔍 Agency Reviews Query - Has Data: ${reviewSnapshot.hasData}');
+                print('🔍 Agency Reviews Query - Data Length: ${reviewSnapshot.hasData ? reviewSnapshot.data!.length : 'null'}');
+                print('🔍 Agency Reviews Query - Agency Ref: ${agencyRef.path}');
+                if (reviewSnapshot.hasError) {
+                  print('🔍 Agency Reviews Query - Error: ${reviewSnapshot.error}');
+                }
+              }
+
               if (reviewSnapshot.connectionState == ConnectionState.waiting) {
                 return Center(
                   child: CircularProgressIndicator(
@@ -555,7 +832,7 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
                 return _buildEmptyState(
                   icon: Icons.error_outline,
                   title: 'Error Loading Reviews',
-                  subtitle: 'Unable to load agency reviews. Please try again.',
+                  subtitle: 'Unable to load agency reviews. Please try again.\nError: ${reviewSnapshot.error}',
                   buttonText: 'Refresh',
                   onButtonPressed: () => setState(() {}),
                 );
@@ -586,6 +863,13 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
               }
 
               final reviews = _applyAgencySorting(reviewSnapshot.data!);
+              if (kDebugMode) {
+                print('🔍 Agency Reviews - Displaying ${reviews.length} reviews');
+                for (var review in reviews) {
+                  print('🔍 Review: ${review.userName} - ${review.rating}★');
+                }
+              }
+              
               return ListView.separated(
                 padding: EdgeInsets.all(16),
                 itemCount: reviews.length,
@@ -642,53 +926,61 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
 
   Widget _buildLoginPrompt() {
     return Center(
-      child: Padding(
-        padding: EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.login,
-              size: 80,
-              color: FlutterFlowTheme.of(context).secondaryText,
-            ),
-            SizedBox(height: 24),
-            Text(
-              'Sign In Required',
-              style: GoogleFonts.poppins(
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-                color: FlutterFlowTheme.of(context).primaryText,
-              ),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Please sign in to view and manage your reviews',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                color: FlutterFlowTheme.of(context).secondaryText,
-              ),
-            ),
-            SizedBox(height: 32),
-            FFButtonWidget(
-              onPressed: () => context.pushNamed('home'),
-              text: 'Sign In',
-              options: FFButtonOptions(
-                height: 50,
-                padding: EdgeInsetsDirectional.fromSTEB(32, 0, 32, 0),
-                iconPadding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
-                color: Color(0xFFD76B30),
-                textStyle: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+      child: SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: MediaQuery.of(context).size.height * 0.3,
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(24), // Reduced padding
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min, // Allow column to shrink
+              children: [
+                Icon(
+                  Icons.login,
+                  size: 64, // Reduced icon size
+                  color: FlutterFlowTheme.of(context).secondaryText,
                 ),
-                elevation: 2,
-                borderRadius: BorderRadius.circular(25),
-              ),
+                SizedBox(height: 16), // Reduced spacing
+                Text(
+                  'Sign In Required',
+                  style: GoogleFonts.poppins(
+                    fontSize: 22, // Slightly smaller
+                    fontWeight: FontWeight.w600,
+                    color: FlutterFlowTheme.of(context).primaryText,
+                  ),
+                ),
+                SizedBox(height: 12), // Reduced spacing
+                Text(
+                  'Please sign in to view and manage your reviews',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 15, // Slightly smaller
+                    color: FlutterFlowTheme.of(context).secondaryText,
+                  ),
+                ),
+                SizedBox(height: 24), // Reduced spacing
+                FFButtonWidget(
+                  onPressed: () => context.pushNamed('home'),
+                  text: 'Sign In',
+                  options: FFButtonOptions(
+                    height: 48, // Slightly smaller button
+                    padding: EdgeInsetsDirectional.fromSTEB(32, 0, 32, 0),
+                    iconPadding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
+                    color: Color(0xFFD76B30),
+                    textStyle: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    elevation: 2,
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -702,53 +994,61 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
     required VoidCallback onButtonPressed,
   }) {
     return Center(
-      child: Padding(
-        padding: EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 80,
-              color: FlutterFlowTheme.of(context).secondaryText,
-            ),
-            SizedBox(height: 24),
-            Text(
-              title,
-              style: GoogleFonts.poppins(
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-                color: FlutterFlowTheme.of(context).primaryText,
-              ),
-            ),
-            SizedBox(height: 16),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                color: FlutterFlowTheme.of(context).secondaryText,
-              ),
-            ),
-            SizedBox(height: 32),
-            FFButtonWidget(
-              onPressed: onButtonPressed,
-              text: buttonText,
-              options: FFButtonOptions(
-                height: 50,
-                padding: EdgeInsetsDirectional.fromSTEB(32, 0, 32, 0),
-                iconPadding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
-                color: Color(0xFFD76B30),
-                textStyle: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: 400),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 60,
+                  color: FlutterFlowTheme.of(context).secondaryText,
                 ),
-                elevation: 2,
-                borderRadius: BorderRadius.circular(25),
-              ),
+                SizedBox(height: 16),
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: FlutterFlowTheme.of(context).primaryText,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 12),
+                Text(
+                  subtitle,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: FlutterFlowTheme.of(context).secondaryText,
+                    height: 1.4,
+                  ),
+                ),
+                SizedBox(height: 24),
+                FFButtonWidget(
+                  onPressed: onButtonPressed,
+                  text: buttonText,
+                  options: FFButtonOptions(
+                    height: 44,
+                    padding: EdgeInsetsDirectional.fromSTEB(24, 0, 24, 0),
+                    iconPadding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
+                    color: Color(0xFFD76B30),
+                    textStyle: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    elevation: 2,
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -1412,6 +1712,214 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAgencyTripReviews() {
+    // Get the agency reference - either direct or from trip
+    DocumentReference? targetAgencyRef = agencyReference;
+    
+    if (targetAgencyRef == null && fromTripId != null) {
+      // Need to get the agency reference from the trip
+      final tripRef = FirebaseFirestore.instance.collection('trips').doc(fromTripId!);
+      return StreamBuilder<TripsRecord>(
+        stream: TripsRecord.getDocument(tripRef),
+        builder: (context, tripSnapshot) {
+          if (tripSnapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD76B30)),
+              ),
+            );
+          }
+
+          if (!tripSnapshot.hasData || !tripSnapshot.data!.hasAgencyReference()) {
+            return _buildEmptyState(
+              icon: Icons.business,
+              title: 'No Agency Linked',
+              subtitle: 'This trip is not linked to any agency.',
+              buttonText: 'Browse Agencies',
+              onButtonPressed: () => context.pushNamed('agenciesList'),
+            );
+          }
+
+          final trip = tripSnapshot.data!;
+          return _buildAgencyTripReviewsForReference(trip.agencyReference!);
+        },
+      );
+    }
+    
+    if (targetAgencyRef == null) {
+      return _buildEmptyState(
+        icon: Icons.error,
+        title: 'No Agency Found',
+        subtitle: 'Unable to determine which agency to show trip reviews for.',
+        buttonText: 'Go Back',
+        onButtonPressed: () => context.pop(),
+      );
+    }
+    
+    return _buildAgencyTripReviewsForReference(targetAgencyRef);
+  }
+
+  Widget _buildAgencyTripReviewsForReference(DocumentReference agencyRef) {
+    return Column(
+      children: [
+        // Header info
+        Container(
+          padding: EdgeInsets.all(16),
+          color: Colors.grey.shade50,
+          child: Row(
+            children: [
+              Icon(
+                Icons.flight_takeoff,
+                color: Color(0xFFD76B30),
+                size: 24,
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Trip Reviews for This Agency',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    Text(
+                      'Reviews for trips offered by this agency',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Filter and Sort Controls
+        _buildFilterSortControls(),
+        
+        // Reviews List
+        Expanded(
+          child: StreamBuilder<List<TripsRecord>>(
+            stream: queryTripsRecord(
+              queryBuilder: (q) => q.where('agency_reference', isEqualTo: agencyRef),
+            ),
+            builder: (context, tripsSnapshot) {
+              if (tripsSnapshot.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD76B30)),
+                  ),
+                );
+              }
+
+              if (tripsSnapshot.hasError) {
+                return _buildEmptyState(
+                  icon: Icons.error_outline,
+                  title: 'Error Loading Trips',
+                  subtitle: 'Unable to load agency trips. Please try again.',
+                  buttonText: 'Refresh',
+                  onButtonPressed: () => setState(() {}),
+                );
+              }
+
+              if (!tripsSnapshot.hasData || tripsSnapshot.data!.isEmpty) {
+                return _buildEmptyState(
+                  icon: Icons.flight_takeoff,
+                  title: 'No Trips Found',
+                  subtitle: 'This agency has no trips available.',
+                  buttonText: 'Browse Agencies',
+                  onButtonPressed: () => context.pushNamed('agenciesList'),
+                );
+              }
+
+              final agencyTrips = tripsSnapshot.data!;
+              final tripReferences = agencyTrips.map((trip) => trip.reference).toList();
+              
+              return StreamBuilder<List<ReviewsRecord>>(
+                stream: queryReviewsRecord(
+                  queryBuilder: (q) {
+                    var query = q.where('trip_reference', whereIn: tripReferences);
+                    
+                    // Apply rating filter if set
+                    if (_selectedRatingFilter != null) {
+                      double minRating = _selectedRatingFilter!;
+                      double maxRating = _selectedRatingFilter! + 0.99;
+                      query = query
+                          .where('rating', isGreaterThanOrEqualTo: minRating)
+                          .where('rating', isLessThanOrEqualTo: maxRating);
+                    }
+                    
+                    return query.orderBy('created_at', descending: true);
+                  },
+                ),
+                builder: (context, reviewsSnapshot) {
+                  if (reviewsSnapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD76B30)),
+                      ),
+                    );
+                  }
+
+                  if (reviewsSnapshot.hasError) {
+                    return _buildEmptyState(
+                      icon: Icons.error_outline,
+                      title: 'Error Loading Reviews',
+                      subtitle: 'Unable to load trip reviews. Please try again.',
+                      buttonText: 'Refresh',
+                      onButtonPressed: () => setState(() {}),
+                    );
+                  }
+
+                  if (!reviewsSnapshot.hasData || reviewsSnapshot.data!.isEmpty) {
+                    String title = 'No Trip Reviews Yet';
+                    String subtitle = 'No reviews available for this agency\'s trips.';
+                    
+                    // Check if filters are applied
+                    if (_selectedRatingFilter != null) {
+                      title = 'No Reviews Match Your Filter';
+                      subtitle = 'Try adjusting your rating filter or clear all filters.';
+                    }
+                    
+                    return _buildEmptyState(
+                      icon: Icons.rate_review,
+                      title: title,
+                      subtitle: subtitle,
+                      buttonText: _selectedRatingFilter != null ? 'Clear Filters' : 'Browse Agencies',
+                      onButtonPressed: _selectedRatingFilter != null 
+                        ? () => setState(() { 
+                            _selectedRatingFilter = null; 
+                            _sortBy = 'newest';
+                          })
+                        : () => context.pushNamed('agenciesList'),
+                    );
+                  }
+
+                  final reviews = _applySorting(reviewsSnapshot.data!);
+                  return ListView.separated(
+                    padding: EdgeInsets.all(16),
+                    itemCount: reviews.length,
+                    separatorBuilder: (context, index) => SizedBox(height: 16),
+                    itemBuilder: (context, index) {
+                      final review = reviews[index];
+                      return _buildModernTripReviewCard(review);
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

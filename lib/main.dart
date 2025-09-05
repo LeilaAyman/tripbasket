@@ -26,6 +26,16 @@ void main() async {
 
   await initFirebase();
 
+  // Initialize Firebase compatibility immediately after Firebase init
+  if (kIsWeb) {
+    try {
+      await initializeFirebaseCompatibility();
+      print('✅ Firebase compatibility initialized immediately');
+    } catch (e) {
+      print('⚠️ Firebase compatibility error: $e');
+    }
+  }
+
   await FlutterFlowTheme.initialize();
 
   runApp(MyApp());

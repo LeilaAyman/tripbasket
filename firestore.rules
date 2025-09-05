@@ -32,9 +32,14 @@ service cloud.firestore {
       allow write: if isOwner(userId) || isAdmin();
     }
     
-    // Agencies collection
+    // Agencies collection (support both collection names for compatibility)
     match /agencies/{agencyId} {
       allow read: if true; // Public read for agency listing
+      allow write: if isAdmin() || (isAgency() && resource.id == getCurrentUserAgencyRef().id);
+    }
+    
+    match /agency/{agencyId} {
+      allow read: if true; // Public read for agency listing  
       allow write: if isAdmin() || (isAgency() && resource.id == getCurrentUserAgencyRef().id);
     }
     

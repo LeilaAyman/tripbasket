@@ -17,7 +17,7 @@ void main() async {
       print('⚠️  No agency reviews found - this might be why reviews aren\'t loading');
       
       // Check if we have agencies
-      final agenciesSnapshot = await firestore.collection('agencies').limit(5).get();
+      final agenciesSnapshot = await firestore.collection('agency').limit(5).get();
       print('🏢 Agencies found: ${agenciesSnapshot.docs.length}');
       
       if (agenciesSnapshot.docs.isNotEmpty) {
