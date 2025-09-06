@@ -64,12 +64,25 @@ class TripbasketFirebaseUser extends BaseAuthUser {
 
 Stream<BaseAuthUser> tripbasketFirebaseUserStream() => FirebaseAuth.instance
         .authStateChanges()
-        .debounce((user) => user == null && !loggedIn
-            ? TimerStream(true, const Duration(seconds: 1))
-            : Stream.value(user))
+        .debounce((user) {
+          try {
+            return user == null && !loggedIn
+                ? TimerStream(true, const Duration(seconds: 1))
+                : Stream.value(user);
+          } catch (e) {
+            print('USER STREAM ERROR: Debounce error: $e');
+            return Stream.value(user);
+          }
+        })
         .map<BaseAuthUser>(
       (user) {
-        currentUser = TripbasketFirebaseUser(user);
-        return currentUser!;
+        try {
+          currentUser = TripbasketFirebaseUser(user);
+          return currentUser!;
+        } catch (e) {
+          print('USER STREAM ERROR: Failed to create user: $e');
+          currentUser = TripbasketFirebaseUser(null);
+          return currentUser!;
+        }
       },
     );

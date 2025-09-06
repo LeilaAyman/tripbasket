@@ -51,26 +51,46 @@ DocumentReference? get currentUserReference =>
 UsersRecord? currentUserDocument;
 final authenticatedUserStream = FirebaseAuth.instance
     .authStateChanges()
-    .map<String>((user) => user?.uid ?? '')
+    .map<String?>((user) {
+      try {
+        return user?.uid;
+      } catch (e) {
+        print('AUTH STREAM ERROR: Failed to get user UID: $e');
+        return null;
+      }
+    })
     .switchMap(
-      (uid) => uid.isEmpty
-          ? Stream.value(null)
-          : UsersRecord.getDocument(UsersRecord.collection.doc(uid))
+      (uid) {
+        try {
+          if (uid == null || uid.isEmpty) {
+            return Stream.value(null);
+          }
+          return UsersRecord.getDocument(UsersRecord.collection.doc(uid))
               .handleError((error) {
                 print('AUTH STREAM ERROR: Failed to load user document for UID: $uid');
                 print('AUTH STREAM ERROR: $error');
                 return null;
-              }),
+              });
+        } catch (e) {
+          print('AUTH STREAM ERROR: Failed to process UID: $e');
+          return Stream.value(null);
+        }
+      },
     )
     .map((user) {
-  currentUserDocument = user;
-  print('AUTH STREAM: User document loaded: ${user != null ? 'SUCCESS' : 'NULL'}');
-  if (user != null) {
-    print('AUTH STREAM: User email: ${user.email}');
-    print('AUTH STREAM: User roles: ${user.role}');
+  try {
+    currentUserDocument = user;
+    print('AUTH STREAM: User document loaded: ${user != null ? 'SUCCESS' : 'NULL'}');
+    if (user != null) {
+      print('AUTH STREAM: User email: ${user.email}');
+      print('AUTH STREAM: User roles: ${user.role}');
+    }
+    return currentUserDocument;
+  } catch (e) {
+    print('AUTH STREAM ERROR: Failed to process user document: $e');
+    currentUserDocument = null;
+    return null;
   }
-
-  return currentUserDocument;
 }).asBroadcastStream();
 
 class AuthUserStreamWidget extends StatelessWidget {

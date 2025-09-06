@@ -73,9 +73,9 @@
   <link rel="preload" as="style" href="/flutter.js">
   
   <!-- FORCE PRELOAD Firebase 10.12.5 before Flutter loads -->
-  <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" crossorigin>
-  <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js" crossorigin>
-  <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" crossorigin>
+  <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" crossorigin="anonymous">
+  <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js" crossorigin="anonymous">
+  <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" crossorigin="anonymous">
   
   <!-- Ultra-critical CSS inlined for performance -->
   <style>
@@ -226,9 +226,8 @@
         }
       };
 
-      // Clear on load and periodically
+      // Clear on load only
       clearFirebase11();
-      setInterval(clearFirebase11, 1000);
 
       console.error('🔒 ULTRA-COMPREHENSIVE Firebase 11.x protection enabled with strict blocking');
     })();
@@ -471,7 +470,7 @@ if ('serviceWorker' in navigator) {
       _flutter.loader.load({
       onEntrypointLoaded: function(engineInitializer) {
         engineInitializer.initializeEngine({
-          renderer: "html",
+          renderer: "canvaskit",
           useColorEmoji: true
         }).then(function(appRunner) {
           appRunner.runApp();

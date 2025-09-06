@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import '/backend/backend.dart';
+import '/backend/firebase/firestore_safe_fetch.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -400,28 +401,8 @@ class _ReviewsWidgetState extends State<ReviewsWidget>
   }
 
   Stream<List<ReviewsRecord>> _buildFilteredReviewsStream() {
-    return queryReviewsRecord(
-      queryBuilder: (q) {
-        var query = q;
-        
-        // Apply trip filter if specified
-        if (tripReference != null) {
-          query = query.where('trip_reference', isEqualTo: tripReference);
-        }
-        
-        // Apply rating filter - simplified to avoid index conflicts
-        if (_selectedRatingFilter != null) {
-          double minRating = _selectedRatingFilter!;
-          double maxRating = _selectedRatingFilter! + 0.99;
-          query = query
-              .where('rating', isGreaterThanOrEqualTo: minRating)
-              .where('rating', isLessThanOrEqualTo: maxRating);
-        }
-        
-        // Single orderBy to avoid index conflicts
-        return query.orderBy('created_at', descending: true);
-      },
-    );
+    // Use safe fetch wrapper that handles Firebase 11.x errors
+    return FirestoreSafeFetch.getReviewsStream();
   }
 
   List<ReviewsRecord> _applySorting(List<ReviewsRecord> reviews) {

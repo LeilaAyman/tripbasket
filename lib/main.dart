@@ -24,20 +24,36 @@ void main() async {
   GoRouter.optionURLReflectsImperativeAPIs = true;
   usePathUrlStrategy();
 
-  await initFirebase();
+  // Debug Firebase initialization
+  if (kDebugMode) {
+    print('🔥 Starting Firebase initialization...');
+  }
+  
+  try {
+    await initFirebase();
+    if (kDebugMode) {
+      print('✅ Firebase initialized successfully');
+    }
+  } catch (e, stackTrace) {
+    if (kDebugMode) {
+      print('❌ Firebase initialization error: $e');
+      print('Stack trace: $stackTrace');
+    }
+    // Don't fail the app - continue with degraded functionality
+  }
 
-  // Initialize Firebase compatibility immediately after Firebase init
-  if (kIsWeb) {
-    try {
-      await initializeFirebaseCompatibility();
-      print('✅ Firebase compatibility initialized immediately');
-    } catch (e) {
-      print('⚠️ Firebase compatibility error: $e');
+  try {
+    await FlutterFlowTheme.initialize();
+  } catch (e) {
+    if (kDebugMode) {
+      print('⚠️ Theme initialization error: $e');
     }
   }
 
-  await FlutterFlowTheme.initialize();
-
+  if (kDebugMode) {
+    print('🚀 Starting MyApp...');
+  }
+  
   runApp(MyApp());
 }
 

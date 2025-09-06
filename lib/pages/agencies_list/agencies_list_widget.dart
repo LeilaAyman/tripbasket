@@ -1,4 +1,5 @@
 import '/backend/backend.dart';
+import '/backend/firebase/firestore_safe_fetch.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '/flutter_flow/flutter_flow_animations.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
@@ -152,7 +153,7 @@ class _AgenciesListWidgetState extends State<AgenciesListWidget>
               // Agencies List
               Expanded(
                 child: StreamBuilder<List<AgenciesRecord>>(
-                  stream: queryAgenciesRecord(),
+                  stream: FirestoreSafeFetch.getAgenciesStream(),
                   builder: (context, snapshot) {
                     // Debug logging
                     print('🔍 Agencies StreamBuilder - Connection state: ${snapshot.connectionState}');

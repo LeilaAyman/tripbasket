@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '/backend/backend.dart';
+import '/backend/firebase/firestore_safe_fetch.dart';
 import '/utils/agency_utils.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -1619,7 +1620,7 @@ class _HomeWebPageState extends State<HomeWebPage>
               const SizedBox(height: 60),
               // Partners Grid
               StreamBuilder<List<AgenciesRecord>>(
-                stream: queryAgenciesRecord(),
+                stream: FirestoreSafeFetch.getAgenciesStream(),
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
                     print('Partners query error: ${snapshot.error}');
